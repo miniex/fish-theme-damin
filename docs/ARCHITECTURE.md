@@ -183,7 +183,7 @@ To verify: `rm -rf ~/.cache/damin; ./tools/bench.sh` shows hot numbers; the very
 
 - **Lang detection is first-match-wins** in the order `rust → node → go → python → deno`. Polyglot projects pick whichever marker appears highest in the file-system walk (up to 8 levels). Result is cached per-PWD.
 - **`jj` support is minimal** — bookmark or change-id short only. No detailed diff counts (yet).
-- **Battery is opt-in** because `pmset` / sysfs reads cost a few ms per refresh window. 60 s in-process TTL keeps the work off the hot path, but the segment is off by default for users who don't have a battery to show.
+- **Battery is opt-in** because per-platform reads cost a few ms per refresh window — `pmset` on macOS, `/sys/class/power_supply/BAT*/capacity` on Linux, `apm -l` with `sysctl hw.acpi.battery.life` fallback on FreeBSD / OpenBSD / NetBSD / DragonFly. 60 s in-process TTL keeps the work off the hot path, but the segment is off by default for users who don't have a battery to show.
 - **Cwd truncation** uses fish's `prompt_pwd --dir-length=N --full-length-dirs=K`. Last K segments stay full; earlier ones truncate to N chars. Defaults (K=3, N=4) are gentle — `~/Documents/projects/foo` stays full, `~/.config/nvim/lua/plugins/lsp` becomes `~/.co/nvim/lua/plugins/lsp`.
 - **No Nerd Font dependency** — the two prompt glyphs (`✿` U+273F, `❥` U+2765) live in the Dingbats block (U+2700-U+27BF). The git indicators (`✗` ✓ `⇣` `⇡`) are also Dingbats / Arrows. East Asian Width = Neutral, so they render narrow (1 cell) in any monospace font that covers Dingbats — D2Coding, JetBrains Mono, SF Mono, DejaVu Sans Mono, etc.
 

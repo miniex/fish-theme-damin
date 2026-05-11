@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `_damin_cache_prune` now tries GNU `stat -c %Y` before BSD `stat -f %m` and validates the result is numeric, fixing `math: Missing operator` startup errors on Linux where `stat -f %m` emitted verbose filesystem info instead of an epoch
+
+### Changed
+
+- Battery percent (`theme_damin_show_battery`) now resolves per-platform via `switch (uname)` — macOS `pmset`, Linux sysfs, FreeBSD / OpenBSD / NetBSD / DragonFly `apm -l` with `sysctl hw.acpi.battery.life` fallback. Previously non-Darwin BSDs fell through to the Linux sysfs path
+
 ## [1.0.0] - 20260511223917 KST
 
 Initial release.

@@ -96,9 +96,9 @@ function _damin_cache_prune
     test -d $_damin_cache_dir; or return
     set -l marker "$_damin_cache_dir/.last-prune"
     if test -f $marker
-        set -l mtime (command stat -f %m $marker 2>/dev/null)
-        test -z "$mtime"; and set mtime (command stat -c %Y $marker 2>/dev/null)
-        if test -n "$mtime"
+        set -l mtime (command stat -c %Y $marker 2>/dev/null)
+        test -z "$mtime"; and set mtime (command stat -f %m $marker 2>/dev/null)
+        if string match -rq '^\d+$' -- "$mtime"
             test (math (date +%s) - $mtime) -lt 86400; and return
         end
     end
@@ -407,17 +407,24 @@ function _damin_battery_render
     if test (math $now - $_damin_battery_at) -ge 60
         set -g _damin_battery_at $now
         set -l pct
-        if test (uname) = Darwin
-            set pct (command pmset -g batt 2>/dev/null | string match -gr '(\d+)%')
-            set pct $pct[1]
-        else
-            for f in /sys/class/power_supply/BAT*/capacity
-                if test -f $f
-                    set pct (command cat $f 2>/dev/null | string trim)
-                    break
+        switch (uname)
+            case Darwin
+                set pct (command pmset -g batt 2>/dev/null | string match -gr '(\d+)%')
+                set pct $pct[1]
+            case Linux
+                for f in /sys/class/power_supply/BAT*/capacity
+                    if test -f $f
+                        set pct (command cat $f 2>/dev/null | string trim)
+                        break
+                    end
                 end
-            end
+            case FreeBSD OpenBSD NetBSD DragonFly
+                set pct (command apm -l 2>/dev/null | string trim)
+                if not string match -rq '^\d+$' -- "$pct"
+                    set pct (command sysctl -n hw.acpi.battery.life 2>/dev/null | string trim)
+                end
         end
+        string match -rq '^\d+$' -- "$pct"; or set pct ""
         set -g _damin_battery_value "$pct"
     end
     set -l pct $_damin_battery_value
