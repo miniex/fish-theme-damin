@@ -30,6 +30,7 @@ function damin_help
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
     _damin_help_row theme_damin_async_warmup 1
+    _damin_help_row theme_damin_async_repaint 0
     _damin_help_row theme_damin_osc_integration 1
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0

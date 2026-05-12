@@ -141,6 +141,7 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_async_git`              | `1`      | Cache git status + postexec invalidation. `0` = pure sync            |
 | `theme_damin_async_lang`             | `1`      | Cache lang detection + postexec invalidation. `0` = sync             |
 | `theme_damin_async_warmup`           | `1`      | Background-prefill git cache at theme load when in a repo            |
+| `theme_damin_async_repaint`          | `0`      | Stale-while-revalidate git via `fish -c` subshell + repaint signal   |
 | `theme_damin_osc_integration`        | `1`      | Emit OSC 7 (cwd advertise) + OSC 133 (semantic prompt markers)       |
 | `theme_damin_cwd_keep`               | `3`      | Trailing path segments shown in full                                 |
 | `theme_damin_cwd_short`              | `4`      | Character length each earlier segment is truncated to                |
@@ -228,6 +229,21 @@ The `fish_postexec` event handler `_damin_postexec` watches every command:
 `fish_postexec` only fires for commands run interactively in this shell, so commits made by `lazygit`, an IDE git plugin, a `bash -c "git commit …"` invocation, or another shell session would leak past the invalidation. `_damin_git_render` adds a second backstop: before reading the cache, it compares the cache mtime against `.git/{index,HEAD,logs/HEAD}` via fish's `path mtime` builtin (one builtin call, no fork). If any git state file is newer than the cache, it's treated as stale and recomputed. Filesystem mtime has 1-second resolution, so commits made within the same second as the cache write are still covered by the postexec hook for in-shell commands and recomputed on the next prompt for everyone else.
 
 Pure-sync mode (`theme_damin_async_git 0` / `theme_damin_async_lang 0`) skips the cache layer entirely and runs the underlying compute on every prompt.
+
+### True async repaint (opt-in)
+
+`theme_damin_async_repaint 1` adds a stale-while-revalidate layer on top of `theme_damin_async_git`:
+
+- Cache miss → render the prompt without the git segment, kick off a backgrounded `fish -c '… _damin_git_prefill'` subshell. When the subshell finishes, it sets `_damin_async_repaint_token` universally, which all listening fish processes pick up via `--on-variable`. The handler clears the in-flight guard and runs `commandline -f repaint`, redrawing the prompt with the now-hot cache.
+- Stale cache → render *with* the stale data immediately, kick off the same bg refresh, repaint when ready.
+
+The subshell sources `conf.d/damin.fish` with `_damin_subshell=1` set so the init block (cache prune, transient bindings, warmup) is skipped — only the helper function definitions run.
+
+Universal variables are the only fish IPC primitive that works without a known PID. `&` on a fish function doesn't populate `$last_pid`, so `--on-process-exit` is not an option here.
+
+Only one in-flight refresh is allowed at a time (`_damin_git_refresh_running` guard). The guard clears in the repaint handler.
+
+The repaint event fires in *every* fish shell that has the theme loaded, not just the originator. That's harmless — each shell re-renders its own prompt from its own cache.
 
 ### Atomicity
 

@@ -56,6 +56,7 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 - **Catppuccin palette swap** — `theme_damin_palette` selects between `mocha` (default), `frappe`, `macchiato`, `latte`. Switch live with `damin_set_palette frappe`
 - **`fish_config` integration** — bundled `themes/Damin Mocha.theme` (and the other three flavors) installable via `damin_install_themes`, so they show up in `fish_config theme show`
 - **Async cache warmup** — when fish opens directly into a repo, a background fork pre-fills the git cache so the next prompt is already hot
+- **True async repaint** (opt-in) — `theme_damin_async_repaint 1` renders immediately on stale or missing git cache, runs the refresh in a `fish -c` subshell, then triggers `commandline -f repaint` once the fresh data is on disk. Useful for very large repos where porcelain v2 takes meaningful time
 - **Auto-minimal on TRAMP / dumb terminals** — `$TERM=dumb` or `$INSIDE_EMACS` set ⇒ ascii glyphs, no transient, no OSC, no palette mutation, all without nuking user-explicit settings
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`

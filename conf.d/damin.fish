@@ -1,3 +1,6 @@
+# record the source path so the async-repaint subshell can re-source helpers.
+set -g _damin_theme_file (status filename)
+
 # tramp / dumb terminals (emacs shell, basic ttys) — adjust defaults before they're set.
 # user-explicit values still win because the regular defaults below use `set -q; or set`.
 set -l _damin_dumb 0
@@ -40,6 +43,7 @@ set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
 set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
+set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 0
 set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
 set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
@@ -763,11 +767,35 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     _damin_gh_render "$branch"
 end
 
-# compute + write the git cache without rendering. used by warmup.
+# compute + write the git cache without rendering. used by warmup + async repaint.
 function _damin_git_prefill
     set -l cache_file (_damin_cache_path git)
     set -l data (_damin_git_compute 2>/dev/null)
     test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
+end
+
+# fork a single bg prefill via `fish -c` subshell, then signal completion through a
+# universal variable. all listening fish processes repaint when the var flips —
+# universal-var change events are the only fish IPC primitive that works without
+# capturing a PID (fish functions backgrounded with `&` don't populate $last_pid).
+function _damin_git_async_kickoff
+    set -q _damin_git_refresh_running; and return
+    set -g _damin_git_refresh_running 1
+    set -l theme_file $_damin_theme_file
+    set -l pwd $PWD
+    fish -c "
+        set -gx _damin_subshell 1
+        cd '$pwd' 2>/dev/null
+        source '$theme_file' 2>/dev/null
+        _damin_git_prefill
+        set -U _damin_async_repaint_token (random)
+    " >/dev/null 2>&1 &
+    disown 2>/dev/null
+end
+
+function _damin_async_repaint_handler --on-variable _damin_async_repaint_token
+    set -e _damin_git_refresh_running
+    commandline -f repaint 2>/dev/null
 end
 
 function _damin_git_render
@@ -780,17 +808,28 @@ function _damin_git_render
 
     set -l cache_file (_damin_cache_path git)
     set -l data
+    set -l stale 0
 
     if test -f $cache_file
-        if not _damin_git_cache_stale $cache_file
-            set -l lines (_damin_read_lines $cache_file)
-            if test (count $lines) -ge 9 -a "$lines[1]" = "$PWD"
-                set data $lines[2..9]
-            end
+        set -l lines (_damin_read_lines $cache_file)
+        if test (count $lines) -ge 9 -a "$lines[1]" = "$PWD"
+            set data $lines[2..9]
+            _damin_git_cache_stale $cache_file; and set stale 1
         end
     end
 
-    if test -z "$data"
+    # async_repaint mode: render stale/empty NOW, bg refresh + repaint on completion.
+    if test "$theme_damin_async_repaint" = 1
+        if test -z "$data" -o $stale = 1
+            _damin_git_async_kickoff
+        end
+        test -z "$data"; and return
+        _damin_git_render_data $data
+        return
+    end
+
+    # default: sync compute on miss or stale.
+    if test -z "$data" -o $stale = 1
         set data (_damin_git_compute)
         test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
     end
@@ -894,21 +933,40 @@ function _damin_vi_mode_repaint --on-variable fish_bind_mode
     commandline -f repaint 2>/dev/null
 end
 
-# 126 = no-exec, 127 = not-found; 128+N = signal name via fish_status_to_signal.
+# 126 = no-exec, 127 = not-found; 128+N maps to POSIX signal names (same numbers
+# on linux / macOS / BSD). inline switch avoids fish_status_to_signal's `kill -l` fork.
 function _damin_status_name --argument-names code
     switch $code
         case 126
             echo noexec
-            return
         case 127
             echo not-found
-            return
-    end
-    set -l sig (fish_status_to_signal $code 2>/dev/null)
-    if test -n "$sig" -a "$sig" != "$code"
-        echo $sig
-    else
-        echo $code
+        case 129
+            echo SIGHUP
+        case 130
+            echo SIGINT
+        case 131
+            echo SIGQUIT
+        case 132
+            echo SIGILL
+        case 133
+            echo SIGTRAP
+        case 134
+            echo SIGABRT
+        case 136
+            echo SIGFPE
+        case 137
+            echo SIGKILL
+        case 139
+            echo SIGSEGV
+        case 141
+            echo SIGPIPE
+        case 142
+            echo SIGALRM
+        case 143
+            echo SIGTERM
+        case '*'
+            echo $code
     end
 end
 
@@ -1229,15 +1287,17 @@ end
 
 
 # init: bare calls run after every function is defined.
+# subshell mode (used by async_repaint kickoff) only needs the function defs.
+if not set -q _damin_subshell
+    _damin_cache_prune
+    _damin_install_transient_bindings
 
-_damin_cache_prune
-_damin_install_transient_bindings
-
-# warmup: prefill the git cache in the background when fish opens directly into a repo,
-# so the next prompt doesn't pay the cold-cache compute on the hot path.
-if test "$theme_damin_async_warmup" = 1 -a "$theme_damin_async_git" = 1
-    if test (_damin_detect_vcs) = git
-        _damin_git_prefill >/dev/null 2>&1 &
-        disown 2>/dev/null
+    # warmup: prefill the git cache in the background when fish opens directly into a repo,
+    # so the next prompt doesn't pay the cold-cache compute on the hot path.
+    if test "$theme_damin_async_warmup" = 1 -a "$theme_damin_async_git" = 1
+        if test (_damin_detect_vcs) = git
+            _damin_git_prefill >/dev/null 2>&1 &
+            disown 2>/dev/null
+        end
     end
 end

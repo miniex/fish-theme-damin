@@ -578,11 +578,29 @@ expect "status: 137 = SIGKILL" "$got" "SIGKILL"
 got=$(run_status 143)
 expect "status: 143 = SIGTERM" "$got" "SIGTERM"
 
+got=$(run_status 129)
+expect "status: 129 = SIGHUP" "$got" "SIGHUP"
+
+got=$(run_status 131)
+expect "status: 131 = SIGQUIT" "$got" "SIGQUIT"
+
+got=$(run_status 134)
+expect "status: 134 = SIGABRT" "$got" "SIGABRT"
+
+got=$(run_status 139)
+expect "status: 139 = SIGSEGV" "$got" "SIGSEGV"
+
+got=$(run_status 141)
+expect "status: 141 = SIGPIPE" "$got" "SIGPIPE"
+
 got=$(run_status 1)
 expect "status: 1 stays raw (no mapping)" "$got" "1"
 
 got=$(run_status 42)
 expect "status: 42 stays raw (no mapping)" "$got" "42"
+
+got=$(run_status 200)
+expect "status: 200 stays raw (no mapping)" "$got" "200"
 
 run_exit_label() {
     fish -c "
@@ -687,6 +705,30 @@ got=$(run_dumb "
     true
 ")
 expect "palette: latte → text=4c4f69" "$got" "4c4f69"
+
+echo
+echo "=== damin async repaint kickoff ==="
+echo
+
+tmphome=$(mktemp -d -t damin-test-home.XXXXXX)
+tmprepo=$(mkrepo)
+HOME="$tmphome" XDG_CONFIG_HOME="$tmphome/.config" \
+    fish --no-config -c "
+        set -g theme_damin_async_repaint 1
+        source '$THEME/conf.d/damin.fish' 2>/dev/null
+        cd '$tmprepo'
+        _damin_git_render >/dev/null
+        # bg subshell needs time to fork, run git, and write the cache file.
+        for _ in (seq 30)
+            test (count \$_damin_cache_dir/*-git 2>/dev/null) -gt 0; and break
+            sleep 0.1
+        end
+        test (count \$_damin_cache_dir/*-git 2>/dev/null) -gt 0; and echo cached; or echo missing
+        true
+    " 2>/dev/null >"$tmphome/out"
+result=$(cat "$tmphome/out")
+expect "async repaint: bg subshell writes cache" "$result" "cached"
+rm -rf "$tmphome" "$tmprepo"
 
 echo
 TOTAL=$((PASS + FAIL))
