@@ -4,7 +4,7 @@ function fish_right_prompt
         return
     end
 
-    echo -n -s " " $_damin_c_deco "❥ " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
+    echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
 
     _damin_lang_render
     _damin_env_render

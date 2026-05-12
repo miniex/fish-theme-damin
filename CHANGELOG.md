@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `theme_damin_ascii` toggle — `set -U theme_damin_ascii 1` swaps every prompt glyph to a safe ASCII fallback for terminals whose font lacks the dingbat glyphs (`⇡ ⇣ ❥ ✧ ✿ ✗ ✓ ·`). Defaults: `* > ~ ! + ? $ ^ v |`
+- 10 `theme_damin_glyph_*` variables for individual symbol overrides (`prompt`, `cwd`, `clean`, `modified`, `added`, `untracked`, `stashed`, `ahead`, `behind`, `sep`). User overrides win over both fancy and ASCII defaults
+- `damin_doctor` now reports the active glyph mode and the cached cache-entry count, and the font-width sanity hint suggests `theme_damin_ascii=1` when glyphs render as `?`
+
 ### Fixed
 
-- `_damin_cache_prune` now tries GNU `stat -c %Y` before BSD `stat -f %m` and validates the result is numeric, fixing `math: Missing operator` startup errors on Linux where `stat -f %m` emitted verbose filesystem info instead of an epoch
+- `_damin_git_compute` parsed `git status --porcelain=v2 --branch` with `case '?'`, but fish's `case` uses glob semantics — the `?` wildcard matched **every** single character, so `# branch.head main` and `1 .M …` lines all fell into the untracked counter. Branch name stayed empty (rendered as fallback `?`) and modified/staged/ahead/behind counts were always `0`. Now uses `case '\?'` to match the literal character. Existing caches must be cleared (`damin_reset_cache`) for the fix to take effect
 
 ### Changed
 

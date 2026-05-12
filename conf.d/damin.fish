@@ -17,6 +17,40 @@ set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
 set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
 set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
+set -q theme_damin_ascii; or set -g theme_damin_ascii 0
+
+set -l _ds_prompt ✿
+set -l _ds_cwd ❥
+set -l _ds_clean ✧
+set -l _ds_modified ✗
+set -l _ds_added ✓
+set -l _ds_untracked '?'
+set -l _ds_stashed '$'
+set -l _ds_ahead ⇡
+set -l _ds_behind ⇣
+set -l _ds_sep ·
+
+if test "$theme_damin_ascii" = 1
+    set _ds_prompt '*'
+    set _ds_cwd '>'
+    set _ds_clean '~'
+    set _ds_modified '!'
+    set _ds_added '+'
+    set _ds_ahead '^'
+    set _ds_behind v
+    set _ds_sep '|'
+end
+
+set -q theme_damin_glyph_prompt; or set -g theme_damin_glyph_prompt $_ds_prompt
+set -q theme_damin_glyph_cwd; or set -g theme_damin_glyph_cwd $_ds_cwd
+set -q theme_damin_glyph_clean; or set -g theme_damin_glyph_clean $_ds_clean
+set -q theme_damin_glyph_modified; or set -g theme_damin_glyph_modified $_ds_modified
+set -q theme_damin_glyph_added; or set -g theme_damin_glyph_added $_ds_added
+set -q theme_damin_glyph_untracked; or set -g theme_damin_glyph_untracked $_ds_untracked
+set -q theme_damin_glyph_stashed; or set -g theme_damin_glyph_stashed $_ds_stashed
+set -q theme_damin_glyph_ahead; or set -g theme_damin_glyph_ahead $_ds_ahead
+set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
+set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
 
 if test "$theme_damin_apply_colors" = 1
     set -U fish_color_normal cdd6f4
@@ -147,7 +181,7 @@ function _damin_jobs_render
     test "$theme_damin_show_jobs" = 1; or return
     set -l n (count (jobs -p 2>/dev/null))
     test $n -gt 0; or return
-    echo -n -s " " $_damin_c_sep "·" " " $_damin_c_dim "&$n" $_damin_c_normal
+    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
 end
 
 function _damin_git_compute
@@ -166,7 +200,7 @@ function _damin_git_compute
 
     for line in (command git status --porcelain=v2 --branch 2>/dev/null)
         switch (string sub -l 1 -- "$line")
-            case '?'
+            case '\?'
                 set untracked (math $untracked + 1)
             case 1 2
                 set -l xy (string sub -s 3 -l 2 -- "$line")
@@ -255,17 +289,17 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     test "$theme_damin_git_counts" = 1; and set counts_on 1
 
     set -l first 1
-    _damin_git_part $u '?' $first $counts_on; and set first 0
-    _damin_git_part $st '$' $first $counts_on; and set first 0
-    _damin_git_part $m '✗' $first $counts_on; and set first 0
-    _damin_git_part $s '✓' $first $counts_on; and set first 0
-    _damin_git_part $b '⇣' $first $counts_on; and set first 0
-    _damin_git_part $a '⇡' $first $counts_on; and set first 0
+    _damin_git_part $u $theme_damin_glyph_untracked $first $counts_on; and set first 0
+    _damin_git_part $st $theme_damin_glyph_stashed $first $counts_on; and set first 0
+    _damin_git_part $m $theme_damin_glyph_modified $first $counts_on; and set first 0
+    _damin_git_part $s $theme_damin_glyph_added $first $counts_on; and set first 0
+    _damin_git_part $b $theme_damin_glyph_behind $first $counts_on; and set first 0
+    _damin_git_part $a $theme_damin_glyph_ahead $first $counts_on; and set first 0
 
     if test $first -eq 0
         echo -n -s $_damin_c_normal
     else if test -z "$op"
-        echo -n -s " " $_damin_c_deco "✧" $_damin_c_normal
+        echo -n -s " " $_damin_c_deco $theme_damin_glyph_clean $_damin_c_normal
     end
 end
 
@@ -308,7 +342,7 @@ end
 function _damin_jj_render
     set -l name (_damin_jj_compute)
     test -z "$name"; and return
-    echo -n -s $_damin_c_branch $name $_damin_c_normal " " $_damin_c_deco "✧" $_damin_c_normal
+    echo -n -s $_damin_c_branch $name $_damin_c_normal " " $_damin_c_deco $theme_damin_glyph_clean $_damin_c_normal
 end
 
 function _damin_vcs_render
@@ -387,7 +421,7 @@ function _damin_lang_render
         set value $_damin_lang_value
     end
 
-    test -n "$value"; and echo -n -s " " $_damin_c_sep "·" " " $_damin_c_dim "$value" $_damin_c_normal
+    test -n "$value"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "$value" $_damin_c_normal
 end
 
 function _damin_env_render
@@ -398,7 +432,7 @@ function _damin_env_render
     set -q DIRENV_DIR; and set -a parts direnv
     test (count $parts) -eq 0; and return
     set -l joined (string join , -- $parts)
-    echo -n -s " " $_damin_c_sep "·" " " $_damin_c_dim "($joined)" $_damin_c_normal
+    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "($joined)" $_damin_c_normal
 end
 
 function _damin_battery_render
@@ -432,7 +466,7 @@ function _damin_battery_render
     test $pct -gt $theme_damin_battery_threshold; and return
     set -l color $_damin_c_dim
     test $pct -le 10; and set color $_damin_c_err
-    echo -n -s " " $_damin_c_sep "·" " " $color "$pct%" $_damin_c_normal
+    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $color "$pct%" $_damin_c_normal
 end
 
 function _damin_duration_format
@@ -451,7 +485,7 @@ function _damin_duration_render
     test "$theme_damin_show_duration" = 1; or return
     set -l color $_damin_c_dim
     test $CMD_DURATION -gt $theme_damin_long_command_threshold; and set color $_damin_c_long
-    echo -n -s " " $_damin_c_sep "·" " " $color (_damin_duration_format) $_damin_c_normal
+    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $color (_damin_duration_format) $_damin_c_normal
 end
 
 function _damin_help_row --argument-names name default

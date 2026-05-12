@@ -21,12 +21,38 @@ function damin_help
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
     _damin_help_row theme_damin_apply_colors 1
+    _damin_help_row theme_damin_ascii 0
     echo
     echo "  numeric"
     _damin_help_row theme_damin_cwd_keep 3
     _damin_help_row theme_damin_cwd_short 4
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
+    echo
+    echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
+    if test "$theme_damin_ascii" = 1
+        _damin_help_row theme_damin_glyph_prompt '*'
+        _damin_help_row theme_damin_glyph_cwd '>'
+        _damin_help_row theme_damin_glyph_clean '~'
+        _damin_help_row theme_damin_glyph_modified '!'
+        _damin_help_row theme_damin_glyph_added '+'
+        _damin_help_row theme_damin_glyph_untracked '?'
+        _damin_help_row theme_damin_glyph_stashed '$'
+        _damin_help_row theme_damin_glyph_ahead '^'
+        _damin_help_row theme_damin_glyph_behind v
+        _damin_help_row theme_damin_glyph_sep '|'
+    else
+        _damin_help_row theme_damin_glyph_prompt ✿
+        _damin_help_row theme_damin_glyph_cwd ❥
+        _damin_help_row theme_damin_glyph_clean ✧
+        _damin_help_row theme_damin_glyph_modified ✗
+        _damin_help_row theme_damin_glyph_added ✓
+        _damin_help_row theme_damin_glyph_untracked '?'
+        _damin_help_row theme_damin_glyph_stashed '$'
+        _damin_help_row theme_damin_glyph_ahead ⇡
+        _damin_help_row theme_damin_glyph_behind ⇣
+        _damin_help_row theme_damin_glyph_sep ·
+    end
     echo
     echo "  commands"
     printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"

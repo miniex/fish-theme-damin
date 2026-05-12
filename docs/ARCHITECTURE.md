@@ -89,6 +89,31 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_cwd_short`              | `4`     | Character length each earlier segment is truncated to             |
 | `theme_damin_long_command_threshold` | `3000`  | Duration (ms) above which the right-prompt time renders bold      |
 | `theme_damin_battery_threshold`      | `30`    | Show battery only when `%` is at or below this number             |
+| `theme_damin_ascii`                  | `0`     | Swap every glyph default to ASCII for fonts missing dingbats      |
+
+### Glyph overrides
+
+Every prompt symbol is read from a `theme_damin_glyph_*` variable so individual glyphs can be overridden without flipping the whole theme into ASCII mode. Values resolved at theme load: a user-set override wins; otherwise the default is picked from the table below based on `theme_damin_ascii`.
+
+| Variable                         | Default (fancy) | Default (`ascii=1`) | Where it renders                                |
+|----------------------------------|-----------------|---------------------|-------------------------------------------------|
+| `theme_damin_glyph_prompt`       | `✿`             | `*`                 | Florette at end of left prompt + transient stub |
+| `theme_damin_glyph_cwd`          | `❥`             | `>`                 | Right-prompt cwd marker                         |
+| `theme_damin_glyph_clean`        | `✧`             | `~`                 | Sparkle when working tree is fully clean        |
+| `theme_damin_glyph_modified`     | `✗`             | `!`                 | Modified-file count                             |
+| `theme_damin_glyph_added`        | `✓`             | `+`                 | Staged-file count                               |
+| `theme_damin_glyph_untracked`    | `?`             | `?`                 | Untracked-file count (matches porcelain)        |
+| `theme_damin_glyph_stashed`      | `$`             | `$`                 | Stash count                                     |
+| `theme_damin_glyph_ahead`        | `⇡`             | `^`                 | Ahead-of-upstream count                         |
+| `theme_damin_glyph_behind`       | `⇣`             | `v`                 | Behind-upstream count                           |
+| `theme_damin_glyph_sep`          | `·`             | `\|`                | Right-prompt segment separator                  |
+
+Override one at a time:
+
+```fish
+set -U theme_damin_glyph_ahead ^
+set -U theme_damin_glyph_behind v
+```
 
 ### Palette
 
@@ -185,7 +210,7 @@ To verify: `rm -rf ~/.cache/damin; ./tools/bench.sh` shows hot numbers; the very
 - **`jj` support is minimal** — bookmark or change-id short only. No detailed diff counts (yet).
 - **Battery is opt-in** because per-platform reads cost a few ms per refresh window — `pmset` on macOS, `/sys/class/power_supply/BAT*/capacity` on Linux, `apm -l` with `sysctl hw.acpi.battery.life` fallback on FreeBSD / OpenBSD / NetBSD / DragonFly. 60 s in-process TTL keeps the work off the hot path, but the segment is off by default for users who don't have a battery to show.
 - **Cwd truncation** uses fish's `prompt_pwd --dir-length=N --full-length-dirs=K`. Last K segments stay full; earlier ones truncate to N chars. Defaults (K=3, N=4) are gentle — `~/Documents/projects/foo` stays full, `~/.config/nvim/lua/plugins/lsp` becomes `~/.co/nvim/lua/plugins/lsp`.
-- **No Nerd Font dependency** — the two prompt glyphs (`✿` U+273F, `❥` U+2765) live in the Dingbats block (U+2700-U+27BF). The git indicators (`✗` ✓ `⇣` `⇡`) are also Dingbats / Arrows. East Asian Width = Neutral, so they render narrow (1 cell) in any monospace font that covers Dingbats — D2Coding, JetBrains Mono, SF Mono, DejaVu Sans Mono, etc.
+- **No Nerd Font dependency** — the two prompt glyphs (`✿` U+273F, `❥` U+2765) live in the Dingbats block (U+2700-U+27BF). The git indicators (`✗` ✓ `⇣` `⇡`) are also Dingbats / Arrows. East Asian Width = Neutral, so they render narrow (1 cell) in any monospace font that covers Dingbats — D2Coding, JetBrains Mono, SF Mono, DejaVu Sans Mono, etc. Some Linux defaults (e.g. older Liberation Mono, Ubuntu Mono builds, Hack without symbol fallback) are missing the dashed arrows `⇡ ⇣` (U+21E1 / U+21E3) or `❥`; those terminals show `?` for the missing slots. `set -U theme_damin_ascii 1` is the one-shot fix; `theme_damin_glyph_ahead` / `theme_damin_glyph_behind` lets you keep the rest fancy and swap only the missing two.
 
 ## Internals you might want to know
 

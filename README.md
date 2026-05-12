@@ -50,7 +50,8 @@ Requires **fish ≥ 3.6**. Works with **Fisher** (auto-loads via `conf.d/` + `fu
 - **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv)` display
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **Catppuccin Mocha** `fish_color_*` palette applied on theme activation (opt-out via `theme_damin_apply_colors 0`)
-- **19 toggles** via `set -U theme_damin_*` — run `damin_help` to discover
+- **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`
+- **20 toggles** via `set -U theme_damin_*` — run `damin_help` to discover
 
 ## Commands
 

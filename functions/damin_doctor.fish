@@ -35,10 +35,16 @@ function damin_doctor
     set -l n_caches (count (path filter -tf $_damin_cache_dir/* 2>/dev/null))
     _damin_doctor_check "cache entries" ok "$n_caches files"
 
+    if test "$theme_damin_ascii" = 1
+        _damin_doctor_check "ascii glyph mode" ok "(theme_damin_ascii=1)"
+    else
+        _damin_doctor_check "ascii glyph mode" ok "off — set -U theme_damin_ascii 1 if any glyph below shows as '?'"
+    end
+
     echo
     echo "  font width sanity — each glyph should sit immediately before the |:"
     for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ ?
         printf '    %s|\n' $c
     end
-    echo "  (visible space between glyph and | = 2-cell render; check font / kitty symbol_map)"
+    echo "  (a '?' or visible gap before | = font is missing the glyph; enable ascii mode)"
 end
