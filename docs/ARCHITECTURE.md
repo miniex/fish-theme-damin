@@ -220,4 +220,4 @@ One conditional extra call: when the branch has no upstream tracking, porcelain 
 
 - **Global state** lives under the `_damin_` prefix: color cache (`_damin_c_*`), per-PWD memos (`_damin_vcs_pwd`/`_damin_vcs_value`, `_damin_lang_pwd`/`_damin_lang_value`, `_damin_pwd_key_pwd`/`_damin_pwd_key_value`), the EUID cache (`_damin_is_root`), the battery TTL (`_damin_battery_at`/`_damin_battery_value`), the transient flag (`_damin_in_transient`), and the cache dir (`_damin_cache_dir`).
 - **User-facing helpers** are `damin_help`, `damin_doctor`, `damin_reset_cache` — defined at top level in `fish_prompt.fish` so they're always available after the theme loads.
-- **No `funcsave`** — the theme never persists anything to `~/.config/fish/functions/`. Uninstall is `omf theme <other> && rm ~/.local/share/omf/themes/damin`.
+- **No `funcsave`** — the theme never persists anything to `~/.config/fish/functions/`. Uninstall is `omf theme <other> && rm -rf ~/.local/share/omf/themes/fish-theme-damin`.

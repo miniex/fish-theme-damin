@@ -39,9 +39,9 @@ fisher install (pwd)
 exec fish
 
 # OR Oh My Fish
-ln -sfn (pwd) ~/.local/share/omf/themes/damin   # one-time
-omf theme damin                                  # apply
-exec fish                                        # reload to confirm the prompt draws
+ln -sfn (pwd) ~/.local/share/omf/themes/fish-theme-damin   # one-time
+omf theme fish-theme-damin                                 # apply
+exec fish                                                  # reload to confirm the prompt draws
 ```
 
 ## PR expectations

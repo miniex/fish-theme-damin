@@ -26,7 +26,7 @@ fisher install miniex/fish-theme-damin
 
 ```fish
 omf install https://github.com/miniex/fish-theme-damin
-omf theme damin
+omf theme fish-theme-damin
 ```
 
 For local hacking:
@@ -36,8 +36,8 @@ git clone https://github.com/miniex/fish-theme-damin.git
 # fisher
 fisher install (pwd)/fish-theme-damin
 # OR omf
-ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/damin
-omf theme damin
+ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/fish-theme-damin
+omf theme fish-theme-damin
 ```
 
 Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** (auto-loads via `conf.d/` + `functions/`) and **Oh My Fish** (root shims source the same code).
@@ -86,18 +86,25 @@ fisher remove miniex/fish-theme-damin   # Fisher
 # OR — OMF: switch off the theme, then delete the dir yourself
 #         (omf remove can leave stale theme files behind)
 omf theme default
-rm -rf ~/.local/share/omf/themes/damin
+rm -rf ~/.local/share/omf/themes/fish-theme-damin
 
 # 3. reinstall
 fisher install miniex/fish-theme-damin  # Fisher
 # OR
-omf install https://github.com/miniex/fish-theme-damin; and omf theme damin
+omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme-damin
 
 # 4. apply in the current shell
 exec fish
 ```
 
 Still off? Run `damin_doctor` — it reports cache state, font width, and missing dependencies.
+
+**`Conflicting prompt setting` from `omf theme …` or `omf doctor`?** A `fish_prompt.fish` left behind by a previous install method is blocking OMF — typically a leftover from Fisher (which copies files into `~/.config/fish/functions/`) when switching to OMF without `fisher remove` first. Delete it and retry:
+
+```fish
+rm -f ~/.config/fish/functions/fish_prompt.fish ~/.config/fish/functions/fish_right_prompt.fish
+omf theme fish-theme-damin
+```
 
 ## Contributing
 

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `theme_damin_ascii` toggle — `set -U theme_damin_ascii 1` swaps every prompt glyph to a safe ASCII fallback for terminals whose font lacks the dingbat glyphs (`⇡ ⇣ ❥ ✧ ✿ ✗ ✓ ·`). Defaults: `* > ~ ! + ? $ ^ v |`
 - 10 `theme_damin_glyph_*` variables for individual symbol overrides (`prompt`, `cwd`, `clean`, `modified`, `added`, `untracked`, `stashed`, `ahead`, `behind`, `sep`). User overrides win over both fancy and ASCII defaults
 - `damin_doctor` now reports the active glyph mode and the cached cache-entry count, and the font-width sanity hint suggests `theme_damin_ascii=1` when glyphs render as `?`
-- `README.md` Troubleshooting section — nuke-and-reinstall recipe covering cache clear (`damin_reset_cache` or `rm -rf ~/.cache/damin`), Fisher / OMF uninstall (OMF: `omf theme default` + `rm -rf ~/.local/share/omf/themes/damin` to avoid leftover files), reinstall, and `exec fish` to apply
+- `README.md` Troubleshooting section — nuke-and-reinstall recipe covering cache clear (`damin_reset_cache` or `rm -rf ~/.cache/damin`), Fisher / OMF uninstall (OMF: `omf theme default` + `rm -rf ~/.local/share/omf/themes/fish-theme-damin` to avoid leftover files), reinstall, and `exec fish` to apply. Includes a `Conflicting prompt setting` follow-up for users switching from Fisher to OMF without cleaning up Fisher's copy of `fish_prompt.fish`
 
 ### Fixed
 
