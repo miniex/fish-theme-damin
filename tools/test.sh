@@ -1,6 +1,5 @@
 #!/bin/sh
-# Test _damin_git_compute against fixture git repos.
-# Asserts the 8-line stdout: branch, untracked, modified, staged, stashed, ahead, behind, op.
+# fixture tests for _damin_git_compute (8-line stdout: branch, u, m, s, st, a, b, op).
 set -e
 
 cd "$(dirname "$0")/.."
@@ -20,7 +19,7 @@ PASS=0
 FAIL=0
 FAILED_NAMES=""
 
-# Trailing `true` ensures fish exit 0 even on non-git pwd, so `set -e` doesn't fire on $().
+# trailing `true` keeps fish exit 0 on non-git pwd so `set -e` doesn't fire on $().
 run_compute() {
     fish -c "
         source '$THEME/conf.d/damin.fish'
@@ -48,7 +47,7 @@ expect() {
     fi
 }
 
-# expected BRANCH U M S ST A B OP -> 8-line fixture (trailing newline stripped by $())
+# 8-line fixture builder (trailing newline stripped by $()).
 expected() {
     printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
 }
@@ -69,26 +68,23 @@ cleanup() {
 echo "=== damin _damin_git_compute tests ==="
 echo
 
-# --- non-git PWD: function returns nothing ---
 tmp=$(mktemp -d -t damin-test-notgit.XXXXXX)
 got=$(run_compute "$tmp")
 expect "non-git pwd: empty output" "$got" ""
 cleanup "$tmp"
 
-# --- clean repo, no remote ---
 repo=$(mkrepo)
 got=$(run_compute "$repo")
 expect "clean repo" "$got" "$(expected main 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
-# --- 1 untracked (regression: case '?' glob bug counted every line) ---
+# regression: glob `?` once matched every line.
 repo=$(mkrepo)
 echo new >"$repo/u"
 got=$(run_compute "$repo")
 expect "1 untracked file" "$got" "$(expected main 1 0 0 0 0 0 '')"
 cleanup "$repo"
 
-# --- 1 modified (tracked, unstaged) ---
 repo=$(mkrepo)
 echo orig >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m add
 echo edit >"$repo/f"
@@ -96,14 +92,12 @@ got=$(run_compute "$repo")
 expect "1 modified" "$got" "$(expected main 0 1 0 0 0 0 '')"
 cleanup "$repo"
 
-# --- 1 staged ---
 repo=$(mkrepo)
 echo new >"$repo/s" && git -C "$repo" add s
 got=$(run_compute "$repo")
 expect "1 staged" "$got" "$(expected main 0 0 1 0 0 0 '')"
 cleanup "$repo"
 
-# --- mixed: 1 untracked + 1 modified + 1 staged ---
 repo=$(mkrepo)
 echo orig >"$repo/m" && git -C "$repo" add m && git -C "$repo" commit -q -m add
 echo edit >"$repo/m"
@@ -113,7 +107,6 @@ got=$(run_compute "$repo")
 expect "mixed dirty" "$got" "$(expected main 1 1 1 0 0 0 '')"
 cleanup "$repo"
 
-# --- detached HEAD: branch shows 8-char SHA prefix, not "?" ---
 repo=$(mkrepo)
 sha=$(git -C "$repo" rev-parse HEAD)
 prefix=$(printf '%s' "$sha" | cut -c1-8)
@@ -122,7 +115,6 @@ got=$(run_compute "$repo")
 expect "detached HEAD shows sha prefix" "$got" "$(expected "$prefix" 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
-# --- 1 stash entry ---
 repo=$(mkrepo)
 echo orig >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m add
 echo edit >"$repo/f"
@@ -131,7 +123,7 @@ got=$(run_compute "$repo")
 expect "1 stash entry" "$got" "$(expected main 0 0 0 1 0 0 '')"
 cleanup "$repo"
 
-# --- no upstream + remote + 2 unpushed commits (regression: branch.ab fallback) ---
+# regression: branch.ab fallback when upstream is unset.
 bare=$(mktemp -d -t damin-test-bare.XXXXXX)
 git -c init.defaultBranch=main init --bare -q "$bare"
 repo=$(mkrepo)
@@ -144,7 +136,7 @@ got=$(run_compute "$repo")
 expect "no upstream + remote + 2 unpushed" "$got" "$(expected main 0 0 0 0 2 0 '')"
 cleanup "$repo" "$bare"
 
-# --- no upstream + NO remote + commits: ahead must stay 0 (no false positive) ---
+# no remote at all: ahead must stay 0 (no false positive).
 repo=$(mkrepo)
 git -C "$repo" commit --allow-empty -q -m c1
 git -C "$repo" commit --allow-empty -q -m c2
@@ -152,7 +144,6 @@ got=$(run_compute "$repo")
 expect "no remote at all: ahead stays 0" "$got" "$(expected main 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
-# --- upstream set + 1 commit ahead ---
 bare=$(mktemp -d -t damin-test-bare.XXXXXX)
 git -c init.defaultBranch=main init --bare -q "$bare"
 repo=$(mkrepo)
@@ -163,7 +154,6 @@ got=$(run_compute "$repo")
 expect "upstream set, 1 ahead" "$got" "$(expected main 0 0 0 0 1 0 '')"
 cleanup "$repo" "$bare"
 
-# --- upstream set + 1 commit behind (rewind local) ---
 bare=$(mktemp -d -t damin-test-bare.XXXXXX)
 git -c init.defaultBranch=main init --bare -q "$bare"
 repo=$(mkrepo)
@@ -175,22 +165,21 @@ got=$(run_compute "$repo")
 expect "upstream set, 1 behind" "$got" "$(expected main 0 0 0 0 0 1 '')"
 cleanup "$repo" "$bare"
 
-# --- active rebase: op=rebase ---
 repo=$(mkrepo)
 git -C "$repo" checkout -q -b feature
 echo a >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m feat
 git -C "$repo" checkout -q main
 echo b >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m base
-# start a rebase that conflicts so it stays mid-flight
+# rebase that conflicts so it stays mid-flight.
 git -C "$repo" checkout -q feature
 git -C "$repo" rebase main >/dev/null 2>&1 || true
 got=$(run_compute "$repo")
-# Branch reads as SHA prefix during rebase (git detaches HEAD) — assert op only.
+# branch reads as sha prefix during rebase (git detaches HEAD) — assert op only.
 op_line=$(printf '%s' "$got" | sed -n '8p')
 expect "active rebase: op is rebase" "$op_line" "rebase"
 cleanup "$repo"
 
-# --- active rebase + theme_damin_show_git_op=0: op suppressed (regression) ---
+# regression: show_git_op=0 must suppress op even mid-flight.
 repo=$(mkrepo)
 git -C "$repo" checkout -q -b feature
 echo a >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m feat
@@ -203,7 +192,6 @@ op_line=$(printf '%s' "$got" | sed -n '8p')
 expect "rebase + show_git_op=0: op suppressed" "$op_line" ""
 cleanup "$repo"
 
-# --- active merge: op=merge ---
 repo=$(mkrepo)
 git -C "$repo" checkout -q -b feature
 echo a >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m feat
@@ -219,7 +207,7 @@ echo
 echo "=== damin _damin_k8s_compute tests ==="
 echo
 
-# k8s_compute writes "context\nnamespace\n"; namespace empty when unset.
+# _damin_k8s_compute writes "context\nnamespace\n"; namespace empty when unset.
 run_k8s() {
     fish -c "
         source '$THEME/conf.d/damin.fish'
@@ -232,7 +220,6 @@ write_kube() {
     cat >"$1"
 }
 
-# --- single context with namespace ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -249,7 +236,6 @@ got=$(run_k8s "$cfg")
 expect "k8s: context + namespace" "$got" "$(printf 'prod\nproduction')"
 rm -f "$cfg"
 
-# --- single context, no namespace key ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -265,7 +251,6 @@ got=$(run_k8s "$cfg")
 expect "k8s: context, no namespace" "$got" "dev"
 rm -f "$cfg"
 
-# --- multiple contexts: picks the matching one ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -291,7 +276,6 @@ got=$(run_k8s "$cfg")
 expect "k8s: picks correct entry of many" "$got" "$(printf 'stage\nstaging')"
 rm -f "$cfg"
 
-# --- current-context appears before contexts: section ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -308,7 +292,6 @@ got=$(run_k8s "$cfg")
 expect "k8s: current-context before contexts" "$got" "$(printf 'prod\nproduction')"
 rm -f "$cfg"
 
-# --- no current-context: returns empty ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -323,7 +306,6 @@ got=$(run_k8s "$cfg")
 expect "k8s: no current-context = empty output" "$got" ""
 rm -f "$cfg"
 
-# --- quoted context name ---
 cfg=$(mktemp -t damin-test-kube.XXXXXX)
 write_kube "$cfg" <<'EOF'
 apiVersion: v1
@@ -390,6 +372,184 @@ expect_contains "env: venv + nix combined" "$got" "(proj,nix:ml)"
 
 got=$(run_env "")
 expect "env: nothing set produces no output" "$got" ""
+
+echo
+echo "=== damin cloud context tests ==="
+echo
+
+run_aws_region() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        _damin_aws_region_for '$1' '$2'
+        true
+    " 2>/dev/null
+}
+
+cfg=$(mktemp -t damin-test-aws.XXXXXX)
+cat >"$cfg" <<'EOF'
+[default]
+region = us-east-1
+output = json
+
+[profile prod]
+region = eu-west-2
+EOF
+got=$(run_aws_region default "$cfg")
+expect "aws: default profile region" "$got" "us-east-1"
+
+got=$(run_aws_region prod "$cfg")
+expect "aws: named profile region" "$got" "eu-west-2"
+
+got=$(run_aws_region nonexistent "$cfg")
+expect "aws: unknown profile = empty" "$got" ""
+rm -f "$cfg"
+
+got=$(run_aws_region default /tmp/damin-aws-missing-$$)
+expect "aws: missing file = empty" "$got" ""
+
+run_azure() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        _damin_azure_compute '$1'
+        true
+    " 2>/dev/null
+}
+
+azf=$(mktemp -t damin-test-az.XXXXXX)
+cat >"$azf" <<'EOF'
+{
+  "subscriptions": [
+    {
+      "id": "11111111-2222-3333-4444-555555555555",
+      "name": "Prod",
+      "isDefault": true,
+      "tenantId": "t1"
+    },
+    {
+      "id": "66666666-7777-8888-9999-000000000000",
+      "name": "Dev",
+      "isDefault": false,
+      "tenantId": "t1"
+    }
+  ]
+}
+EOF
+got=$(run_azure "$azf")
+expect "azure: default subscription extracted" "$got" "Prod"
+rm -f "$azf"
+
+azf=$(mktemp -t damin-test-az.XXXXXX)
+cat >"$azf" <<'EOF'
+{
+  "subscriptions": [
+    {"id":"x","name":"Stage","isDefault":false},
+    {"id":"y","name":"Production-US","isDefault":true}
+  ]
+}
+EOF
+got=$(run_azure "$azf")
+expect "azure: second isDefault entry" "$got" "Production-US"
+rm -f "$azf"
+
+azf=$(mktemp -t damin-test-az.XXXXXX)
+cat >"$azf" <<'EOF'
+{"subscriptions":[{"name":"A","isDefault":false}]}
+EOF
+got=$(run_azure "$azf")
+expect "azure: no default = empty" "$got" ""
+rm -f "$azf"
+
+got=$(run_azure /tmp/damin-az-missing-$$)
+expect "azure: missing file = empty" "$got" ""
+
+gcp_root=$(mktemp -d -t damin-test-gcp.XXXXXX)
+mkdir -p "$gcp_root/configurations"
+echo "work" >"$gcp_root/active_config"
+cat >"$gcp_root/configurations/config_work" <<'EOF'
+[core]
+account = me@example.com
+project = my-cool-project
+[compute]
+region = us-central1
+EOF
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -gx CLOUDSDK_CONFIG '$gcp_root'
+    set -g theme_damin_show_gcp 1
+    _damin_gcp_render
+    true
+" 2>/dev/null)
+case "$got" in
+    *"gcp:my-cool-project"*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "gcp: active_config + project resolved"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        FAILED_NAMES="$FAILED_NAMES
+    gcp: active_config + project resolved"
+        printf '  FAIL %s\n' "gcp: active_config + project resolved"
+        printf '       in: %s\n' "$got"
+        ;;
+esac
+rm -rf "$gcp_root"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -gx CLOUDSDK_CORE_PROJECT 'env-project'
+    set -gx CLOUDSDK_CONFIG '/tmp/damin-gcp-missing-$$'
+    set -g theme_damin_show_gcp 1
+    _damin_gcp_render
+    true
+" 2>/dev/null)
+case "$got" in
+    *"gcp:env-project"*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "gcp: CLOUDSDK_CORE_PROJECT short-circuit"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        FAILED_NAMES="$FAILED_NAMES
+    gcp: CLOUDSDK_CORE_PROJECT short-circuit"
+        printf '  FAIL %s\n' "gcp: CLOUDSDK_CORE_PROJECT short-circuit"
+        printf '       in: %s\n' "$got"
+        ;;
+esac
+
+echo
+echo "=== damin OSC 7 / OSC 133 tests ==="
+echo
+
+expected_133a=$(printf '\033]133;A\007')
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_osc_integration 1
+    _damin_osc133_a
+    true
+" 2>/dev/null)
+expect "osc: 133;A emitted" "$got" "$expected_133a"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_osc_integration 0
+    _damin_osc133_a
+    true
+" 2>/dev/null)
+expect "osc: integration=0 emits nothing" "$got" ""
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    _damin_osc_encode_path '/tmp/has space/sub'
+    true
+" 2>/dev/null)
+expect "osc: path encoding escapes space" "$got" "/tmp/has%20space/sub"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    _damin_osc_encode_path '/usr/local/bin'
+    true
+" 2>/dev/null)
+expect "osc: path encoding preserves slashes" "$got" "/usr/local/bin"
 
 echo
 TOTAL=$((PASS + FAIL))

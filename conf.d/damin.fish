@@ -21,6 +21,13 @@ set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_th
 set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
+set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
+set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
+set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
+set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
+set -q theme_damin_show_azure; or set -g theme_damin_show_azure 0
+set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
+set -q theme_damin_gh_pr_ttl; or set -g theme_damin_gh_pr_ttl 300
 
 # transient flag is session-global only; drain any universal-scope leak.
 set -qU _damin_in_transient; and set -eU _damin_in_transient
@@ -112,6 +119,20 @@ set -g _damin_pwd_key_value ""
 set -g _damin_k8s_mt ""
 set -g _damin_k8s_ctx ""
 set -g _damin_k8s_ns ""
+set -g _damin_aws_cfg_mt ""
+set -g _damin_aws_cfg_value ""
+set -g _damin_aws_cfg_profile ""
+set -g _damin_gcp_active_mt ""
+set -g _damin_gcp_active_name ""
+set -g _damin_gcp_cfg_mt ""
+set -g _damin_gcp_cfg_value ""
+set -g _damin_azure_mt ""
+set -g _damin_azure_value ""
+set -g _damin_osc_pwd ""
+set -g _damin_osc_host ""
+set -g _damin_gh_branch ""
+set -g _damin_gh_value ""
+set -g _damin_gh_at 0
 
 set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
@@ -151,6 +172,229 @@ function _damin_cache_prune
 end
 
 _damin_cache_prune
+
+# osc 7 = cwd advertise (new tabs reuse dir); osc 133 = semantic prompt markers
+# (jump-to-prompt, select-output). unsupporting terminals drop them silently.
+
+function _damin_osc_enabled
+    test "$theme_damin_osc_integration" = 1
+end
+
+function _damin_osc_hostname
+    if test -z "$_damin_osc_host"
+        set -l h (hostname 2>/dev/null | string trim)
+        test -z "$h"; and set h localhost
+        set -g _damin_osc_host $h
+    end
+    echo $_damin_osc_host
+end
+
+# split-then-encode so the `/` separators survive url-escaping.
+function _damin_osc_encode_path --argument-names path
+    set -l parts (string split / -- $path)
+    set -l out
+    for p in $parts
+        if test -z "$p"
+            set -a out ""
+        else
+            set -a out (string escape --style=url -- $p)
+        end
+    end
+    string join / -- $out
+end
+
+function _damin_osc7_emit
+    _damin_osc_enabled; or return
+    test "$_damin_osc_pwd" = "$PWD"; and return
+    set -g _damin_osc_pwd "$PWD"
+    set -l host (_damin_osc_hostname)
+    set -l enc (_damin_osc_encode_path "$PWD")
+    printf '\e]7;file://%s%s\a' "$host" "$enc"
+end
+
+function _damin_osc133_a
+    _damin_osc_enabled; and printf '\e]133;A\a'
+end
+
+function _damin_osc133_b
+    _damin_osc_enabled; and printf '\e]133;B\a'
+end
+
+function _damin_osc133_c --on-event fish_preexec
+    _damin_osc_enabled; and printf '\e]133;C\a'
+end
+
+# `[default]` for the default profile, `[profile <name>]` for the rest.
+function _damin_aws_region_for --argument-names profile cfg
+    test -f $cfg; or return
+    set -l target
+    if test "$profile" = default
+        set target '[default]'
+    else
+        set target "[profile $profile]"
+    end
+    set -l in_section 0
+    for line in (command cat $cfg 2>/dev/null)
+        if string match -qr '^\[' -- $line
+            test "$line" = "$target"; and set in_section 1; or set in_section 0
+            continue
+        end
+        test $in_section = 1; or continue
+        set -l m (string match -r '^region *= *(.*)$' -- $line)
+        test (count $m) -ge 2; and echo (string trim -- $m[2]); and return
+    end
+end
+
+function _damin_aws_render
+    test "$theme_damin_show_aws" = 1; or return
+    set -l profile
+    if set -q AWS_PROFILE; and test -n "$AWS_PROFILE"
+        set profile $AWS_PROFILE
+    else if set -q AWS_DEFAULT_PROFILE; and test -n "$AWS_DEFAULT_PROFILE"
+        set profile $AWS_DEFAULT_PROFILE
+    end
+    test -n "$profile"; or return
+
+    set -l region
+    if set -q AWS_REGION; and test -n "$AWS_REGION"
+        set region $AWS_REGION
+    else if set -q AWS_DEFAULT_REGION; and test -n "$AWS_DEFAULT_REGION"
+        set region $AWS_DEFAULT_REGION
+    else if test "$theme_damin_show_aws_region" = 1
+        set -l cfg "$HOME/.aws/config"
+        set -q AWS_CONFIG_FILE; and test -n "$AWS_CONFIG_FILE"; and set cfg $AWS_CONFIG_FILE
+        if test -f $cfg
+            set -l mt (path mtime $cfg 2>/dev/null)
+            set -l key "$mt|$profile"
+            if test "$_damin_aws_cfg_mt" = "$key"
+                set region $_damin_aws_cfg_value
+            else
+                set region (_damin_aws_region_for $profile $cfg)
+                set -g _damin_aws_cfg_mt "$key"
+                set -g _damin_aws_cfg_value "$region"
+            end
+        end
+    end
+
+    set -l label "aws:$profile"
+    test "$theme_damin_show_aws_region" = 1 -a -n "$region"; and set label "$label@$region"
+    echo -n -s $_damin_c_dim "$label " $_damin_c_normal
+end
+
+# active_config names the live config; configurations/config_<name> [core] holds the project.
+function _damin_gcp_render
+    test "$theme_damin_show_gcp" = 1; or return
+
+    set -l project
+    if set -q CLOUDSDK_CORE_PROJECT; and test -n "$CLOUDSDK_CORE_PROJECT"
+        set project $CLOUDSDK_CORE_PROJECT
+    else
+        set -l cfg_root "$HOME/.config/gcloud"
+        set -q CLOUDSDK_CONFIG; and test -n "$CLOUDSDK_CONFIG"; and set cfg_root $CLOUDSDK_CONFIG
+        set -l active "$cfg_root/active_config"
+        test -f $active; or return
+
+        set -l mt (path mtime $active 2>/dev/null)
+        set -l name
+        if test "$_damin_gcp_active_mt" = "$mt"
+            set name $_damin_gcp_active_name
+        else
+            set name (command cat $active 2>/dev/null | string trim | head -1)
+            set -g _damin_gcp_active_mt "$mt"
+            set -g _damin_gcp_active_name "$name"
+        end
+        test -n "$name"; or return
+
+        set -l cfg "$cfg_root/configurations/config_$name"
+        test -f $cfg; or return
+        set -l cmt (path mtime $cfg 2>/dev/null)
+        if test "$_damin_gcp_cfg_mt" = "$cmt|$name"
+            set project $_damin_gcp_cfg_value
+        else
+            set -l in_core 0
+            for line in (command cat $cfg 2>/dev/null)
+                if string match -qr '^\[' -- $line
+                    test "$line" = '[core]'; and set in_core 1; or set in_core 0
+                    continue
+                end
+                test $in_core = 1; or continue
+                set -l m (string match -r '^project *= *(.*)$' -- $line)
+                test (count $m) -ge 2; and set project (string trim -- $m[2]); and break
+            end
+            set -g _damin_gcp_cfg_mt "$cmt|$name"
+            set -g _damin_gcp_cfg_value "$project"
+        end
+    end
+
+    test -n "$project"; or return
+    echo -n -s $_damin_c_dim "gcp:$project " $_damin_c_normal
+end
+
+# split azureProfile.json on `},` to get per-subscription chunks (schema is flat).
+function _damin_azure_compute --argument-names file
+    test -f $file; or return
+    set -l data (command cat $file 2>/dev/null | string collect)
+    test -z "$data"; and return
+    set -l chunks (string split '},' -- $data)
+    for chunk in $chunks
+        string match -qr '"isDefault"\s*:\s*true' -- $chunk; or continue
+        set -l m (string match -r '"name"\s*:\s*"([^"]+)"' -- $chunk)
+        test (count $m) -ge 2; and echo $m[2]; and return
+    end
+end
+
+function _damin_azure_render
+    test "$theme_damin_show_azure" = 1; or return
+    set -l sub
+    if set -q AZURE_SUBSCRIPTION_NAME; and test -n "$AZURE_SUBSCRIPTION_NAME"
+        set sub $AZURE_SUBSCRIPTION_NAME
+    else if set -q AZURE_DEFAULTS_SUBSCRIPTION; and test -n "$AZURE_DEFAULTS_SUBSCRIPTION"
+        set sub $AZURE_DEFAULTS_SUBSCRIPTION
+    else
+        set -l file "$HOME/.azure/azureProfile.json"
+        set -q AZURE_CONFIG_DIR; and test -n "$AZURE_CONFIG_DIR"; and set file "$AZURE_CONFIG_DIR/azureProfile.json"
+        test -f $file; or return
+        set -l mt (path mtime $file 2>/dev/null)
+        if test "$_damin_azure_mt" = "$mt"
+            set sub $_damin_azure_value
+        else
+            set sub (_damin_azure_compute $file)
+            set -g _damin_azure_mt "$mt"
+            set -g _damin_azure_value "$sub"
+        end
+    end
+    test -n "$sub"; or return
+    echo -n -s $_damin_c_dim "az:$sub " $_damin_c_normal
+end
+
+# silent skip when gh is missing, remote isn't github, or no PR is open.
+function _damin_gh_compute --argument-names branch
+    type -q gh 2>/dev/null; or return
+    set -l remote (command git remote get-url origin 2>/dev/null)
+    string match -q '*github.com*' -- $remote; or return
+    set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
+    test -z "$out"; and return
+    echo $out
+end
+
+function _damin_gh_render --argument-names branch
+    test "$theme_damin_show_gh_pr" = 1; or return
+    test -n "$branch"; or return
+    set -l now (date +%s)
+    set -l ttl $theme_damin_gh_pr_ttl
+    if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
+        set -g _damin_gh_branch "$branch"
+        set -g _damin_gh_at $now
+        set -g _damin_gh_value (_damin_gh_compute "$branch")
+    end
+    test -n "$_damin_gh_value"; or return
+    set -l parts (string split ' ' -- $_damin_gh_value)
+    set -l num $parts[1]
+    set -l draft $parts[2]
+    set -l color $_damin_c_meta
+    test "$draft" = true; and set color $_damin_c_dim
+    echo -n -s " " $color "#$num" $_damin_c_normal
+end
 
 function _damin_detect_vcs
     if test "$_damin_vcs_pwd" != "$PWD"
@@ -198,6 +442,9 @@ function _damin_context_render
     else if test -f /run/.containerenv
         echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
     end
+    _damin_aws_render
+    _damin_gcp_render
+    _damin_azure_render
     _damin_k8s_render
 end
 
@@ -209,8 +456,7 @@ function _damin_k8s_config_path
     echo "$HOME/.kube/config"
 end
 
-# Resolves current-context's namespace by collecting all blocks first, so the
-# order of current-context vs contexts: in the file doesn't matter.
+# collect all blocks first so order of current-context vs contexts: doesn't matter.
 function _damin_k8s_compute --argument-names cfg
     set -l current
     set -l in_contexts 0
@@ -353,9 +599,8 @@ function _damin_git_compute
         end
     end
 
-    # No upstream → porcelain v2 omits branch.ab. Fall back to "commits not on any remote"
-    # so a fresh feature branch still shows ⇡ for unpushed work. Skip when there are no
-    # remotes at all (otherwise a brand-new local-only repo would flag every commit).
+    # no upstream → porcelain v2 omits branch.ab. fall back to "commits not on any remote"
+    # so fresh branches still show ⇡; skip when no remotes exist (no false positives).
     if test $has_upstream = 0 -a "$ahead" = 0
         if test -n "$(command git remote 2>/dev/null)"
             set -l unpushed (command git rev-list --count HEAD --not --remotes 2>/dev/null)
@@ -397,14 +642,28 @@ function _damin_write_cache --argument-names cache_file pwd
 end
 
 function _damin_postexec --on-event fish_postexec
+    set -l exit $status
+    _damin_osc_enabled; and printf '\e]133;D;%s\a' $exit
     set -l cmd "$argv"
     if string match -qr '\b(git|jj|hub|gh)\b' -- $cmd
         if not string match -qr '\bgit\s+(status|log|diff|show|blame|ls-(files|tree)|cat-file|rev-(list|parse)|describe|name-rev|shortlog|whatchanged|reflog|grep|ls-remote|help|version)\b' -- $cmd
             command rm -f (_damin_cache_path git) 2>/dev/null
         end
+        # state-changing gh pr subcommands invalidate the cached number.
+        if string match -qr '\bgh\s+pr\s+(create|close|reopen|merge|edit)\b' -- $cmd
+            set -g _damin_gh_branch ""
+            set -g _damin_gh_at 0
+        end
     end
     if string match -qr '\b(nvm|fnm|asdf|mise|pyenv|rbenv|rustup|volta|conda)\b' -- $cmd
         command rm -f (_damin_cache_path lang) 2>/dev/null
+    end
+    # `aws configure` / `gcloud config set` / `az account set` mutate same-second; force refresh.
+    if string match -qr '\b(aws|gcloud|az)\b' -- $cmd
+        set -g _damin_aws_cfg_mt ""
+        set -g _damin_gcp_active_mt ""
+        set -g _damin_gcp_cfg_mt ""
+        set -g _damin_azure_mt ""
     end
 end
 
@@ -446,14 +705,14 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     else if test -z "$op"
         echo -n -s " " $_damin_c_deco $theme_damin_glyph_clean $_damin_c_normal
     end
+
+    _damin_gh_render "$branch"
 end
 
 function _damin_git_cache_stale --argument-names cache_file
     test -n "$_damin_vcs_dir"; or return 1
-    # `path mtime` (fish 3.7+) is a builtin: no fork. Missing files are silently dropped,
-    # so output is ordered — cache first, then whichever state files exist. Index/HEAD/
-    # logs/HEAD change whenever the working tree, branch, or refs change, which catches
-    # out-of-shell commits (lazygit, IDE plugins, scripts) that bypass fish_postexec.
+    # `path mtime` is a builtin (no fork); missing files are dropped silently so order is preserved.
+    # index/HEAD/logs/HEAD cover working-tree, branch, and ref changes — catches out-of-shell commits.
     set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
     test (count $mt) -lt 2; and return 1
     set -l cm $mt[1]
@@ -593,13 +852,13 @@ function _damin_env_render
     set -q CONDA_DEFAULT_ENV; and set -a parts $CONDA_DEFAULT_ENV
 
     if set -q DIRENV_DIR
-        # $DIRENV_DIR has a leading `-` marker; strip then basename.
+        # strip leading `-` marker from $DIRENV_DIR before basename.
         set -l d (string replace -r '^-' '' -- $DIRENV_DIR)
         set -a parts "direnv:"(path basename -- $d)
     end
 
     if set -q IN_NIX_SHELL
-        # $name is the nix derivation attr; skip the generic default.
+        # $name = the nix derivation attr; skip the generic default.
         if test "$theme_damin_show_nix_name" = 1
             switch "$name"
                 case nix-shell nix-shell-env ''
@@ -691,7 +950,7 @@ end
 
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
-        # skip incomplete buffers (status 2) — Enter inserts a newline, no execute.
+        # skip incomplete buffers (status 2) — enter inserts a newline, no execute.
         commandline --is-valid 2>/dev/null
         if test $status -ne 2
             set -g _damin_in_transient 1
@@ -701,7 +960,7 @@ function _damin_transient_enter
     commandline -f execute
 end
 
-# bind in every mode so vi's `insert` (where editing happens) is covered too.
+# bind in every mode so vi `insert` (where editing happens) is covered too.
 function _damin_install_transient_bindings
     for mode in default insert visual replace replace_one paste
         bind -M $mode \r _damin_transient_enter 2>/dev/null
@@ -711,22 +970,25 @@ end
 
 _damin_install_transient_bindings
 
-# fish_{default,vi}_key_bindings wipe all bindings; re-install after the swap.
+# `fish_{default,vi}_key_bindings` wipe all bindings; re-install after the swap.
 function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
     _damin_install_transient_bindings
 end
 
-# defined here (not in functions/) so Fisher doesn't copy a stub into
-# ~/.config/fish/functions/ that OMF would flag as a "Conflicting prompt setting".
+# defined in conf.d/ (not functions/) so fisher doesn't copy a stub that omf would flag as conflicting.
 function fish_prompt
     set -l last_status $status
 
-    # 1 = render stub then advance, 2 = clear and render full. owning the clear
-    # here keeps lifecycle independent of fish_right_prompt (user-overridable).
+    _damin_osc133_a
+    _damin_osc7_emit
+
+    # 1 = render stub then advance; 2 = clear and render full. owning the clear here
+    # keeps lifecycle independent of fish_right_prompt (user-overridable).
     switch "$_damin_in_transient"
         case 1
             echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
             set -g _damin_in_transient 2
+            _damin_osc133_b
             return
         case 2
             set -eg _damin_in_transient
@@ -742,10 +1004,12 @@ function fish_prompt
         echo -n -s " " $_damin_c_err "$theme_damin_glyph_prompt " $_damin_c_normal
         test "$theme_damin_show_exit_code" = 1; and echo -n -s $_damin_c_exit "$last_status " $_damin_c_normal
     end
+
+    _damin_osc133_b
 end
 
 function fish_right_prompt
-    # fish_prompt owns the flag lifecycle; render blank while it's set.
+    # fish_prompt owns the flag; render blank while it's set.
     if set -q _damin_in_transient
         return
     end

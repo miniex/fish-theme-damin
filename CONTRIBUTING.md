@@ -27,7 +27,7 @@ Before every commit:
 ```bash
 ./tools/format.sh   # fish_indent on prompt files; shfmt on the tools scripts
 ./tools/lint.sh     # fish_indent --check + fish -n + shfmt --diff + shellcheck
-./tools/test.sh     # fixture-repo tests for _damin_git_compute
+./tools/test.sh     # fixture tests: git compute, kubeconfig, env, aws/gcp/azure, OSC 7/133
 ```
 
 `lint.sh` exits non-zero on any formatting drift or shellcheck finding. `test.sh` exits non-zero if any parser assertion fails. CI / reviewers expect a clean run.

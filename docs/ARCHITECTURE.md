@@ -35,9 +35,9 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
 
 ### Left prompt segments (in render order)
 
-1. **Context** — `ssh` (`$SSH_CONNECTION`), `root` (bold red when EUID=0, cached at theme load), `dkr` (`/.dockerenv`), `ctr` (`/run/.containerenv`), `k8s:<context>` (parses `current-context` from `$KUBECONFIG`'s first path or `~/.kube/config`; pure-fish, mtime-cached, no `kubectl` fork; appends `/<namespace>` when `theme_damin_show_k8s_namespace=1`; falls back to bare `k8s` when `$KUBERNETES_SERVICE_HOST` is set but no config is readable, e.g. inside a pod). Stack with spaces.
+1. **Context** — `ssh` (`$SSH_CONNECTION`), `root` (bold red when EUID=0, cached at theme load), `dkr` (`/.dockerenv`), `ctr` (`/run/.containerenv`), `aws:<profile>` / `gcp:<project>` / `az:<subscription>` (opt-in, see [Cloud context](#cloud-context) below), `k8s:<context>` (parses `current-context` from `$KUBECONFIG`'s first path or `~/.kube/config`; pure-fish, mtime-cached, no `kubectl` fork; appends `/<namespace>` when `theme_damin_show_k8s_namespace=1`; falls back to bare `k8s` when `$KUBERNETES_SERVICE_HOST` is set but no config is readable, e.g. inside a pod). Stack with spaces.
 2. **VCS** — `jj` if `.jj/` is found before `.git/` while walking ancestors (cached per-PWD), else `git`.
-   - **git** — branch name (or detached HEAD short), op state in dim red parens (`(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)`), then meta indicators with counts (`?N` untracked, `$N` stashed, `✗N` modified, `✓N` staged, `⇣N` behind, `⇡N` ahead). When fully clean, a `✧` sparkle replaces the meta block.
+   - **git** — branch name (or detached HEAD short), op state in dim red parens (`(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)`), then meta indicators with counts (`?N` untracked, `$N` stashed, `✗N` modified, `✓N` staged, `⇣N` behind, `⇡N` ahead). When fully clean, a `✧` sparkle replaces the meta block. With `theme_damin_show_gh_pr=1` and a github remote, appends `#<num>` for the current branch's open PR (dim when draft).
    - **jj** — bookmark name (or change-id short). No status counts (yet).
 3. **Background-job count** — `&N` when `count (jobs -p)` > 0.
 4. **Florette `✿`** — bold pink on success, bold red on the previous command's non-zero exit. Trailing space holds the cursor.
@@ -66,6 +66,27 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
 
 `conf.d/damin.fish` runs `set -eU _damin_in_transient` at theme load to drain a universal-scope leak (which would otherwise survive `set -eg` and pin every prompt to the stub). `damin_doctor` checks the same leak plus binding presence in `default` / `insert`.
 
+### Cloud context
+
+All three are off by default — each adds one file `stat` per prompt when enabled.
+
+- **AWS** — reads `AWS_PROFILE` / `AWS_DEFAULT_PROFILE`; if neither is set, the segment skips. Region falls back to `AWS_REGION` / `AWS_DEFAULT_REGION`, then to a pure-fish INI walk over `~/.aws/config` (`$AWS_CONFIG_FILE` overrides). The walk reads only the `[default]` or `[profile <name>]` section that matches and is cached by `(mtime, profile)` so unchanged config files cost one `path mtime` call.
+- **GCP** — `CLOUDSDK_CORE_PROJECT` short-circuits. Otherwise reads `~/.config/gcloud/active_config` (one line, the active config name; `CLOUDSDK_CONFIG` overrides the directory), then walks `[core] project` out of `~/.config/gcloud/configurations/config_<name>`. Both files are mtime-cached independently.
+- **Azure** — `AZURE_SUBSCRIPTION_NAME` or `AZURE_DEFAULTS_SUBSCRIPTION` short-circuit. Otherwise `~/.azure/azureProfile.json` is read whole and split on `},` into per-subscription chunks; the one containing `"isDefault": true` yields its `"name"` via a single regex. Fragile by spec but the schema has been stable since the Azure CLI 2.x release. Mtime-cached.
+
+Cache invalidation: `_damin_postexec` watches the command line for `aws` / `gcloud` / `az` and drops all three caches — `aws configure`, `gcloud config set`, and `az account set` mutate their files but don't change the mtime in a way the read-time check can predict reliably (same-second writes).
+
+### Shell integration (OSC 7 + OSC 133)
+
+Modern terminals (Ghostty, iTerm2, Kitty, WezTerm, VS Code, Windows Terminal, Warp) expose two features the prompt has to opt into:
+
+- **OSC 7** (`\e]7;file://<host><path>\a`) tells the terminal the current working directory. New tabs / splits / SSH-share-cwd open in the same directory without the shell having to track it. Emitted from `fish_prompt` only when `$PWD` changes (`_damin_osc7_emit` short-circuits on the cached PWD). Path is percent-encoded via `string escape --style=url` on each segment so spaces and non-ASCII survive.
+- **OSC 133** (`\e]133;A\a` … `D;<exit>\a`) marks the semantic regions of a shell session: `A` = prompt start, `B` = prompt end (= command input start), `C` = command starts running (fired from `fish_preexec`), `D;<exit>` = command finished with exit code (fired from `fish_postexec`). Terminals use this for "jump to prompt", "select command output", and per-command exit-status surfacing.
+
+Unsupported terminals are required by the OSC spec to silently drop unrecognized sequences, so the only risk is older or strict terminals that bail on the BEL terminator. The toggle (`theme_damin_osc_integration`, default `1`) is the escape hatch.
+
+In transient mode, the `A`/`B` pair still wraps the collapsed stub so navigation features keep working across the scrollback.
+
 ## Configuration
 
 Every toggle is a fish universal variable (`set -U …` persists across sessions, `set -g …` is session-only). Defaults are applied at theme load only when the variable is unset. Run `damin_help` to see all current values.
@@ -87,14 +108,21 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_show_battery`           | `0`     | Battery % when ≤ threshold (opt-in — laptops only)                |
 | `theme_damin_show_duration`          | `1`     | Last command duration                                             |
 | `theme_damin_show_exit_code`         | `1`     | Exit code next to the florette on failure                         |
+| `theme_damin_show_aws`               | `0`     | `aws:<profile>` context indicator (opt-in)                        |
+| `theme_damin_show_aws_region`        | `1`     | Append `@<region>` to the AWS indicator                           |
+| `theme_damin_show_gcp`               | `0`     | `gcp:<project>` context indicator (opt-in)                        |
+| `theme_damin_show_azure`             | `0`     | `az:<subscription>` context indicator (opt-in)                    |
+| `theme_damin_show_gh_pr`             | `0`     | `#<num>` for the current branch's open PR via `gh` (opt-in)       |
 | `theme_damin_git_counts`             | `1`     | Show counts next to git indicators (`?3 ✓5` vs `? ✓`)             |
 | `theme_damin_transient`              | `1`     | Collapse past prompts to `✿` after Enter                          |
 | `theme_damin_async_git`              | `1`     | Cache git status + postexec invalidation. `0` = pure sync         |
 | `theme_damin_async_lang`             | `1`     | Cache lang detection + postexec invalidation. `0` = sync          |
+| `theme_damin_osc_integration`        | `1`     | Emit OSC 7 (cwd advertise) + OSC 133 (semantic prompt markers)    |
 | `theme_damin_cwd_keep`               | `3`     | Trailing path segments shown in full                              |
 | `theme_damin_cwd_short`              | `4`     | Character length each earlier segment is truncated to             |
 | `theme_damin_long_command_threshold` | `3000`  | Duration (ms) above which the right-prompt time renders bold      |
 | `theme_damin_battery_threshold`      | `30`    | Show battery only when `%` is at or below this number             |
+| `theme_damin_gh_pr_ttl`              | `300`   | Seconds the cached GitHub PR result is reused before re-fetching  |
 | `theme_damin_ascii`                  | `0`     | Swap every glyph default to ASCII for fonts missing dingbats      |
 
 ### Glyph overrides
@@ -224,6 +252,6 @@ One conditional extra call: when the branch has no upstream tracking, porcelain 
 
 ## Internals you might want to know
 
-- **Global state** lives under the `_damin_` prefix: color cache (`_damin_c_*`), per-PWD memos (`_damin_vcs_pwd`/`_damin_vcs_value`, `_damin_lang_pwd`/`_damin_lang_value`, `_damin_pwd_key_pwd`/`_damin_pwd_key_value`), the EUID cache (`_damin_is_root`), the battery TTL (`_damin_battery_at`/`_damin_battery_value`), the transient flag (`_damin_in_transient`), and the cache dir (`_damin_cache_dir`).
+- **Global state** lives under the `_damin_` prefix: color cache (`_damin_c_*`), per-PWD memos (`_damin_vcs_pwd`/`_damin_vcs_value`, `_damin_lang_pwd`/`_damin_lang_value`, `_damin_pwd_key_pwd`/`_damin_pwd_key_value`), the EUID cache (`_damin_is_root`), the battery TTL (`_damin_battery_at`/`_damin_battery_value`), the k8s mtime cache (`_damin_k8s_*`), cloud-context caches (`_damin_aws_*`, `_damin_gcp_*`, `_damin_azure_*`), the OSC 7 PWD memo (`_damin_osc_pwd`, `_damin_osc_host`), the GitHub PR cache (`_damin_gh_branch` / `_damin_gh_value` / `_damin_gh_at`), the transient flag (`_damin_in_transient`), and the cache dir (`_damin_cache_dir`).
 - **User-facing helpers** are `damin_help`, `damin_doctor`, `damin_reset_cache` — defined at top level in `fish_prompt.fish` so they're always available after the theme loads.
 - **No `funcsave`** — the theme never persists anything to `~/.config/fish/functions/`. Uninstall is `omf theme <other> && rm -rf ~/.local/share/omf/themes/fish-theme-damin`.

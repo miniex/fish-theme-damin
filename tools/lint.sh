@@ -1,7 +1,5 @@
 #!/bin/sh
-# Lint fish (fish_indent --check + fish -n) and shell scripts
-# (shfmt --diff + shellcheck). Contributor/maintainer tool — every binary
-# below must be on PATH.
+# lint fish (fish_indent --check + fish -n) and shell scripts (shfmt --diff + shellcheck).
 set -e
 
 cd "$(dirname "$0")/.."

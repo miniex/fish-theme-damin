@@ -7,8 +7,8 @@
 ![damin prompt walkthrough](assets/preview.gif)
 
 ```
-master ✗3 ✓1 ✿                               ❥ ~/code · node:22 · 120 ms
-ssh master (rebase) ✿                         ❥ ~/foo · py:3.12 · 250 ms
+master ✗3 ✓1 #42 ✿                            ❥ ~/code · node:22 · 120 ms
+ssh aws:prod@us-east-1 master (rebase) ✿      ❥ ~/foo · py:3.12 · 250 ms
 master ✿ 127                                             ❥ ~/bug · 3.2 s
 ```
 
@@ -45,13 +45,15 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 ## Highlights
 
 - **Sub-millisecond hot path** — caches + event-driven invalidation. No background forks on every prompt
-- **Smart git/jj integration** — counts (`?2 ✗3 ✓1`), op state (`(rebase)`), worktree-aware, jj support, postexec invalidation that skips read-only commands
+- **Smart git/jj integration** — counts (`?2 ✗3 ✓1`), op state (`(rebase)`), worktree-aware, jj support, postexec invalidation that skips read-only commands. Optional `#N` for the current branch's open GitHub PR (via `gh`, cached)
 - **Context indicators** — `ssh`, `root`, `dkr`, `ctr` plus `k8s:<context>` (parsed from `~/.kube/config` / `$KUBECONFIG`; pure-fish, no `kubectl` fork) with optional `/<namespace>`. `&N` for background jobs
+- **Cloud context** — opt-in `aws:<profile>@<region>` (env + `~/.aws/config`), `gcp:<project>` (`~/.config/gcloud/`), `az:<subscription>` (env + `~/.azure/azureProfile.json`). Pure-fish, mtime-cached, no CLI forks
 - **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)` display — direnv shows the project dir, `nix:` shows the flake's `name` attr
+- **Terminal-native shell integration** — OSC 7 (advertises cwd so new tabs/splits open in the same directory) + OSC 133 (semantic prompt markers for "jump to prompt" / "select command output" in Ghostty, iTerm2, Kitty, WezTerm, VS Code, Windows Terminal). Unsupporting terminals silently ignore; opt out via `theme_damin_osc_integration 0`
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **Catppuccin Mocha** `fish_color_*` palette applied on theme activation (opt-out via `theme_damin_apply_colors 0`)
 - **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`
-- **20+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
+- **25+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
 
 ## Commands
 

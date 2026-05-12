@@ -19,10 +19,16 @@ function damin_help
     _damin_help_row theme_damin_show_battery 0
     _damin_help_row theme_damin_show_duration 1
     _damin_help_row theme_damin_show_exit_code 1
+    _damin_help_row theme_damin_show_aws 0
+    _damin_help_row theme_damin_show_aws_region 1
+    _damin_help_row theme_damin_show_gcp 0
+    _damin_help_row theme_damin_show_azure 0
+    _damin_help_row theme_damin_show_gh_pr 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_transient 1
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
+    _damin_help_row theme_damin_osc_integration 1
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0
     echo
@@ -31,6 +37,7 @@ function damin_help
     _damin_help_row theme_damin_cwd_short 4
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
+    _damin_help_row theme_damin_gh_pr_ttl 300
     echo
     echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
     if test "$theme_damin_ascii" = 1

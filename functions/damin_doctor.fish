@@ -33,9 +33,8 @@ function damin_doctor
         _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
     end
 
-    # damin defines fish_prompt / fish_right_prompt inside conf.d/, so nothing should
-    # land in ~/.config/fish/functions/ for those names. Catch leftovers (older damin
-    # versions, manual installs, other plugins) that would block OMF activation.
+    # damin defines prompts in conf.d/, so nothing should land in ~/.config/fish/functions/.
+    # catch leftovers (old damin, manual installs, other plugins) that block omf activation.
     set -l strays
     for f in fish_prompt.fish fish_right_prompt.fish
         test -e ~/.config/fish/functions/$f; and set strays $strays $f

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Format fish (fish_indent) and shell scripts (shfmt).
+# format fish (fish_indent) and shell scripts (shfmt).
 set -e
 
 cd "$(dirname "$0")/.."
