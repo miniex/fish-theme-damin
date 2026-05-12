@@ -58,6 +58,7 @@ function damin_help
         _damin_help_row theme_damin_glyph_stashed '$'
         _damin_help_row theme_damin_glyph_ahead '^'
         _damin_help_row theme_damin_glyph_behind v
+        _damin_help_row theme_damin_glyph_conflict X
         _damin_help_row theme_damin_glyph_sep '|'
     else
         _damin_help_row theme_damin_glyph_prompt ✿
@@ -69,6 +70,7 @@ function damin_help
         _damin_help_row theme_damin_glyph_stashed '$'
         _damin_help_row theme_damin_glyph_ahead ⇡
         _damin_help_row theme_damin_glyph_behind ⇣
+        _damin_help_row theme_damin_glyph_conflict X
         _damin_help_row theme_damin_glyph_sep ·
     end
     echo

@@ -37,7 +37,7 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
 
 1. **Context** — `ssh` (`$SSH_CONNECTION`), `root` (bold red when EUID=0, cached at theme load), `dkr` (`/.dockerenv`), `ctr` (`/run/.containerenv`), `aws:<profile>` / `gcp:<project>` / `az:<subscription>` (opt-in, see [Cloud context](#cloud-context) below), `k8s:<context>` (parses `current-context` from `$KUBECONFIG`'s first path or `~/.kube/config`; pure-fish, mtime-cached, no `kubectl` fork; appends `/<namespace>` when `theme_damin_show_k8s_namespace=1`; falls back to bare `k8s` when `$KUBERNETES_SERVICE_HOST` is set but no config is readable, e.g. inside a pod). Stack with spaces.
 2. **VCS** — `jj` if `.jj/` is found before `.git/` while walking ancestors (cached per-PWD), else `git`.
-   - **git** — branch name (or detached HEAD short), op state in dim red parens (`(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)`), then meta indicators with counts (`?N` untracked, `$N` stashed, `✗N` modified, `✓N` staged, `⇣N` behind, `⇡N` ahead). When fully clean, a `✧` sparkle replaces the meta block. With `theme_damin_show_gh_pr=1` and a github remote, appends `#<num>` for the current branch's open PR (dim when draft).
+   - **git** — branch name (or detached HEAD short), op state in dim red parens (`(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)`), then meta indicators with counts (`XN` unmerged in bold red — rendered first, `?N` untracked, `$N` stashed, `✗N` modified, `✓N` staged, `⇣N` behind, `⇡N` ahead). When fully clean, a `✧` sparkle replaces the meta block. Inside a `git worktree`, appends `wt:<name>` (basename of the `.git/worktrees/<name>` gitdir) right after the branch. With `theme_damin_show_gh_pr=1` and a github remote, appends `#<num>` for the current branch's open PR (dim when draft).
    - **jj** — bookmark name (or change-id short). No status counts (yet).
 3. **Background-job count** — `&N` when `count (jobs -p)` > 0.
 4. **Florette `✿`** — bold pink on success, bold red on the previous command's non-zero exit. Trailing space holds the cursor.
@@ -95,6 +95,23 @@ In transient mode, the `A`/`B` pair still wraps the collapsed stub so navigation
 - **`notify-send`** — fired in the background (`&`) when the binary is on `$PATH`. Survives focus loss on Linux and BSD desktops.
 
 Message includes the command (truncated to 60 chars), elapsed seconds, and exit code. Off by default (`theme_damin_notify_long_command 0`) — noisy if you frequently run commands that legitimately take longer than the threshold.
+
+### Custom segments
+
+Two extension points let users insert their own segments without forking the theme:
+
+- `set -U theme_damin_extra_left foo bar` — the prompt loops over each name and calls `damin_segment_<name>` (when that function exists) just after the vi-mode badge, before the florette.
+- `set -U theme_damin_extra_right baz` — same shape, called at the very end of `fish_right_prompt` after the duration segment.
+
+Missing functions are silently skipped. The segment function is responsible for its own leading separator / glyph / color — `fish_prompt` only invokes it.
+
+```fish
+function damin_segment_kube_age
+    set -l n (kubectl get pods --no-headers 2>/dev/null | count)
+    test $n -gt 0; and echo -n -s " $(set_color --dim)pods:$n$(set_color normal)"
+end
+set -U theme_damin_extra_left kube_age
+```
 
 ### TRAMP / dumb terminal auto-detect
 
@@ -166,6 +183,7 @@ Every prompt symbol is read from a `theme_damin_glyph_*` variable so individual 
 | `theme_damin_glyph_stashed`      | `$`             | `$`                 | Stash count                                     |
 | `theme_damin_glyph_ahead`        | `⇡`             | `^`                 | Ahead-of-upstream count                         |
 | `theme_damin_glyph_behind`       | `⇣`             | `v`                 | Behind-upstream count                           |
+| `theme_damin_glyph_conflict`     | `X`             | `X`                 | Unmerged-file count (rendered in bold red)      |
 | `theme_damin_glyph_sep`          | `·`             | `\|`                | Right-prompt segment separator                  |
 
 Override one at a time:
@@ -180,7 +198,7 @@ set -U theme_damin_glyph_behind v
 | Element                        | Color                       |
 |--------------------------------|-----------------------------|
 | Branch name / cwd              | `#98ABCC` (cool blue)       |
-| Meta symbols (`?$✗✓⇣⇡`) / `✧`   | `#E890B0` (warm pink)       |
+| Meta symbols (`?$✗✓⇣⇡`) / `✧`  | `#E890B0` (warm pink)       |
 | Meta counts / right-prompt `·` | `#E890B0` (warm pink, dim)  |
 | Florette `✿` on success        | `#E890B0` (warm pink, bold) |
 | Florette `✿` on failure        | terminal `red` (bold)       |
@@ -306,6 +324,6 @@ One conditional extra call: when the branch has no upstream tracking, porcelain 
 
 ## Internals you might want to know
 
-- **Global state** lives under the `_damin_` prefix: color cache (`_damin_c_*`), per-PWD memos (`_damin_vcs_pwd`/`_damin_vcs_value`, `_damin_lang_pwd`/`_damin_lang_value`, `_damin_pwd_key_pwd`/`_damin_pwd_key_value`), the EUID cache (`_damin_is_root`), the battery TTL (`_damin_battery_at`/`_damin_battery_value`), the k8s mtime cache (`_damin_k8s_*`), cloud-context caches (`_damin_aws_*`, `_damin_gcp_*`, `_damin_azure_*`), the OSC 7 PWD memo (`_damin_osc_pwd`, `_damin_osc_host`), the GitHub PR cache (`_damin_gh_branch` / `_damin_gh_value` / `_damin_gh_at`), the transient flag (`_damin_in_transient`), and the cache dir (`_damin_cache_dir`).
+- **Global state** lives under the `_damin_` prefix: color cache (`_damin_c_*`), per-PWD memos (`_damin_vcs_pwd`/`_damin_vcs_value`/`_damin_vcs_worktree`, `_damin_lang_pwd`/`_damin_lang_value`, `_damin_pwd_key_pwd`/`_damin_pwd_key_value`), the EUID cache (`_damin_is_root`), the battery TTL (`_damin_battery_at`/`_damin_battery_value`), the k8s mtime cache (`_damin_k8s_*`), cloud-context caches (`_damin_aws_*`, `_damin_gcp_*`, `_damin_azure_*`), the OSC 7 PWD memo (`_damin_osc_pwd`, `_damin_osc_host`), the GitHub PR cache (`_damin_gh_branch` / `_damin_gh_value` / `_damin_gh_at`), the async-repaint guard (`_damin_git_refresh_running`), the transient flag (`_damin_in_transient`), and the cache dir (`_damin_cache_dir`).
 - **User-facing helpers** are `damin_help`, `damin_doctor`, `damin_reset_cache` — defined at top level in `fish_prompt.fish` so they're always available after the theme loads.
 - **No `funcsave`** — the theme never persists anything to `~/.config/fish/functions/`. Uninstall is `omf theme <other> && rm -rf ~/.local/share/omf/themes/fish-theme-damin`.

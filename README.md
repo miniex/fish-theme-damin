@@ -8,7 +8,8 @@
 
 ```
 master ✗3 ✓1 #42 [N] ✿                        ❥ ~/code · node:22 · 120 ms
-ssh aws:prod@us-east-1 master (rebase) ✿      ❥ ~/foo · py:3.12 · 250 ms
+master (rebase) wt:feat-x X2 ✿                ❥ ~/code · 50 ms
+ssh aws:prod@us-east-1 master ✿               ❥ ~/foo · py:3.12 · 250 ms
 master ✿ SIGINT                                          ❥ ~/bug · 3.2 s
 ```
 
@@ -45,7 +46,7 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 ## Highlights
 
 - **Sub-millisecond hot path** — caches + event-driven invalidation. No background forks on every prompt
-- **Smart git/jj integration** — counts (`?2 ✗3 ✓1`), op state (`(rebase)`), worktree-aware, jj support, postexec invalidation that skips read-only commands. Optional `#N` for the current branch's open GitHub PR (via `gh`, cached)
+- **Smart git/jj integration** — counts (`X2 ?2 ✗3 ✓1`), op state (`(rebase)`), `wt:<name>` inside `git worktree`, jj support, postexec invalidation that skips read-only commands. Unmerged files surface first in bold red. Optional `#N` for the current branch's open GitHub PR (via `gh`, cached)
 - **Context indicators** — `ssh`, `root`, `dkr`, `ctr` plus `k8s:<context>` (parsed from `~/.kube/config` / `$KUBECONFIG`; pure-fish, no `kubectl` fork) with optional `/<namespace>`. `&N` for background jobs
 - **Cloud context** — opt-in `aws:<profile>@<region>` (env + `~/.aws/config`), `gcp:<project>` (`~/.config/gcloud/`), `az:<subscription>` (env + `~/.azure/azureProfile.json`). Pure-fish, mtime-cached, no CLI forks
 - **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)` display — direnv shows the project dir, `nix:` shows the flake's `name` attr
@@ -61,6 +62,7 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`
 - **Interactive setup** — `damin_config` wizard walks you through the high-value toggles. `damin_help` is the full reference; the wizard is the onramp
+- **Custom segments** — `set -U theme_damin_extra_left mything` and define `function damin_segment_mything; …; end`. Same for `_right`. Drop-in extension without forking
 - **35+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
 
 ## Commands

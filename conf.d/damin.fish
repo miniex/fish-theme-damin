@@ -13,7 +13,6 @@ if test $_damin_dumb = 1
     set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 0
 end
 
-# left-prompt segment toggles
 set -q theme_damin_show_context; or set -g theme_damin_show_context 1
 set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
 set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
@@ -30,14 +29,12 @@ set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code number
 set -q theme_damin_show_vi_mode; or set -g theme_damin_show_vi_mode 1
 
-# right-prompt segment toggles
 set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
 set -q theme_damin_show_env; or set -g theme_damin_show_env 1
 set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
 set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
 set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
 
-# behavior toggles
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
 set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
@@ -50,7 +47,6 @@ set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
 set -q theme_damin_palette; or set -g theme_damin_palette mocha
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
 
-# numeric thresholds + lengths
 set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
 set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
 set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
@@ -72,6 +68,7 @@ set -l _ds_stashed '$'
 set -l _ds_ahead ⇡
 set -l _ds_behind ⇣
 set -l _ds_sep ·
+set -l _ds_conflict X
 
 if test "$theme_damin_ascii" = 1
     set _ds_prompt '*'
@@ -94,10 +91,9 @@ set -q theme_damin_glyph_stashed; or set -g theme_damin_glyph_stashed $_ds_stash
 set -q theme_damin_glyph_ahead; or set -g theme_damin_glyph_ahead $_ds_ahead
 set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
 set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
+set -q theme_damin_glyph_conflict; or set -g theme_damin_glyph_conflict $_ds_conflict
 
-# catppuccin palette — defaults to mocha; latte/frappe/macchiato switch the hex codes.
-# fills unset fish_color_* slots only so user customizations win; switch palettes via
-# `damin_set_palette <flavor>` which erases the universals first.
+# catppuccin palette — `damin_set_palette <flavor>` erases universals first to switch.
 if test "$theme_damin_apply_colors" = 1
     set -l text cdd6f4
     set -l blue 89b4fa
@@ -202,12 +198,12 @@ set -g _damin_c_deco (set_color E890B0)
 set -g _damin_c_sep (set_color E890B0 --dim)
 set -g _damin_c_long (set_color E890B0 -o)
 
-# per-session caches and memos.
 set -g _damin_pwd_key_pwd ""
 set -g _damin_pwd_key_value ""
 set -g _damin_vcs_pwd ""
 set -g _damin_vcs_value ""
 set -g _damin_vcs_dir ""
+set -g _damin_vcs_worktree ""
 set -g _damin_lang_pwd ""
 set -g _damin_lang_value ""
 set -g _damin_battery_value ""
@@ -234,8 +230,6 @@ set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
 test (id -u 2>/dev/null) = 0; and set -g _damin_is_root 1
 
-
-# cache + i/o helpers.
 
 function _damin_pwd_key
     if test "$_damin_pwd_key_pwd" != "$PWD"
@@ -278,9 +272,7 @@ function _damin_cache_prune
 end
 
 
-# osc 7 = cwd advertise (new tabs reuse dir); osc 133 = semantic prompt markers
-# (jump-to-prompt, select-output). unsupporting terminals drop them silently.
-
+# osc 7 advertises cwd; osc 133 marks prompt regions. unknown OSC = ignored.
 function _damin_osc_enabled
     test "$theme_damin_osc_integration" = 1
 end
@@ -330,11 +322,10 @@ function _damin_osc133_c --on-event fish_preexec
 end
 
 
-# vcs detection — shared by context segment + vcs render.
-
 function _damin_detect_vcs
     if test "$_damin_vcs_pwd" != "$PWD"
         set -g _damin_vcs_pwd "$PWD"
+        set -g _damin_vcs_worktree ""
         set -l dir $PWD
         set -l levels 0
         set -l result ""
@@ -358,6 +349,8 @@ function _damin_detect_vcs
                 else
                     set found "$dir/.git"
                 end
+                # gitdir under .git/worktrees/<name> = git worktree; basename is the worktree name.
+                string match -q '*/worktrees/*' -- $found; and set -g _damin_vcs_worktree (path basename $found)
                 break
             end
             set dir (path dirname $dir)
@@ -369,8 +362,6 @@ function _damin_detect_vcs
     echo $_damin_vcs_value
 end
 
-
-# left prompt: context segments (aws / gcp / azure / k8s).
 
 # `[default]` for the default profile, `[profile <name>]` for the rest.
 function _damin_aws_region_for --argument-names profile cfg
@@ -636,8 +627,6 @@ function _damin_context_render
 end
 
 
-# left prompt: vcs — git, jj, and gh PR badge.
-
 function _damin_git_compute
     set -l info (command git rev-parse --is-inside-work-tree --git-dir --git-common-dir 2>/dev/null)
     test "$info[1]" = true; or return
@@ -652,11 +641,14 @@ function _damin_git_compute
     set -l staged 0
     set -l ahead 0
     set -l behind 0
+    set -l conflict 0
 
     for line in (command git status --porcelain=v2 --branch 2>/dev/null)
         switch (string sub -l 1 -- "$line")
             case '\?'
                 set untracked (math $untracked + 1)
+            case u
+                set conflict (math $conflict + 1)
             case 1 2
                 set -l xy (string sub -s 3 -l 2 -- "$line")
                 test (string sub -s 1 -l 1 -- "$xy") != .; and set staged (math $staged + 1)
@@ -677,8 +669,7 @@ function _damin_git_compute
         end
     end
 
-    # no upstream → porcelain v2 omits branch.ab. fall back to "commits not on any remote"
-    # so fresh branches still show ⇡; skip when no remotes exist (no false positives).
+    # no upstream → porcelain v2 omits branch.ab; rev-list against remotes to keep ⇡N alive.
     if test $has_upstream = 0 -a "$ahead" = 0
         if test -n "$(command git remote 2>/dev/null)"
             set -l unpushed (command git rev-list --count HEAD --not --remotes 2>/dev/null)
@@ -709,13 +700,12 @@ function _damin_git_compute
         end
     end
 
-    printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$op"
+    printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$conflict" "$op"
 end
 
 function _damin_git_cache_stale --argument-names cache_file
     test -n "$_damin_vcs_dir"; or return 1
-    # `path mtime` is a builtin (no fork); missing files are dropped silently so order is preserved.
-    # index/HEAD/logs/HEAD cover working-tree, branch, and ref changes — catches out-of-shell commits.
+    # path mtime is a builtin (no fork). index/HEAD/logs/HEAD catch out-of-shell commits.
     set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
     test (count $mt) -lt 2; and return 1
     set -l cm $mt[1]
@@ -743,14 +733,24 @@ function _damin_git_part
     return 0
 end
 
-function _damin_git_render_data --argument-names branch u m s st a b op
+function _damin_git_render_data --argument-names branch u m s st a b c op
     echo -n -s $_damin_c_branch $branch $_damin_c_normal
     test -n "$op"; and echo -n -s " " $_damin_c_exit "($op)" $_damin_c_normal
+    test -n "$_damin_vcs_worktree"; and echo -n -s " " $_damin_c_dim "wt:$_damin_vcs_worktree" $_damin_c_normal
 
     set -l counts_on 0
     test "$theme_damin_git_counts" = 1; and set counts_on 1
 
     set -l first 1
+
+    # conflicts render first in bold red — always demand attention.
+    if test $c -gt 0
+        echo -n -s " " $_damin_c_err $theme_damin_glyph_conflict
+        test $counts_on -eq 1; and echo -n "$c"
+        echo -n -s $_damin_c_normal
+        set first 0
+    end
+
     _damin_git_part $u $theme_damin_glyph_untracked $first $counts_on; and set first 0
     _damin_git_part $st $theme_damin_glyph_stashed $first $counts_on; and set first 0
     _damin_git_part $m $theme_damin_glyph_modified $first $counts_on; and set first 0
@@ -774,10 +774,7 @@ function _damin_git_prefill
     test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
 end
 
-# fork a single bg prefill via `fish -c` subshell, then signal completion through a
-# universal variable. all listening fish processes repaint when the var flips —
-# universal-var change events are the only fish IPC primitive that works without
-# capturing a PID (fish functions backgrounded with `&` don't populate $last_pid).
+# universal-var IPC instead of --on-process-exit: backgrounded fish funcs don't set $last_pid.
 function _damin_git_async_kickoff
     set -q _damin_git_refresh_running; and return
     set -g _damin_git_refresh_running 1
@@ -812,8 +809,8 @@ function _damin_git_render
 
     if test -f $cache_file
         set -l lines (_damin_read_lines $cache_file)
-        if test (count $lines) -ge 9 -a "$lines[1]" = "$PWD"
-            set data $lines[2..9]
+        if test (count $lines) -ge 10 -a "$lines[1]" = "$PWD"
+            set data $lines[2..10]
             _damin_git_cache_stale $cache_file; and set stale 1
         end
     end
@@ -895,13 +892,20 @@ function _damin_vcs_render
 end
 
 
-# left prompt: tail (jobs + vi mode + status name).
-
 function _damin_jobs_render
     test "$theme_damin_show_jobs" = 1; or return
     set -l n (count (jobs -p 2>/dev/null))
     test $n -gt 0; or return
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
+end
+
+# set -U theme_damin_extra_left foo bar → calls damin_segment_foo + damin_segment_bar.
+function _damin_extra_segments_render --argument-names side
+    set -l var theme_damin_extra_$side
+    set -q $var; or return
+    for seg in $$var
+        functions -q damin_segment_$seg; and damin_segment_$seg
+    end
 end
 
 # vi mode badge — only shown when vi keybindings are active.
@@ -933,8 +937,7 @@ function _damin_vi_mode_repaint --on-variable fish_bind_mode
     commandline -f repaint 2>/dev/null
 end
 
-# 126 = no-exec, 127 = not-found; 128+N maps to POSIX signal names (same numbers
-# on linux / macOS / BSD). inline switch avoids fish_status_to_signal's `kill -l` fork.
+# inline POSIX signal map; avoids fish_status_to_signal's `kill -l` fork.
 function _damin_status_name --argument-names code
     switch $code
         case 126
@@ -989,8 +992,6 @@ function _damin_exit_label --argument-names code
     end
 end
 
-
-# right prompt segments.
 
 function _damin_cwd_pretty
     set -l result (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
@@ -1144,8 +1145,6 @@ function _damin_duration_render
 end
 
 
-# shared rendering for functions/damin_{help,doctor}.fish.
-
 function _damin_help_row --argument-names name default
     set -l val
     set -q $name; and set val $$name
@@ -1165,8 +1164,6 @@ function _damin_doctor_check
     printf '  %s%s%s %s%s%s\n' $col $sym (set_color normal) $argv[1] (set_color --dim) " $argv[3..]"(set_color normal)
 end
 
-
-# fish_postexec handler — osc 133;D, long-command notification, cache invalidation.
 
 function _damin_postexec --on-event fish_postexec
     set -l exit $status
@@ -1207,8 +1204,6 @@ function _damin_postexec --on-event fish_postexec
 end
 
 
-# transient prompt — collapse past prompts to a single florette after enter.
-
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
         # skip incomplete buffers (status 2) — enter inserts a newline, no execute.
@@ -1243,8 +1238,8 @@ function fish_prompt
     _damin_osc133_a
     _damin_osc7_emit
 
-    # 1 = render stub then advance; 2 = clear and render full. owning the clear here
-    # keeps lifecycle independent of fish_right_prompt (user-overridable).
+    # 1 = render stub then advance; 2 = clear + render full. owned here so an overridden
+    # fish_right_prompt can't strand the flag.
     switch "$_damin_in_transient"
         case 1
             echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
@@ -1259,6 +1254,7 @@ function fish_prompt
     _damin_vcs_render
     _damin_jobs_render
     _damin_vi_mode_render
+    _damin_extra_segments_render left
 
     if test $last_status -eq 0
         echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
@@ -1283,17 +1279,16 @@ function fish_right_prompt
     _damin_env_render
     _damin_battery_render
     _damin_duration_render
+    _damin_extra_segments_render right
 end
 
 
-# init: bare calls run after every function is defined.
-# subshell mode (used by async_repaint kickoff) only needs the function defs.
+# async_repaint subshell needs only the function defs; skip init side effects.
 if not set -q _damin_subshell
     _damin_cache_prune
     _damin_install_transient_bindings
 
-    # warmup: prefill the git cache in the background when fish opens directly into a repo,
-    # so the next prompt doesn't pay the cold-cache compute on the hot path.
+    # warmup: prefill the git cache so the next prompt isn't cold when fish opens in a repo.
     if test "$theme_damin_async_warmup" = 1 -a "$theme_damin_async_git" = 1
         if test (_damin_detect_vcs) = git
             _damin_git_prefill >/dev/null 2>&1 &

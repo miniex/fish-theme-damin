@@ -1,5 +1,5 @@
 #!/bin/sh
-# fixture tests for _damin_git_compute (8-line stdout: branch, u, m, s, st, a, b, op).
+# fixture tests for _damin_git_compute (9-line stdout: branch, u, m, s, st, a, b, c, op).
 set -e
 
 cd "$(dirname "$0")/.."
@@ -47,9 +47,9 @@ expect() {
     fi
 }
 
-# 8-line fixture builder (trailing newline stripped by $()).
+# 9-line fixture builder (trailing newline stripped by $()).
 expected() {
-    printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+    printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
 }
 
 mkrepo() {
@@ -75,27 +75,27 @@ cleanup "$tmp"
 
 repo=$(mkrepo)
 got=$(run_compute "$repo")
-expect "clean repo" "$got" "$(expected main 0 0 0 0 0 0 '')"
+expect "clean repo" "$got" "$(expected main 0 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
 # regression: glob `?` once matched every line.
 repo=$(mkrepo)
 echo new >"$repo/u"
 got=$(run_compute "$repo")
-expect "1 untracked file" "$got" "$(expected main 1 0 0 0 0 0 '')"
+expect "1 untracked file" "$got" "$(expected main 1 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
 repo=$(mkrepo)
 echo orig >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m add
 echo edit >"$repo/f"
 got=$(run_compute "$repo")
-expect "1 modified" "$got" "$(expected main 0 1 0 0 0 0 '')"
+expect "1 modified" "$got" "$(expected main 0 1 0 0 0 0 0 '')"
 cleanup "$repo"
 
 repo=$(mkrepo)
 echo new >"$repo/s" && git -C "$repo" add s
 got=$(run_compute "$repo")
-expect "1 staged" "$got" "$(expected main 0 0 1 0 0 0 '')"
+expect "1 staged" "$got" "$(expected main 0 0 1 0 0 0 0 '')"
 cleanup "$repo"
 
 repo=$(mkrepo)
@@ -104,7 +104,7 @@ echo edit >"$repo/m"
 echo new >"$repo/u"
 echo staged >"$repo/s" && git -C "$repo" add s
 got=$(run_compute "$repo")
-expect "mixed dirty" "$got" "$(expected main 1 1 1 0 0 0 '')"
+expect "mixed dirty" "$got" "$(expected main 1 1 1 0 0 0 0 '')"
 cleanup "$repo"
 
 repo=$(mkrepo)
@@ -112,7 +112,7 @@ sha=$(git -C "$repo" rev-parse HEAD)
 prefix=$(printf '%s' "$sha" | cut -c1-8)
 git -C "$repo" -c advice.detachedHead=false checkout -q "$sha"
 got=$(run_compute "$repo")
-expect "detached HEAD shows sha prefix" "$got" "$(expected "$prefix" 0 0 0 0 0 0 '')"
+expect "detached HEAD shows sha prefix" "$got" "$(expected "$prefix" 0 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
 repo=$(mkrepo)
@@ -120,7 +120,7 @@ echo orig >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m add
 echo edit >"$repo/f"
 git -C "$repo" stash push -q -m wip
 got=$(run_compute "$repo")
-expect "1 stash entry" "$got" "$(expected main 0 0 0 1 0 0 '')"
+expect "1 stash entry" "$got" "$(expected main 0 0 0 1 0 0 0 '')"
 cleanup "$repo"
 
 # regression: branch.ab fallback when upstream is unset.
@@ -133,7 +133,7 @@ git -C "$repo" branch --unset-upstream main 2>/dev/null || true
 git -C "$repo" commit --allow-empty -q -m c1
 git -C "$repo" commit --allow-empty -q -m c2
 got=$(run_compute "$repo")
-expect "no upstream + remote + 2 unpushed" "$got" "$(expected main 0 0 0 0 2 0 '')"
+expect "no upstream + remote + 2 unpushed" "$got" "$(expected main 0 0 0 0 2 0 0 '')"
 cleanup "$repo" "$bare"
 
 # no remote at all: ahead must stay 0 (no false positive).
@@ -141,7 +141,7 @@ repo=$(mkrepo)
 git -C "$repo" commit --allow-empty -q -m c1
 git -C "$repo" commit --allow-empty -q -m c2
 got=$(run_compute "$repo")
-expect "no remote at all: ahead stays 0" "$got" "$(expected main 0 0 0 0 0 0 '')"
+expect "no remote at all: ahead stays 0" "$got" "$(expected main 0 0 0 0 0 0 0 '')"
 cleanup "$repo"
 
 bare=$(mktemp -d -t damin-test-bare.XXXXXX)
@@ -151,7 +151,7 @@ git -C "$repo" remote add origin "$bare"
 git -C "$repo" push -q --set-upstream origin main
 git -C "$repo" commit --allow-empty -q -m c1
 got=$(run_compute "$repo")
-expect "upstream set, 1 ahead" "$got" "$(expected main 0 0 0 0 1 0 '')"
+expect "upstream set, 1 ahead" "$got" "$(expected main 0 0 0 0 1 0 0 '')"
 cleanup "$repo" "$bare"
 
 bare=$(mktemp -d -t damin-test-bare.XXXXXX)
@@ -162,7 +162,7 @@ git -C "$repo" commit --allow-empty -q -m c1
 git -C "$repo" push -q --set-upstream origin main
 git -C "$repo" reset --hard -q HEAD~1
 got=$(run_compute "$repo")
-expect "upstream set, 1 behind" "$got" "$(expected main 0 0 0 0 0 1 '')"
+expect "upstream set, 1 behind" "$got" "$(expected main 0 0 0 0 0 1 0 '')"
 cleanup "$repo" "$bare"
 
 repo=$(mkrepo)
@@ -175,7 +175,7 @@ git -C "$repo" checkout -q feature
 git -C "$repo" rebase main >/dev/null 2>&1 || true
 got=$(run_compute "$repo")
 # branch reads as sha prefix during rebase (git detaches HEAD) — assert op only.
-op_line=$(printf '%s' "$got" | sed -n '8p')
+op_line=$(printf '%s' "$got" | sed -n '9p')
 expect "active rebase: op is rebase" "$op_line" "rebase"
 cleanup "$repo"
 
@@ -188,7 +188,7 @@ echo b >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m base
 git -C "$repo" checkout -q feature
 git -C "$repo" rebase main >/dev/null 2>&1 || true
 got=$(run_compute "$repo" "set -g theme_damin_show_git_op 0")
-op_line=$(printf '%s' "$got" | sed -n '8p')
+op_line=$(printf '%s' "$got" | sed -n '9p')
 expect "rebase + show_git_op=0: op suppressed" "$op_line" ""
 cleanup "$repo"
 
@@ -199,9 +199,26 @@ git -C "$repo" checkout -q main
 echo b >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m base
 git -C "$repo" merge --no-commit --no-ff feature >/dev/null 2>&1 || true
 got=$(run_compute "$repo")
-op_line=$(printf '%s' "$got" | sed -n '8p')
+op_line=$(printf '%s' "$got" | sed -n '9p')
 expect "active merge: op is merge" "$op_line" "merge"
+# conflict count sits at line 8 (UU file from the failed merge).
+conflict_line=$(printf '%s' "$got" | sed -n '8p')
+expect "active merge: 1 conflict (UU)" "$conflict_line" "1"
 cleanup "$repo"
+
+# worktree detection: gitdir points to .git/worktrees/<name>; basename is the wt name.
+repo=$(mkrepo)
+wtroot=$(mktemp -d -t damin-test-wt.XXXXXX)
+git -C "$repo" worktree add -q -b feature-x "$wtroot/feature-x" >/dev/null 2>&1
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    cd '$wtroot/feature-x'
+    _damin_detect_vcs >/dev/null
+    echo \$_damin_vcs_worktree
+    true
+" 2>/dev/null)
+expect "worktree: gitdir basename surfaced" "$got" "feature-x"
+cleanup "$repo" "$wtroot"
 
 echo
 echo "=== damin _damin_k8s_compute tests ==="
@@ -705,6 +722,39 @@ got=$(run_dumb "
     true
 ")
 expect "palette: latte → text=4c4f69" "$got" "4c4f69"
+
+echo
+echo "=== damin custom segment hooks ==="
+echo
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    function damin_segment_hello
+        echo -n ' [HELLO]'
+    end
+    function damin_segment_world
+        echo -n ' [WORLD]'
+    end
+    set -g theme_damin_extra_left hello world
+    _damin_extra_segments_render left
+    true
+" 2>/dev/null)
+expect "hooks: left segments fire in order" "$got" " [HELLO] [WORLD]"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_extra_right missing
+    _damin_extra_segments_render right
+    true
+" 2>/dev/null)
+expect "hooks: missing segment function = silent skip" "$got" ""
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    _damin_extra_segments_render left
+    true
+" 2>/dev/null)
+expect "hooks: unset extra_left → no output" "$got" ""
 
 echo
 echo "=== damin async repaint kickoff ==="
