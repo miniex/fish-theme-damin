@@ -37,7 +37,7 @@ The split keeps helpers/state in `conf.d/` and user-callable functions (`fish_pr
 
 ### Left prompt segments (in render order)
 
-1. **Context** — `ssh` (`$SSH_CONNECTION`), `root` (bold red when EUID=0, cached at theme load), `dkr` (`/.dockerenv`), `ctr` (`/run/.containerenv`), `k8s` (`$KUBERNETES_SERVICE_HOST`). Stack with spaces.
+1. **Context** — `ssh` (`$SSH_CONNECTION`), `root` (bold red when EUID=0, cached at theme load), `dkr` (`/.dockerenv`), `ctr` (`/run/.containerenv`), `k8s:<context>` (parses `current-context` from `$KUBECONFIG`'s first path or `~/.kube/config`; pure-fish, mtime-cached, no `kubectl` fork; appends `/<namespace>` when `theme_damin_show_k8s_namespace=1`; falls back to bare `k8s` when `$KUBERNETES_SERVICE_HOST` is set but no config is readable, e.g. inside a pod). Stack with spaces.
 2. **VCS** — `jj` if `.jj/` is found before `.git/` while walking ancestors (cached per-PWD), else `git`.
    - **git** — branch name (or detached HEAD short), op state in dim red parens (`(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)`), then meta indicators with counts (`?N` untracked, `$N` stashed, `✗N` modified, `✓N` staged, `⇣N` behind, `⇡N` ahead). When fully clean, a `✧` sparkle replaces the meta block.
    - **jj** — bookmark name (or change-id short). No status counts (yet).
@@ -49,7 +49,7 @@ The split keeps helpers/state in `conf.d/` and user-callable functions (`fish_pr
 
 1. **Heart bullet `❥`** + cwd in cool blue
 2. **`· lang:version`** — when a project marker is found within 8 levels up
-3. **`· (env)`** — when `VIRTUAL_ENV` / `CONDA_DEFAULT_ENV` / `DIRENV_DIR` is set
+3. **`· (env)`** — when `VIRTUAL_ENV` / `CONDA_DEFAULT_ENV` / `DIRENV_DIR` / `IN_NIX_SHELL` is set. Renders as the venv basename, conda env name, `direnv:<project>` (basename of `$DIRENV_DIR`), or `nix:<name>` (the derivation's `name` attr; collapses to bare `nix` when generic or when `theme_damin_show_nix_name=0`)
 4. **`· N%`** — battery percent when below threshold (opt-in)
 5. **`· duration`** — last command's elapsed time; bold pink when over the long-command threshold
 
@@ -76,8 +76,11 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_show_jj`                | `1`     | Use jj when `.jj/` is encountered before `.git/`                  |
 | `theme_damin_show_git_op`            | `1`     | `(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)` state |
 | `theme_damin_show_context`           | `1`     | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                 |
+| `theme_damin_show_k8s_context`       | `1`     | Append `:<context>` to the `k8s` indicator                        |
+| `theme_damin_show_k8s_namespace`     | `0`     | Append `/<namespace>` to the `k8s:<context>` indicator (opt-in)   |
 | `theme_damin_show_jobs`              | `1`     | `&N` background-job count                                         |
-| `theme_damin_show_env`               | `1`     | `(.venv)` / `(conda)` / `(direnv)` indicator                      |
+| `theme_damin_show_env`               | `1`     | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)` indicator |
+| `theme_damin_show_nix_name`          | `1`     | Show the nix devshell's `name` attr when inside `IN_NIX_SHELL`    |
 | `theme_damin_show_lang`              | `1`     | Project language + version                                        |
 | `theme_damin_show_battery`           | `0`     | Battery % when ≤ threshold (opt-in — laptops only)                |
 | `theme_damin_show_duration`          | `1`     | Last command duration                                             |

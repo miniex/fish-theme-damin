@@ -46,12 +46,12 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 
 - **Sub-millisecond hot path** — caches + event-driven invalidation. No background forks on every prompt
 - **Smart git/jj integration** — counts (`?2 ✗3 ✓1`), op state (`(rebase)`), worktree-aware, jj support, postexec invalidation that skips read-only commands
-- **Context indicators** — `ssh`, `root`, `dkr`, `ctr`, `k8s` prefix when relevant; `&N` for background jobs
-- **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv)` display
+- **Context indicators** — `ssh`, `root`, `dkr`, `ctr` plus `k8s:<context>` (parsed from `~/.kube/config` / `$KUBECONFIG`; pure-fish, no `kubectl` fork) with optional `/<namespace>`. `&N` for background jobs
+- **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)` display — direnv shows the project dir, `nix:` shows the flake's `name` attr
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **Catppuccin Mocha** `fish_color_*` palette applied on theme activation (opt-out via `theme_damin_apply_colors 0`)
 - **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`
-- **20 toggles** via `set -U theme_damin_*` — run `damin_help` to discover
+- **20+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
 
 ## Commands
 

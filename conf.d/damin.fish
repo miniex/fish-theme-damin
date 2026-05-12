@@ -2,6 +2,9 @@ set -q theme_damin_show_git; or set -g theme_damin_show_git 1
 set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
 set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
 set -q theme_damin_show_context; or set -g theme_damin_show_context 1
+set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
+set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
+set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 set -q theme_damin_show_env; or set -g theme_damin_show_env 1
 set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
@@ -103,6 +106,9 @@ set -g _damin_battery_value ""
 set -g _damin_battery_at 0
 set -g _damin_pwd_key_pwd ""
 set -g _damin_pwd_key_value ""
+set -g _damin_k8s_mt ""
+set -g _damin_k8s_ctx ""
+set -g _damin_k8s_ns ""
 
 set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
@@ -189,7 +195,113 @@ function _damin_context_render
     else if test -f /run/.containerenv
         echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
     end
-    set -q KUBERNETES_SERVICE_HOST; and echo -n -s $_damin_c_dim k8s $_damin_c_normal " "
+    _damin_k8s_render
+end
+
+function _damin_k8s_config_path
+    if set -q KUBECONFIG; and test -n "$KUBECONFIG"
+        echo (string split : -- $KUBECONFIG)[1]
+        return
+    end
+    echo "$HOME/.kube/config"
+end
+
+# Resolves current-context's namespace by collecting all blocks first, so the
+# order of current-context vs contexts: in the file doesn't matter.
+function _damin_k8s_compute --argument-names cfg
+    set -l current
+    set -l in_contexts 0
+    set -l block_ns
+    set -l block_name
+    set -l names
+    set -l namespaces
+
+    for line in (command cat $cfg 2>/dev/null)
+        set -l m (string match -r '^current-context: *(.*)$' -- $line)
+        if test (count $m) -ge 2
+            set current (string trim --chars '"' -- $m[2])
+            continue
+        end
+
+        if string match -q 'contexts:*' -- $line
+            set in_contexts 1
+            continue
+        else if string match -qr '^[a-zA-Z]' -- $line
+            if test -n "$block_name"
+                set -a names $block_name
+                set -a namespaces $block_ns
+                set block_name ""
+                set block_ns ""
+            end
+            set in_contexts 0
+            continue
+        end
+
+        test $in_contexts = 1; or continue
+
+        if test (string trim -- $line) = '- context:'
+            if test -n "$block_name"
+                set -a names $block_name
+                set -a namespaces $block_ns
+            end
+            set block_ns ""
+            set block_name ""
+            continue
+        end
+
+        set m (string match -r '^    namespace: *(.*)$' -- $line)
+        test (count $m) -ge 2; and set block_ns (string trim --chars '"' -- $m[2])
+
+        set m (string match -r '^  name: *(.*)$' -- $line)
+        test (count $m) -ge 2; and set block_name (string trim --chars '"' -- $m[2])
+    end
+
+    if test -n "$block_name"
+        set -a names $block_name
+        set -a namespaces $block_ns
+    end
+
+    test -z "$current"; and return
+
+    set -l found_ns ""
+    for i in (seq (count $names))
+        if test "$names[$i]" = "$current"
+            set found_ns $namespaces[$i]
+            break
+        end
+    end
+    printf '%s\n%s\n' "$current" "$found_ns"
+end
+
+function _damin_k8s_render
+    set -l cfg (_damin_k8s_config_path)
+    set -l in_pod 0
+    set -q KUBERNETES_SERVICE_HOST; and set in_pod 1
+
+    set -l ctx ""
+    set -l ns ""
+
+    if test -f $cfg
+        set -l mt (path mtime $cfg 2>/dev/null)
+        if test "$mt" = "$_damin_k8s_mt"
+            set ctx $_damin_k8s_ctx
+            set ns $_damin_k8s_ns
+        else
+            set -l data (_damin_k8s_compute $cfg)
+            test (count $data) -ge 1; and set ctx $data[1]
+            test (count $data) -ge 2; and set ns $data[2]
+            set -g _damin_k8s_mt $mt
+            set -g _damin_k8s_ctx $ctx
+            set -g _damin_k8s_ns $ns
+        end
+    end
+
+    test -n "$ctx" -o $in_pod = 1; or return
+
+    set -l label k8s
+    test "$theme_damin_show_k8s_context" = 1 -a -n "$ctx"; and set label "$label:$ctx"
+    test "$theme_damin_show_k8s_namespace" = 1 -a -n "$ns"; and set label "$label/$ns"
+    echo -n -s $_damin_c_dim "$label " $_damin_c_normal
 end
 
 function _damin_jobs_render
@@ -476,7 +588,27 @@ function _damin_env_render
     set -l parts
     set -q VIRTUAL_ENV; and set -a parts (path basename $VIRTUAL_ENV)
     set -q CONDA_DEFAULT_ENV; and set -a parts $CONDA_DEFAULT_ENV
-    set -q DIRENV_DIR; and set -a parts direnv
+
+    if set -q DIRENV_DIR
+        # $DIRENV_DIR has a leading `-` marker; strip then basename.
+        set -l d (string replace -r '^-' '' -- $DIRENV_DIR)
+        set -a parts "direnv:"(path basename -- $d)
+    end
+
+    if set -q IN_NIX_SHELL
+        # $name is the nix derivation attr; skip the generic default.
+        if test "$theme_damin_show_nix_name" = 1
+            switch "$name"
+                case nix-shell nix-shell-env ''
+                    set -a parts nix
+                case '*'
+                    set -a parts "nix:$name"
+            end
+        else
+            set -a parts nix
+        end
+    end
+
     test (count $parts) -eq 0; and return
     set -l joined (string join , -- $parts)
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "($joined)" $_damin_c_normal

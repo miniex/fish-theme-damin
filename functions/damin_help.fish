@@ -10,8 +10,11 @@ function damin_help
     _damin_help_row theme_damin_show_jj 1
     _damin_help_row theme_damin_show_git_op 1
     _damin_help_row theme_damin_show_context 1
+    _damin_help_row theme_damin_show_k8s_context 1
+    _damin_help_row theme_damin_show_k8s_namespace 0
     _damin_help_row theme_damin_show_jobs 1
     _damin_help_row theme_damin_show_env 1
+    _damin_help_row theme_damin_show_nix_name 1
     _damin_help_row theme_damin_show_lang 1
     _damin_help_row theme_damin_show_battery 0
     _damin_help_row theme_damin_show_duration 1
