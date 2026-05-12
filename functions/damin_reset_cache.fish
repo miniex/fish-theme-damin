@@ -9,5 +9,11 @@ function damin_reset_cache
     set -e _damin_pwd_key_value
     set -e _damin_battery_value
     set -e _damin_battery_at
+    set -e _damin_devops_pwd
+    set -e _damin_devops_tf
+    set -e _damin_devops_pl
+    set -e _damin_k8s_mt
+    set -e _damin_k8s_ctx
+    set -e _damin_k8s_ns
     echo "cleared $_damin_cache_dir"
 end

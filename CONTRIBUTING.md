@@ -50,8 +50,9 @@ exec fish                                                  # reload to confirm t
 - Keep changes scoped — one concern per PR.
 - Update `README.md` when the prompt layout, color palette, or glyph changes; update `docs/ARCHITECTURE.md` when caching / event flow / file layout changes.
 - Respect the dual-manager layout — actual code lives in `conf.d/damin.fish` (helpers, setup) and `functions/*.fish` (user-callable functions); the root `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are thin shims for Oh My Fish and shouldn't grow logic.
-- Keep the palette anchored to the two-color pair (`#98ABCC` / `#E890B0`). If you propose a new accent, justify it against the existing pair — the whole theme is built around the tone-on-tone identity.
-- Hot-path changes — include before / after `./tools/bench.sh` numbers in the PR description.
+- The two brand accents (`theme_damin_accent_primary` / `theme_damin_accent_secondary`) drive every `_damin_c_*` color. Catppuccin variants pin to the original cherry-blossom `#98ABCC` / `#E890B0`; new palettes should map both accents to palette-native primary/secondary — losing one breaks the tone-on-tone identity. Adding a new palette: extend the switch in `conf.d/damin.fish` (`fish_color_*` block *and* the accent block), the valid list in `damin_set_palette`, and the table + license attribution in `damin_install_themes` / `LICENSES/` / `README.md`.
+- New lang in the lang segment: add the project marker + label in `_damin_lang_compute`, append the resolution chain (`.tool-versions` key, `.mise.toml` key, lang-specific pin file if any, binary fork), and add a fixture test in `tools/test.sh`.
+- Hot-path changes — include before / after `./tools/bench.sh` numbers in the PR description. `damin_profile` is a quicker per-segment view.
 
 ## Commit messages
 

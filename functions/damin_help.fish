@@ -23,6 +23,8 @@ function damin_help
     _damin_help_row theme_damin_show_aws_region 1
     _damin_help_row theme_damin_show_gcp 0
     _damin_help_row theme_damin_show_azure 0
+    _damin_help_row theme_damin_show_terraform 1
+    _damin_help_row theme_damin_show_pulumi 1
     _damin_help_row theme_damin_show_gh_pr 0
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
@@ -38,6 +40,10 @@ function damin_help
     echo "  enums"
     _damin_help_row theme_damin_show_exit_code number
     _damin_help_row theme_damin_palette mocha
+    echo
+    echo "  palette accent overrides (hex without #; defaults shift per palette)"
+    _damin_help_row theme_damin_accent_primary 98ABCC
+    _damin_help_row theme_damin_accent_secondary E890B0
     echo
     echo "  numeric"
     _damin_help_row theme_damin_cwd_keep 3
@@ -75,10 +81,11 @@ function damin_help
     end
     echo
     echo "  commands"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard (toggles + palette)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch catppuccin flavor (mocha|frappe|macchiato|latte)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (mocha|frappe|macchiato|latte|gruvbox|tokyonight|rosepine|nord|dracula)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo

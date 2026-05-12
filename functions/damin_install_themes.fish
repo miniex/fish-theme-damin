@@ -2,12 +2,13 @@ function damin_install_themes
     set -l dest "$__fish_config_dir/themes"
     mkdir -p $dest
 
-    set -l flavors mocha macchiato frappe latte
-    set -l names "Damin Mocha" "Damin Macchiato" "Damin Frappe" "Damin Latte"
-    set -l bgs 1e1e2e 24273a 303446 eff1f5
+    set -l flavors mocha macchiato frappe latte gruvbox tokyonight rosepine nord dracula
+    set -l names "Damin Mocha" "Damin Macchiato" "Damin Frappe" "Damin Latte" \
+        "Damin Gruvbox" "Damin Tokyo Night" "Damin Rose Pine" "Damin Nord" "Damin Dracula"
+    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 1a1b26 191724 2e3440 282a36
 
     set -l installed
-    for i in (seq 4)
+    for i in (seq (count $flavors))
         set -l flavor $flavors[$i]
         set -l name $names[$i]
         set -l bg $bgs[$i]
@@ -21,6 +22,16 @@ function damin_install_themes
                 set p c6d0f5 8caaee ca9ee6 a6d189 f4b8e4 ef9f76 e78284 eebebe 838ba7 414559 ea999c 737994 e5c890 81c8be
             case latte
                 set p 4c4f69 1e66f5 8839ef 40a02b ea76cb fe640b d20f39 dd7878 8c8fa1 ccd0da e64553 9ca0b0 df8e1d 179299
+            case gruvbox
+                set p ebdbb2 83a598 d3869b b8bb26 fb4934 fe8019 fb4934 e78a4e 928374 504945 ea6962 7c6f64 fabd2f 8ec07c
+            case tokyonight
+                set p c0caf5 7aa2f7 bb9af7 9ece6a f7768e ff9e64 f7768e e0af68 565f89 414868 ff757f 414868 e0af68 73daca
+            case rosepine
+                set p e0def4 9ccfd8 c4a7e7 31748f ebbcba f6c177 eb6f92 ebbcba 6e6a86 26233a eb6f92 524f67 f6c177 9ccfd8
+            case nord
+                set p eceff4 81a1c1 b48ead a3be8c b48ead d08770 bf616a d08770 4c566a 3b4252 bf616a 4c566a ebcb8b 88c0d0
+            case dracula
+                set p f8f8f2 8be9fd bd93f9 50fa7b ff79c6 ffb86c ff5555 ffb86c 6272a4 44475a ff5555 6272a4 f1fa8c 8be9fd
         end
         # p indexes: 1=text 2=blue 3=mauve 4=green 5=pink 6=peach 7=red 8=flamingo 9=overlay1 10=surface0 11=maroon 12=overlay0 13=yellow 14=teal
         set -l file "$dest/$name.theme"

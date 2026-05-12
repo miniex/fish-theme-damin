@@ -32,6 +32,8 @@ set -q theme_damin_show_vi_mode; or set -g theme_damin_show_vi_mode 1
 set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
 set -q theme_damin_show_env; or set -g theme_damin_show_env 1
 set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
+set -q theme_damin_show_terraform; or set -g theme_damin_show_terraform 1
+set -q theme_damin_show_pulumi; or set -g theme_damin_show_pulumi 1
 set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
 set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
 
@@ -155,6 +157,81 @@ if test "$theme_damin_apply_colors" = 1
             set overlay0 6e738d
             set yellow eed49f
             set teal 8bd5ca
+        case gruvbox
+            set text ebdbb2
+            set blue 83a598
+            set mauve d3869b
+            set green b8bb26
+            set pink fb4934
+            set peach fe8019
+            set red fb4934
+            set flamingo e78a4e
+            set overlay1 928374
+            set surface0 504945
+            set maroon ea6962
+            set overlay0 7c6f64
+            set yellow fabd2f
+            set teal 8ec07c
+        case tokyonight
+            set text c0caf5
+            set blue 7aa2f7
+            set mauve bb9af7
+            set green 9ece6a
+            set pink f7768e
+            set peach ff9e64
+            set red f7768e
+            set flamingo e0af68
+            set overlay1 565f89
+            set surface0 414868
+            set maroon ff757f
+            set overlay0 414868
+            set yellow e0af68
+            set teal 73daca
+        case rosepine
+            set text e0def4
+            set blue 9ccfd8
+            set mauve c4a7e7
+            set green 31748f
+            set pink ebbcba
+            set peach f6c177
+            set red eb6f92
+            set flamingo ebbcba
+            set overlay1 6e6a86
+            set surface0 26233a
+            set maroon eb6f92
+            set overlay0 524f67
+            set yellow f6c177
+            set teal 9ccfd8
+        case nord
+            set text eceff4
+            set blue 81a1c1
+            set mauve b48ead
+            set green a3be8c
+            set pink b48ead
+            set peach d08770
+            set red bf616a
+            set flamingo d08770
+            set overlay1 4c566a
+            set surface0 3b4252
+            set maroon bf616a
+            set overlay0 4c566a
+            set yellow ebcb8b
+            set teal 88c0d0
+        case dracula
+            set text f8f8f2
+            set blue 8be9fd
+            set mauve bd93f9
+            set green 50fa7b
+            set pink ff79c6
+            set peach ffb86c
+            set red ff5555
+            set flamingo ffb86c
+            set overlay1 6272a4
+            set surface0 44475a
+            set maroon ff5555
+            set overlay0 6272a4
+            set yellow f1fa8c
+            set teal 8be9fd
     end
     set -q fish_color_normal; or set -U fish_color_normal $text
     set -q fish_color_command; or set -U fish_color_command $blue
@@ -184,19 +261,42 @@ if test "$theme_damin_apply_colors" = 1
     set -q fish_pager_color_progress; or set -U fish_pager_color_progress $overlay0
 end
 
+# brand accents per palette — catppuccin keeps cherry-blossom; user override wins.
+set -l _damin_accent_primary 98ABCC
+set -l _damin_accent_secondary E890B0
+switch "$theme_damin_palette"
+    case gruvbox
+        set _damin_accent_primary 83a598
+        set _damin_accent_secondary d3869b
+    case tokyonight
+        set _damin_accent_primary 7aa2f7
+        set _damin_accent_secondary bb9af7
+    case rosepine
+        set _damin_accent_primary 9ccfd8
+        set _damin_accent_secondary ebbcba
+    case nord
+        set _damin_accent_primary 88c0d0
+        set _damin_accent_secondary b48ead
+    case dracula
+        set _damin_accent_primary 8be9fd
+        set _damin_accent_secondary bd93f9
+end
+set -q theme_damin_accent_primary; or set -g theme_damin_accent_primary $_damin_accent_primary
+set -q theme_damin_accent_secondary; or set -g theme_damin_accent_secondary $_damin_accent_secondary
+
 # pre-computed color escapes (set_color is a fork; do it once at theme load).
 set -g _damin_c_normal (set_color normal)
-set -g _damin_c_branch (set_color 98ABCC)
-set -g _damin_c_meta (set_color E890B0)
-set -g _damin_c_count (set_color E890B0 --dim)
-set -g _damin_c_ok (set_color E890B0 -o)
+set -g _damin_c_branch (set_color $theme_damin_accent_primary)
+set -g _damin_c_meta (set_color $theme_damin_accent_secondary)
+set -g _damin_c_count (set_color $theme_damin_accent_secondary --dim)
+set -g _damin_c_ok (set_color $theme_damin_accent_secondary -o)
 set -g _damin_c_err (set_color red -o)
 set -g _damin_c_exit (set_color red --dim)
-set -g _damin_c_cwd (set_color 98ABCC)
+set -g _damin_c_cwd (set_color $theme_damin_accent_primary)
 set -g _damin_c_dim (set_color --dim)
-set -g _damin_c_deco (set_color E890B0)
-set -g _damin_c_sep (set_color E890B0 --dim)
-set -g _damin_c_long (set_color E890B0 -o)
+set -g _damin_c_deco (set_color $theme_damin_accent_secondary)
+set -g _damin_c_sep (set_color $theme_damin_accent_secondary --dim)
+set -g _damin_c_long (set_color $theme_damin_accent_secondary -o)
 
 set -g _damin_pwd_key_pwd ""
 set -g _damin_pwd_key_value ""
@@ -224,6 +324,9 @@ set -g _damin_osc_host ""
 set -g _damin_gh_branch ""
 set -g _damin_gh_value ""
 set -g _damin_gh_at 0
+set -g _damin_devops_pwd ""
+set -g _damin_devops_tf ""
+set -g _damin_devops_pl ""
 
 set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
@@ -579,6 +682,28 @@ function _damin_k8s_compute --argument-names cfg
     printf '%s\n%s\n' "$current" "$found_ns"
 end
 
+# disk cache (mtime|ctx|ns) so cold-start skips the kubeconfig yaml walk.
+function _damin_k8s_prefill
+    set -l cfg (_damin_k8s_config_path)
+    test -f $cfg; or return
+    set -l mt (path mtime $cfg 2>/dev/null)
+    test -n "$mt"; or return
+    set -l cache "$_damin_cache_dir/cloud-k8s"
+    if test -f $cache
+        set -l lines (_damin_read_lines $cache)
+        test (count $lines) -ge 1 -a "$lines[1]" = "$mt"; and return
+    end
+    set -l data (_damin_k8s_compute $cfg)
+    set -l ctx ""
+    set -l ns ""
+    test (count $data) -ge 1; and set ctx $data[1]
+    test (count $data) -ge 2; and set ns $data[2]
+    mkdir -p $_damin_cache_dir 2>/dev/null
+    set -l tmp "$cache.tmp.$fish_pid"
+    printf '%s\n%s\n%s\n' "$mt" "$ctx" "$ns" >$tmp 2>/dev/null
+    mv $tmp $cache 2>/dev/null
+end
+
 function _damin_k8s_render
     set -l cfg (_damin_k8s_config_path)
     set -l in_pod 0
@@ -593,9 +718,25 @@ function _damin_k8s_render
             set ctx $_damin_k8s_ctx
             set ns $_damin_k8s_ns
         else
-            set -l data (_damin_k8s_compute $cfg)
-            test (count $data) -ge 1; and set ctx $data[1]
-            test (count $data) -ge 2; and set ns $data[2]
+            set -l used_cache 0
+            set -l cache "$_damin_cache_dir/cloud-k8s"
+            if test -f $cache
+                set -l lines (_damin_read_lines $cache)
+                if test (count $lines) -ge 1 -a "$lines[1]" = "$mt"
+                    test (count $lines) -ge 2; and set ctx $lines[2]
+                    test (count $lines) -ge 3; and set ns $lines[3]
+                    set used_cache 1
+                end
+            end
+            if test $used_cache = 0
+                set -l data (_damin_k8s_compute $cfg)
+                test (count $data) -ge 1; and set ctx $data[1]
+                test (count $data) -ge 2; and set ns $data[2]
+                mkdir -p $_damin_cache_dir 2>/dev/null
+                set -l tmp "$cache.tmp.$fish_pid"
+                printf '%s\n%s\n%s\n' "$mt" "$ctx" "$ns" >$tmp 2>/dev/null
+                mv $tmp $cache 2>/dev/null
+            end
             set -g _damin_k8s_mt $mt
             set -g _damin_k8s_ctx $ctx
             set -g _damin_k8s_ns $ns
@@ -998,34 +1139,169 @@ function _damin_cwd_pretty
     prompt_pwd
 end
 
+# first non-empty/non-# line, strips leading `v` (.nvmrc `v18.18` → `18.18`).
+function _damin_lang_read_pin --argument-names file
+    test -n "$file"; or return
+    test -f $file; or return
+    for line in (command cat $file 2>/dev/null)
+        set -l t (string trim -- $line)
+        test -z "$t"; and continue
+        string match -qr '^#' -- $t; and continue
+        echo (string replace -r '^v' '' -- $t)
+        return
+    end
+end
+
+# `.tool-versions`: `<key> <version> [extras…]` per line.
+function _damin_lang_read_tool_versions --argument-names file key
+    test -n "$file" -a -n "$key"; or return
+    test -f $file; or return
+    for line in (command cat $file 2>/dev/null)
+        set -l m (string match -r '^'$key' +([^ #]+)' -- $line)
+        test (count $m) -ge 2; and echo $m[2]; and return
+    end
+end
+
+# `.mise.toml [tools]`: `<key> = "<v>"` or `<key> = ["<v>", …]`.
+function _damin_lang_read_mise --argument-names file key
+    test -n "$file" -a -n "$key"; or return
+    test -f $file; or return
+    set -l in_tools 0
+    for line in (command cat $file 2>/dev/null)
+        if string match -qr '^\[' -- $line
+            test (string trim -- $line) = '[tools]'; and set in_tools 1; or set in_tools 0
+            continue
+        end
+        test $in_tools = 1; or continue
+        set -l m (string match -r '^'$key'\s*=\s*"([^"]+)"' -- $line)
+        test (count $m) -ge 2; and echo $m[2]; and return
+        set m (string match -r '^'$key'\s*=\s*\[\s*"([^"]+)"' -- $line)
+        test (count $m) -ge 2; and echo $m[2]; and return
+    end
+end
+
+# single walk-up. version resolution: tool-versions → mise → lang pin → binary fork.
 function _damin_lang_compute
     set -l dir $PWD
     set -l levels 0
+    set -l found_lang ""
+    set -l found_label ""
+    set -l tool_versions ""
+    set -l mise_toml ""
+    set -l python_pin ""
+    set -l node_pin ""
+    set -l ruby_pin ""
+    set -l java_pin ""
+
     while test "$dir" != / -a $levels -lt 8
-        if test -f "$dir/Cargo.toml"
-            set -l v (command rustc --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
-            test -n "$v"; and echo "rust:$v"; or echo rust
-            return
-        else if test -f "$dir/package.json"
-            set -l v (command node --version 2>/dev/null | string sub -s 2)
-            test -n "$v"; and echo "node:$v"; or echo node
-            return
-        else if test -f "$dir/go.mod"
-            set -l v (command go env GOVERSION 2>/dev/null | string sub -s 3)
-            test -n "$v"; and echo "go:$v"; or echo go
-            return
-        else if test -f "$dir/pyproject.toml" -o -f "$dir/setup.py" -o -f "$dir/requirements.txt"
-            set -l v (command python3 --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
-            test -n "$v"; and echo "py:$v"; or echo py
-            return
-        else if test -f "$dir/deno.json" -o -f "$dir/deno.jsonc"
-            set -l v (command deno --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
-            test -n "$v"; and echo "deno:$v"; or echo deno
-            return
+        if test -z "$found_lang"
+            if test -f "$dir/Cargo.toml"
+                set found_lang rust
+                set found_label rust
+            else if test -f "$dir/package.json"
+                set found_lang node
+                set found_label node
+            else if test -f "$dir/go.mod"
+                set found_lang go
+                set found_label go
+            else if test -f "$dir/pyproject.toml" -o -f "$dir/setup.py" -o -f "$dir/requirements.txt"
+                set found_lang python
+                set found_label py
+            else if test -f "$dir/deno.json" -o -f "$dir/deno.jsonc"
+                set found_lang deno
+                set found_label deno
+            else if test -f "$dir/Gemfile" -o -f "$dir/Gemfile.lock"
+                set found_lang ruby
+                set found_label rb
+            else if test -f "$dir/mix.exs"
+                set found_lang elixir
+                set found_label ex
+            else if test -f "$dir/composer.json"
+                set found_lang php
+                set found_label php
+            else if test -f "$dir/shard.yml"
+                set found_lang crystal
+                set found_label cr
+            else if test -f "$dir/build.zig"
+                set found_lang zig
+                set found_label zig
+            else if test -f "$dir/pom.xml" -o -f "$dir/build.gradle" -o -f "$dir/build.gradle.kts"
+                set found_lang java
+                set found_label java
+            end
         end
+        test -z "$tool_versions" -a -f "$dir/.tool-versions"; and set tool_versions "$dir/.tool-versions"
+        test -z "$mise_toml" -a -f "$dir/.mise.toml"; and set mise_toml "$dir/.mise.toml"
+        test -z "$mise_toml" -a -f "$dir/mise.toml"; and set mise_toml "$dir/mise.toml"
+        test -z "$python_pin" -a -f "$dir/.python-version"; and set python_pin "$dir/.python-version"
+        if test -z "$node_pin"
+            if test -f "$dir/.nvmrc"
+                set node_pin "$dir/.nvmrc"
+            else if test -f "$dir/.node-version"
+                set node_pin "$dir/.node-version"
+            end
+        end
+        test -z "$ruby_pin" -a -f "$dir/.ruby-version"; and set ruby_pin "$dir/.ruby-version"
+        test -z "$java_pin" -a -f "$dir/.java-version"; and set java_pin "$dir/.java-version"
         set dir (path dirname $dir)
         set levels (math $levels + 1)
     end
+
+    test -z "$found_lang"; and return
+
+    set -l v ""
+    switch $found_lang
+        case rust
+            set v (_damin_lang_read_tool_versions $tool_versions rust)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml rust)
+            test -z "$v"; and set v (command rustc --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case node
+            set v (_damin_lang_read_tool_versions $tool_versions nodejs)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml node)
+            test -z "$v"; and set v (_damin_lang_read_pin $node_pin)
+            test -z "$v"; and set v (command node --version 2>/dev/null | string sub -s 2)
+        case go
+            set v (_damin_lang_read_tool_versions $tool_versions golang)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml go)
+            test -z "$v"; and set v (command go env GOVERSION 2>/dev/null | string sub -s 3)
+        case python
+            set v (_damin_lang_read_tool_versions $tool_versions python)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml python)
+            test -z "$v"; and set v (_damin_lang_read_pin $python_pin)
+            test -z "$v"; and set v (command python3 --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case deno
+            set v (_damin_lang_read_tool_versions $tool_versions deno)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml deno)
+            test -z "$v"; and set v (command deno --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case ruby
+            set v (_damin_lang_read_tool_versions $tool_versions ruby)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml ruby)
+            test -z "$v"; and set v (_damin_lang_read_pin $ruby_pin)
+            test -z "$v"; and set v (command ruby --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case elixir
+            set v (_damin_lang_read_tool_versions $tool_versions elixir)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml elixir)
+            test -z "$v"; and set v (command elixir --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case php
+            set v (_damin_lang_read_tool_versions $tool_versions php)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml php)
+            test -z "$v"; and set v (command php -r 'echo PHP_VERSION;' 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case crystal
+            set v (_damin_lang_read_tool_versions $tool_versions crystal)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml crystal)
+            test -z "$v"; and set v (command crystal --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case zig
+            set v (_damin_lang_read_tool_versions $tool_versions zig)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml zig)
+            test -z "$v"; and set v (command zig version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+        case java
+            set v (_damin_lang_read_tool_versions $tool_versions java)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml java)
+            test -z "$v"; and set v (_damin_lang_read_pin $java_pin)
+            test -z "$v"; and set v (command java -version 2>&1 | string match -gr '\d+\.\d+\.\d+' | head -1)
+    end
+
+    test -n "$v"; and echo "$found_label:$v"; or echo $found_label
 end
 
 function _damin_lang_render
@@ -1057,6 +1333,81 @@ function _damin_lang_render
     end
 
     test -n "$value"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "$value" $_damin_c_normal
+end
+
+# $PULUMI_STACK wins; else read workspace file iff exactly one matches the project name
+# (the *-<hash>-workspace.json suffix isn't reverse-engineerable from the path).
+function _damin_pulumi_stack_for --argument-names proj_dir
+    set -l proj_name
+    for yaml in $proj_dir/Pulumi.yaml $proj_dir/Pulumi.yml
+        test -f $yaml; or continue
+        for line in (command cat $yaml 2>/dev/null)
+            set -l m (string match -r '^name: *(.*)$' -- $line)
+            if test (count $m) -ge 2
+                set proj_name (string trim --chars '"' -- $m[2])
+                break
+            end
+        end
+        test -n "$proj_name"; and break
+    end
+    test -n "$proj_name"; or return
+
+    set -q PULUMI_STACK; and test -n "$PULUMI_STACK"; and echo $PULUMI_STACK; and return
+
+    set -l home_pulumi "$HOME/.pulumi"
+    set -q PULUMI_HOME; and test -n "$PULUMI_HOME"; and set home_pulumi $PULUMI_HOME
+    set -l ws_dir "$home_pulumi/workspaces"
+    test -d $ws_dir; or return
+
+    set -l matches
+    for f in $ws_dir/$proj_name-*-workspace.json
+        test -f $f; and set -a matches $f
+    end
+    test (count $matches) -eq 1; or return
+    set -l stack (command cat $matches[1] 2>/dev/null | string match -gr '"stack":\s*"([^"]+)"' | head -1)
+    test -n "$stack"; and echo $stack
+end
+
+# pwd-cached single walk-up; exits early once both segments resolve.
+function _damin_devops_resolve
+    test "$_damin_devops_pwd" = "$PWD"; and return
+    set -g _damin_devops_pwd "$PWD"
+    set -g _damin_devops_tf ""
+    set -g _damin_devops_pl ""
+    set -l want_tf 0
+    set -l want_pl 0
+    test "$theme_damin_show_terraform" = 1; and set want_tf 1
+    test "$theme_damin_show_pulumi" = 1; and set want_pl 1
+    test $want_tf = 0 -a $want_pl = 0; and return
+
+    set -l dir $PWD
+    set -l levels 0
+    while test "$dir" != / -a $levels -lt 8
+        if test $want_tf = 1 -a -d "$dir/.terraform"
+            set -l env "$dir/.terraform/environment"
+            if test -f $env
+                set -l ws (command cat $env 2>/dev/null | string trim)
+                test -n "$ws" -a "$ws" != default; and set -g _damin_devops_tf "$ws"
+            end
+            set want_tf 0
+        end
+        if test $want_pl = 1
+            if test -f "$dir/Pulumi.yaml" -o -f "$dir/Pulumi.yml"
+                set -g _damin_devops_pl (_damin_pulumi_stack_for $dir)
+                set want_pl 0
+            end
+        end
+        test $want_tf = 0 -a $want_pl = 0; and break
+        set dir (path dirname $dir)
+        set levels (math $levels + 1)
+    end
+end
+
+function _damin_devops_render
+    test "$theme_damin_show_terraform" = 1 -o "$theme_damin_show_pulumi" = 1; or return
+    _damin_devops_resolve
+    test -n "$_damin_devops_tf"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "tf:$_damin_devops_tf" $_damin_c_normal
+    test -n "$_damin_devops_pl"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "pulumi:$_damin_devops_pl" $_damin_c_normal
 end
 
 function _damin_env_render
@@ -1200,6 +1551,15 @@ function _damin_postexec --on-event fish_postexec
         set -g _damin_gcp_cfg_mt ""
         set -g _damin_azure_mt ""
     end
+    # terraform workspace / pulumi stack swaps invalidate the devops cache.
+    if string match -qr '\b(terraform|tf|pulumi)\b' -- $cmd
+        set -g _damin_devops_pwd ""
+    end
+    # kubectl mutating subcommands rewrite kubeconfig within the same mtime second.
+    if string match -qr '\bkubectl\s+config\b' -- $cmd
+        set -g _damin_k8s_mt ""
+        command rm -f "$_damin_cache_dir/cloud-k8s" 2>/dev/null
+    end
 end
 
 
@@ -1275,6 +1635,7 @@ function fish_right_prompt
     echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
 
     _damin_lang_render
+    _damin_devops_render
     _damin_env_render
     _damin_battery_render
     _damin_duration_render
@@ -1282,16 +1643,21 @@ function fish_right_prompt
 end
 
 
+# one bg fork warms every prefill — fish's `&` forks the current shell, no reload.
+function _damin_warmup
+    if test "$theme_damin_async_git" = 1
+        test (_damin_detect_vcs) = git; and _damin_git_prefill
+    end
+    test "$theme_damin_show_k8s_context" = 1; and _damin_k8s_prefill
+end
+
 # async_repaint subshell needs only the function defs; skip init side effects.
 if not set -q _damin_subshell
     _damin_cache_prune
     _damin_install_transient_bindings
 
-    # warmup: prefill the git cache so the next prompt isn't cold when fish opens in a repo.
-    if test "$theme_damin_async_warmup" = 1 -a "$theme_damin_async_git" = 1
-        if test (_damin_detect_vcs) = git
-            _damin_git_prefill >/dev/null 2>&1 &
-            disown 2>/dev/null
-        end
+    if test "$theme_damin_async_warmup" = 1
+        _damin_warmup >/dev/null 2>&1 &
+        disown 2>/dev/null
     end
 end
