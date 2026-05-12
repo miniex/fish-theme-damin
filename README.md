@@ -58,7 +58,7 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 | Command             | Purpose                                           |
 |---------------------|---------------------------------------------------|
 | `damin_help`        | List every toggle, current value, and default     |
-| `damin_doctor`      | Environment + font-width sanity diagnostic        |
+| `damin_doctor`      | Environment, install, font-width, and prompt-source diagnostic |
 | `damin_reset_cache` | Wipe the on-disk cache when something looks wrong |
 
 ## Configuration
@@ -97,7 +97,7 @@ omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme
 exec fish
 ```
 
-Still off? Run `damin_doctor` — it reports cache state, font width, and missing dependencies.
+Still off? Run `damin_doctor` — it reports cache state, font width, where `fish_prompt` is loaded from, and any stray prompt symlinks in `~/.config/fish/functions/` left over from a previous install method.
 
 **`Conflicting prompt setting` from `omf theme …` or `omf doctor`?** A `fish_prompt.fish` left behind by a previous install method is blocking OMF — typically a leftover from Fisher (which copies files into `~/.config/fish/functions/`) when switching to OMF without `fisher remove` first. Delete it and retry:
 
@@ -108,7 +108,7 @@ omf theme fish-theme-damin
 
 ## Contributing
 
-PRs welcome. Install `fish` (`fish_indent`), `shfmt`, `shellcheck`, then run `./tools/format.sh` and `./tools/lint.sh`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commit-prefix convention. Hot-path changes should include before/after `./tools/bench.sh` numbers in the PR description.
+PRs welcome. Install `fish` (`fish_indent`), `shfmt`, `shellcheck`, then run `./tools/format.sh`, `./tools/lint.sh`, and `./tools/test.sh`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commit-prefix convention. Hot-path changes should include before/after `./tools/bench.sh` numbers in the PR description.
 
 ## Changelog
 

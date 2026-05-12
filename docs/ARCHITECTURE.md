@@ -22,6 +22,7 @@ fish_title.fish          — empty
 tools/format.sh          — fish_indent + shfmt
 tools/lint.sh            — fish_indent --check + fish -n + shfmt --diff + shellcheck
 tools/bench.sh           — 100-iteration hot-loop bench across scenarios
+tools/test.sh            — fixture-repo assertions for _damin_git_compute
 ```
 
 ### Dual-manager strategy

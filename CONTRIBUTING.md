@@ -27,9 +27,10 @@ Before every commit:
 ```bash
 ./tools/format.sh   # fish_indent on prompt files; shfmt on the tools scripts
 ./tools/lint.sh     # fish_indent --check + fish -n + shfmt --diff + shellcheck
+./tools/test.sh     # fixture-repo tests for _damin_git_compute
 ```
 
-`lint.sh` exits non-zero on any formatting drift or shellcheck finding. CI / reviewers expect a clean run.
+`lint.sh` exits non-zero on any formatting drift or shellcheck finding. `test.sh` exits non-zero if any parser assertion fails. CI / reviewers expect a clean run.
 
 Smoke-test end-to-end after touching any `*.fish`:
 

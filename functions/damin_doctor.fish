@@ -19,11 +19,39 @@ function damin_doctor
 
     if functions -q omf
         set -l theme (command cat ~/.config/omf/theme 2>/dev/null)
-        if test "$theme" = damin
+        if test "$theme" = fish-theme-damin
             _damin_doctor_check "omf active theme" ok "($theme)"
         else
-            _damin_doctor_check "omf active theme" fail "(current: $theme — run: omf theme damin)"
+            _damin_doctor_check "omf active theme" fail "(current: $theme — run: omf theme fish-theme-damin)"
         end
+    end
+
+    set -l prompt_src (functions --details fish_prompt 2>/dev/null)
+    if test -z "$prompt_src" -o "$prompt_src" = n/a -o "$prompt_src" = stdin
+        _damin_doctor_check "fish_prompt loaded" fail "(function not defined — theme not active)"
+    else
+        _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
+    end
+
+    # Neither OMF nor Fisher creates symlinks here — manual install or stale leftover.
+    set -l strays
+    for f in fish_prompt.fish fish_right_prompt.fish
+        test -L ~/.config/fish/functions/$f; and set strays $strays $f
+    end
+    if test (count $strays) -gt 0
+        _damin_doctor_check "no stray prompt symlinks" fail "(symlinks in ~/.config/fish/functions/: $strays — neither OMF nor Fisher creates these; delete to unblock theme switching)"
+    else
+        _damin_doctor_check "no stray prompt symlinks" ok
+    end
+
+    set -l missing
+    for cmd in damin_help damin_reset_cache
+        type -q $cmd; or set missing $missing $cmd
+    end
+    if test (count $missing) -gt 0
+        _damin_doctor_check "damin commands" fail "(not on autoload path: $missing — try exec fish)"
+    else
+        _damin_doctor_check "damin commands" ok
     end
 
     if mkdir -p $_damin_cache_dir 2>/dev/null; and test -w $_damin_cache_dir

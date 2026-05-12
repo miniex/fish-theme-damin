@@ -27,5 +27,5 @@ for f in fish_prompt.fish fish_right_prompt.fish fish_title.fish key_bindings.fi
     fish -n "$f"
 done
 
-shfmt -d -i 4 -ci -bn -s tools/bench.sh tools/format.sh tools/lint.sh
-shellcheck tools/bench.sh tools/format.sh tools/lint.sh
+shfmt -d -i 4 -ci -bn -s tools/bench.sh tools/format.sh tools/lint.sh tools/test.sh
+shellcheck tools/bench.sh tools/format.sh tools/lint.sh tools/test.sh
