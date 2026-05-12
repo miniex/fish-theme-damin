@@ -4,7 +4,13 @@
 
 ## Preview
 
-![damin prompt walkthrough](assets/preview.gif)
+Git workflow — counts, transient prompt, duration, exit code:
+
+![git workflow](assets/preview-0.gif)
+
+Language detection, vi mode, custom segment:
+
+![lang + vi + custom segment](assets/preview-1.gif)
 
 ```
 master ✗3 ✓1 #42 [N] ✿                        ❥ ~/code · node:22 · 120 ms
