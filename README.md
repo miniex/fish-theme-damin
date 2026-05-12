@@ -40,7 +40,7 @@ ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/damin
 omf theme damin
 ```
 
-Requires **fish ≥ 3.6**. Works with **Fisher** (auto-loads via `conf.d/` + `functions/`) and **Oh My Fish** (root shims source the same code).
+Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** (auto-loads via `conf.d/` + `functions/`) and **Oh My Fish** (root shims source the same code).
 
 ## Highlights
 

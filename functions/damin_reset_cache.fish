@@ -4,7 +4,10 @@ function damin_reset_cache
     set -e _damin_lang_value
     set -e _damin_vcs_pwd
     set -e _damin_vcs_value
+    set -e _damin_vcs_dir
     set -e _damin_pwd_key_pwd
     set -e _damin_pwd_key_value
+    set -e _damin_battery_value
+    set -e _damin_battery_at
     echo "cleared $_damin_cache_dir"
 end

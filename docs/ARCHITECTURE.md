@@ -153,6 +153,8 @@ The `fish_postexec` event handler `_damin_postexec` watches every command:
 - **Git cache** — deleted when the command contains `git`/`jj`/`hub`/`gh` AND is not in the read-only whitelist (`status`/`log`/`diff`/`show`/`blame`/`ls-*`/`rev-*`/`describe`/`name-rev`/`shortlog`/`whatchanged`/`reflog`/`grep`/`ls-remote`/`help`/`version`). Read-only commands leave the cache alone — no wasted sync compute on the next prompt.
 - **Lang cache** — deleted on version-managing commands only (`nvm`/`fnm`/`asdf`/`mise`/`pyenv`/`rbenv`/`rustup`/`volta`/`conda`). Package installs like `npm install` don't change the active runtime version so they don't trip invalidation.
 
+`fish_postexec` only fires for commands run interactively in this shell, so commits made by `lazygit`, an IDE git plugin, a `bash -c "git commit …"` invocation, or another shell session would leak past the invalidation. `_damin_git_render` adds a second backstop: before reading the cache, it compares the cache mtime against `.git/{index,HEAD,logs/HEAD}` via fish's `path mtime` builtin (one builtin call, no fork). If any git state file is newer than the cache, it's treated as stale and recomputed. Filesystem mtime has 1-second resolution, so commits made within the same second as the cache write are still covered by the postexec hook for in-shell commands and recomputed on the next prompt for everyone else.
+
 Pure-sync mode (`theme_damin_async_git 0` / `theme_damin_async_lang 0`) skips the cache layer entirely and runs the underlying compute on every prompt.
 
 ### Atomicity
@@ -203,6 +205,8 @@ To verify: `rm -rf ~/.cache/damin; ./tools/bench.sh` shows hot numbers; the very
 ### Single-call git compute
 
 `_damin_git_compute` issues one `git rev-parse --is-inside-work-tree --git-dir --git-common-dir` (worktree-safe) and one `git status --porcelain=v2 --branch`. Branch name, oid, ahead/behind, and the four file counts all come out of the porcelain-v2 output — no separate `git symbolic-ref` / `git describe` / `git rev-parse` calls. Stash count reads `<git-common-dir>/logs/refs/stash` directly via `wc -l` (no `git rev-list` fork). Op state is detected by checking file existence under `<git-dir>` (no fork).
+
+One conditional extra call: when the branch has no upstream tracking, porcelain v2 omits `# branch.ab`. In that case (and only when at least one remote exists), `_damin_git_compute` runs `git rev-list --count HEAD --not --remotes` so a fresh feature branch with unpushed commits still surfaces an `⇡N` indicator. Repos with no remotes at all skip this — every commit would otherwise read as "ahead of nothing."
 
 ## Notes
 

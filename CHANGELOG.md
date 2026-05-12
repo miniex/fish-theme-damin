@@ -17,10 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `_damin_git_compute` parsed `git status --porcelain=v2 --branch` with `case '?'`, but fish's `case` uses glob semantics — the `?` wildcard matched **every** single character, so `# branch.head main` and `1 .M …` lines all fell into the untracked counter. Branch name stayed empty (rendered as fallback `?`) and modified/staged/ahead/behind counts were always `0`. Now uses `case '\?'` to match the literal character. Existing caches must be cleared (`damin_reset_cache`) for the fix to take effect
+- `⇡` ahead indicator never showed when the branch had no upstream tracking. `git status --porcelain=v2 --branch` omits `# branch.ab` without an upstream, so a fresh feature branch full of unpushed commits looked clean. Now falls back to `git rev-list --count HEAD --not --remotes` when no upstream is set (and at least one remote exists), so unpushed commits surface as `⇡N` regardless of whether `--set-upstream` has been run
+- `theme_damin_show_git_op` toggle was listed in `damin_help` and `docs/ARCHITECTURE.md` but never read — `(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)` always rendered. Now gates op-state detection in `_damin_git_compute`
+- Async git cache went stale on out-of-shell commits — `lazygit`, IDE git plugins, scripts invoked via `bash -c`, etc. bypass `fish_postexec` so the prompt kept serving pre-commit state until manual `damin_reset_cache`. Now compares cache mtime against `.git/{index,HEAD,logs/HEAD}` via `path mtime` (single builtin call, no fork), recomputes when any git state file is newer
+- `theme_damin_apply_colors=1` used `set -U fish_color_*` unconditionally on every shell startup, clobbering user-customized colors and persisting them across `theme_damin_apply_colors=0` later (universal scope is sticky). Now uses `set -q X; or set -U X val` so existing customizations win and damin only fills in what's unset
 
 ### Changed
 
 - Battery percent (`theme_damin_show_battery`) now resolves per-platform via `switch (uname)` — macOS `pmset`, Linux sysfs, FreeBSD / OpenBSD / NetBSD / DragonFly `apm -l` with `sysctl hw.acpi.battery.life` fallback. Previously non-Darwin BSDs fell through to the Linux sysfs path
+- Minimum fish version bumped from 3.6 to 3.7 to use the `path mtime` builtin (the cache-freshness check would otherwise need two `stat` forks per prompt)
 
 ## [1.0.0] - 20260511223917 KST
 

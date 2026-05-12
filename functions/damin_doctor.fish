@@ -2,10 +2,10 @@ function damin_doctor
     set -l parts (string split . -- $FISH_VERSION)
     set -l major $parts[1]
     set -l minor $parts[2]
-    if test $major -gt 3 -o \( $major -eq 3 -a $minor -ge 6 \)
-        _damin_doctor_check "fish ≥ 3.6" ok "($FISH_VERSION)"
+    if test $major -gt 3 -o \( $major -eq 3 -a $minor -ge 7 \)
+        _damin_doctor_check "fish ≥ 3.7" ok "($FISH_VERSION)"
     else
-        _damin_doctor_check "fish ≥ 3.6" fail "(found $FISH_VERSION)"
+        _damin_doctor_check "fish ≥ 3.7" fail "(found $FISH_VERSION — need 3.7 for path mtime)"
     end
 
     set -l manager

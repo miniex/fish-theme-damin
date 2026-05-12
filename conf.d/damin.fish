@@ -53,32 +53,32 @@ set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
 set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
 
 if test "$theme_damin_apply_colors" = 1
-    set -U fish_color_normal cdd6f4
-    set -U fish_color_command 89b4fa
-    set -U fish_color_keyword cba6f7
-    set -U fish_color_quote a6e3a1
-    set -U fish_color_redirection f5c2e7
-    set -U fish_color_end fab387
-    set -U fish_color_error f38ba8
-    set -U fish_color_param f2cdcd
-    set -U fish_color_comment 7f849c
-    set -U fish_color_selection --background=313244
-    set -U fish_color_search_match --background=313244
-    set -U fish_color_operator f5c2e7
-    set -U fish_color_escape eba0ac
-    set -U fish_color_autosuggestion 6c7086
-    set -U fish_color_cancel f38ba8
-    set -U fish_color_option a6e3a1
-    set -U fish_color_gray 6c7086
-    set -U fish_color_status f38ba8
-    set -U fish_color_cwd f9e2af
-    set -U fish_color_user 94e2d5
-    set -U fish_color_host 89b4fa
-    set -U fish_color_host_remote a6e3a1
-    set -U fish_pager_color_completion cdd6f4
-    set -U fish_pager_color_description 6c7086
-    set -U fish_pager_color_prefix f5c2e7
-    set -U fish_pager_color_progress 6c7086
+    set -q fish_color_normal; or set -U fish_color_normal cdd6f4
+    set -q fish_color_command; or set -U fish_color_command 89b4fa
+    set -q fish_color_keyword; or set -U fish_color_keyword cba6f7
+    set -q fish_color_quote; or set -U fish_color_quote a6e3a1
+    set -q fish_color_redirection; or set -U fish_color_redirection f5c2e7
+    set -q fish_color_end; or set -U fish_color_end fab387
+    set -q fish_color_error; or set -U fish_color_error f38ba8
+    set -q fish_color_param; or set -U fish_color_param f2cdcd
+    set -q fish_color_comment; or set -U fish_color_comment 7f849c
+    set -q fish_color_selection; or set -U fish_color_selection --background=313244
+    set -q fish_color_search_match; or set -U fish_color_search_match --background=313244
+    set -q fish_color_operator; or set -U fish_color_operator f5c2e7
+    set -q fish_color_escape; or set -U fish_color_escape eba0ac
+    set -q fish_color_autosuggestion; or set -U fish_color_autosuggestion 6c7086
+    set -q fish_color_cancel; or set -U fish_color_cancel f38ba8
+    set -q fish_color_option; or set -U fish_color_option a6e3a1
+    set -q fish_color_gray; or set -U fish_color_gray 6c7086
+    set -q fish_color_status; or set -U fish_color_status f38ba8
+    set -q fish_color_cwd; or set -U fish_color_cwd f9e2af
+    set -q fish_color_user; or set -U fish_color_user 94e2d5
+    set -q fish_color_host; or set -U fish_color_host 89b4fa
+    set -q fish_color_host_remote; or set -U fish_color_host_remote a6e3a1
+    set -q fish_pager_color_completion; or set -U fish_pager_color_completion cdd6f4
+    set -q fish_pager_color_description; or set -U fish_pager_color_description 6c7086
+    set -q fish_pager_color_prefix; or set -U fish_pager_color_prefix f5c2e7
+    set -q fish_pager_color_progress; or set -U fish_pager_color_progress 6c7086
 end
 
 set -g _damin_c_normal (set_color normal)
@@ -96,6 +96,7 @@ set -g _damin_c_long (set_color E890B0 -o)
 
 set -g _damin_vcs_pwd ""
 set -g _damin_vcs_value ""
+set -g _damin_vcs_dir ""
 set -g _damin_lang_pwd ""
 set -g _damin_lang_value ""
 set -g _damin_battery_value ""
@@ -148,19 +149,33 @@ function _damin_detect_vcs
         set -l dir $PWD
         set -l levels 0
         set -l result ""
+        set -l found ""
         while test "$dir" != / -a $levels -lt 16
             if test -d "$dir/.jj"
                 set result jj
+                set found "$dir/.jj"
                 break
             end
-            if test -d "$dir/.git" -o -f "$dir/.git"
+            if test -d "$dir/.git"
                 set result git
+                set found "$dir/.git"
+                break
+            end
+            if test -f "$dir/.git"
+                set result git
+                set -l gd (command cat "$dir/.git" 2>/dev/null | string match -gr '^gitdir: (.+)')
+                if test -n "$gd"
+                    string match -q '/*' -- $gd[1]; and set found $gd[1]; or set found "$dir/$gd[1]"
+                else
+                    set found "$dir/.git"
+                end
                 break
             end
             set dir (path dirname $dir)
             set levels (math $levels + 1)
         end
         set -g _damin_vcs_value $result
+        set -g _damin_vcs_dir $found
     end
     echo $_damin_vcs_value
 end
@@ -192,6 +207,7 @@ function _damin_git_compute
 
     set -l branch
     set -l oid
+    set -l has_upstream 0
     set -l untracked 0
     set -l modified 0
     set -l staged 0
@@ -213,10 +229,22 @@ function _damin_git_compute
                         set branch $parts[3]
                     case branch.oid
                         set oid $parts[3]
+                    case branch.upstream
+                        set has_upstream 1
                     case branch.ab
                         set ahead (string sub -s 2 -- $parts[3])
                         set behind (string sub -s 2 -- $parts[4])
                 end
+        end
+    end
+
+    # No upstream → porcelain v2 omits branch.ab. Fall back to "commits not on any remote"
+    # so a fresh feature branch still shows ⇡ for unpushed work. Skip when there are no
+    # remotes at all (otherwise a brand-new local-only repo would flag every commit).
+    if test $has_upstream = 0 -a "$ahead" = 0
+        if test -n "$(command git remote 2>/dev/null)"
+            set -l unpushed (command git rev-list --count HEAD --not --remotes 2>/dev/null)
+            string match -rq '^\d+$' -- "$unpushed"; and set ahead $unpushed
         end
     end
 
@@ -229,16 +257,18 @@ function _damin_git_compute
     test -z "$stashed"; and set stashed 0
 
     set -l op ""
-    if test -d "$git_dir/rebase-merge" -o -d "$git_dir/rebase-apply"
-        set op rebase
-    else if test -f "$git_dir/MERGE_HEAD"
-        set op merge
-    else if test -f "$git_dir/CHERRY_PICK_HEAD"
-        set op pick
-    else if test -f "$git_dir/REVERT_HEAD"
-        set op revert
-    else if test -f "$git_dir/BISECT_LOG"
-        set op bisect
+    if test "$theme_damin_show_git_op" = 1
+        if test -d "$git_dir/rebase-merge" -o -d "$git_dir/rebase-apply"
+            set op rebase
+        else if test -f "$git_dir/MERGE_HEAD"
+            set op merge
+        else if test -f "$git_dir/CHERRY_PICK_HEAD"
+            set op pick
+        else if test -f "$git_dir/REVERT_HEAD"
+            set op revert
+        else if test -f "$git_dir/BISECT_LOG"
+            set op bisect
+        end
     end
 
     printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$op"
@@ -303,6 +333,21 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     end
 end
 
+function _damin_git_cache_stale --argument-names cache_file
+    test -n "$_damin_vcs_dir"; or return 1
+    # `path mtime` (fish 3.7+) is a builtin: no fork. Missing files are silently dropped,
+    # so output is ordered — cache first, then whichever state files exist. Index/HEAD/
+    # logs/HEAD change whenever the working tree, branch, or refs change, which catches
+    # out-of-shell commits (lazygit, IDE plugins, scripts) that bypass fish_postexec.
+    set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
+    test (count $mt) -lt 2; and return 1
+    set -l cm $mt[1]
+    for m in $mt[2..]
+        test $m -gt $cm; and return 0
+    end
+    return 1
+end
+
 function _damin_git_render
     if test "$theme_damin_async_git" != 1
         set -l data (_damin_git_compute)
@@ -315,9 +360,11 @@ function _damin_git_render
     set -l data
 
     if test -f $cache_file
-        set -l lines (_damin_read_lines $cache_file)
-        if test (count $lines) -ge 9 -a "$lines[1]" = "$PWD"
-            set data $lines[2..9]
+        if not _damin_git_cache_stale $cache_file
+            set -l lines (_damin_read_lines $cache_file)
+            if test (count $lines) -ge 9 -a "$lines[1]" = "$PWD"
+                set data $lines[2..9]
+            end
         end
     end
 
