@@ -1,7 +1,8 @@
 Catppuccin Mocha / Frappé / Macchiato / Latte palettes — used for the
-fish_color_* settings applied at theme load, and for the four bundled
-.theme files under themes/ (Damin Mocha / Frappe / Macchiato / Latte).
-Hex values verified against catppuccin/palette palette.json.
+fish_color_* settings applied at theme load, and for the four .theme
+files (Damin Mocha / Frappe / Macchiato / Latte) generated inline by
+`damin_install_themes`. Hex values verified against catppuccin/palette
+palette.json.
 
 Source: https://github.com/catppuccin/catppuccin
         https://github.com/catppuccin/palette

@@ -48,7 +48,7 @@ function damin_config
         theme_damin_show_azure 0 'Azure context (az:subscription)?' \
         theme_damin_show_gh_pr 0 'GitHub PR badge (#42 next to branch, needs gh)?' \
         theme_damin_show_battery 0 'battery percent (laptops only)?' \
-        theme_damin_status_names 0 'name exit codes (130 → SIGINT)?' \
+        theme_damin_show_vi_mode 1 'vi mode badge (only shown under vi keybindings)?' \
         theme_damin_notify_long_command 0 'desktop notification on long-running commands?' \
         theme_damin_ascii 0 'ASCII glyphs (only if font lacks ✿ ❥ ⇡ ⇣)?' \
         theme_damin_osc_integration 1 'OSC 7 + 133 shell integration?' \

@@ -41,7 +41,7 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
    - **jj** — bookmark name (or change-id short). No status counts (yet).
 3. **Background-job count** — `&N` when `count (jobs -p)` > 0.
 4. **Florette `✿`** — bold pink on success, bold red on the previous command's non-zero exit. Trailing space holds the cursor.
-5. **Exit code** — dim red `123` right after the florette on failure. With `theme_damin_status_names=1`, `126` → `noexec`, `127` → `not-found`, and `128+N` → signal names (`SIGINT` / `SIGKILL` / `SIGTERM` …) via fish's `fish_status_to_signal` builtin; the raw number stays for codes without a known mapping.
+5. **Exit code** — dim red `123` right after the florette on failure. Format follows `theme_damin_show_exit_code`: `number` (default), `name` (`126` → `noexec`, `127` → `not-found`, `128+N` → POSIX signal names via inline map), `both` (`127 not-found`), or `off`.
 
 ### Right prompt segments
 
@@ -223,7 +223,7 @@ The `fish_color_*` block (separate from the two anchor colors above) picks a Cat
 | `frappe`    | dark bg  | softest dark, cooler/grayer accents         |
 | `latte`     | light bg | the light theme — high-contrast deep colors |
 
-`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` universals so the apply block re-fills them, and re-sources the conf.d file. `damin_install_themes` symlinks the four `themes/Damin *.theme` files into `~/.config/fish/themes/` so they appear in `fish_config theme show` and can be applied via the standard fish theming flow.
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` universals so the apply block re-fills them, and re-sources the conf.d file. `damin_install_themes` writes four `Damin *.theme` files into `~/.config/fish/themes/` (generated inline from the palette tables — no separate `themes/` directory in the repo) so they appear in `fish_config theme show` and can be applied via the standard fish theming flow.
 
 ## Cache architecture
 

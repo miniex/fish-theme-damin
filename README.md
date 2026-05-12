@@ -55,7 +55,7 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 - **Exit-code labels** — `theme_damin_show_exit_code` is an enum: `number` (default), `name` (`SIGINT` / `not-found` / `SIGKILL` via fish's `fish_status_to_signal`), `both`, or `off`
 - **Vi mode badge** — `[N]` / `[I]` / `[V]` / `[R]` shown next to the florette when `fish_vi_key_bindings` is active; auto-repaints on mode change. Off entirely under emacs bindings
 - **Catppuccin palette swap** — `theme_damin_palette` selects between `mocha` (default), `frappe`, `macchiato`, `latte`. Switch live with `damin_set_palette frappe`
-- **`fish_config` integration** — bundled `themes/Damin Mocha.theme` (and the other three flavors) installable via `damin_install_themes`, so they show up in `fish_config theme show`
+- **`fish_config` integration** — `damin_install_themes` writes `Damin Mocha` / `Frappe` / `Macchiato` / `Latte` `.theme` files into `~/.config/fish/themes/` so they show up in `fish_config theme show` (generated inline — no extra files in the repo to keep in sync)
 - **Async cache warmup** — when fish opens directly into a repo, a background fork pre-fills the git cache so the next prompt is already hot
 - **True async repaint** (opt-in) — `theme_damin_async_repaint 1` renders immediately on stale or missing git cache, runs the refresh in a `fish -c` subshell, then triggers `commandline -f repaint` once the fresh data is on disk. Useful for very large repos where porcelain v2 takes meaningful time
 - **Auto-minimal on TRAMP / dumb terminals** — `$TERM=dumb` or `$INSIDE_EMACS` set ⇒ ascii glyphs, no transient, no OSC, no palette mutation, all without nuking user-explicit settings
@@ -126,7 +126,7 @@ See [CHANGELOG.md](CHANGELOG.md). Current version: **1.0.0**.
 
 [MIT](LICENSE) © 2026 Han Damin.
 
-Third-party licenses live in [`LICENSES/`](LICENSES/). The bundled `fish_color_*` palettes and the four `themes/Damin *.theme` files use the [Catppuccin](https://github.com/catppuccin/catppuccin) Mocha, Frappé, Macchiato, and Latte hex codes (MIT, © 2021 Catppuccin). Values verified against the authoritative [`catppuccin/palette`](https://github.com/catppuccin/palette) `palette.json`.
+Third-party licenses live in [`LICENSES/`](LICENSES/). The bundled `fish_color_*` palettes and the four `Damin *.theme` files written by `damin_install_themes` use the [Catppuccin](https://github.com/catppuccin/catppuccin) Mocha, Frappé, Macchiato, and Latte hex codes (MIT, © 2021 Catppuccin). Values verified against the authoritative [`catppuccin/palette`](https://github.com/catppuccin/palette) `palette.json`.
 
 [fisher]: https://github.com/jorgebucaran/fisher
 [omf]:    https://github.com/oh-my-fish/oh-my-fish
