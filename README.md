@@ -71,6 +71,34 @@ set -U theme_damin_show_jobs 0
 
 Full toggle reference, palette, performance numbers, and cache architecture in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Troubleshooting
+
+Something looks stale or wrong after an update? Nuke and reinstall:
+
+```fish
+# 1. clear the on-disk cache
+damin_reset_cache
+# OR — if the function is missing or broken, delete the dir yourself
+rm -rf ~/.cache/damin
+
+# 2. uninstall
+fisher remove miniex/fish-theme-damin   # Fisher
+# OR — OMF: switch off the theme, then delete the dir yourself
+#         (omf remove can leave stale theme files behind)
+omf theme default
+rm -rf ~/.local/share/omf/themes/damin
+
+# 3. reinstall
+fisher install miniex/fish-theme-damin  # Fisher
+# OR
+omf install https://github.com/miniex/fish-theme-damin; and omf theme damin
+
+# 4. apply in the current shell
+exec fish
+```
+
+Still off? Run `damin_doctor` — it reports cache state, font width, and missing dependencies.
+
 ## Contributing
 
 PRs welcome. Install `fish` (`fish_indent`), `shfmt`, `shellcheck`, then run `./tools/format.sh` and `./tools/lint.sh`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commit-prefix convention. Hot-path changes should include before/after `./tools/bench.sh` numbers in the PR description.
