@@ -1,37 +1,60 @@
-set -q theme_damin_show_git; or set -g theme_damin_show_git 1
-set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
-set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
+# tramp / dumb terminals (emacs shell, basic ttys) — adjust defaults before they're set.
+# user-explicit values still win because the regular defaults below use `set -q; or set`.
+set -l _damin_dumb 0
+test "$TERM" = dumb; and set _damin_dumb 1
+set -q INSIDE_EMACS; and test -n "$INSIDE_EMACS"; and set _damin_dumb 1
+if test $_damin_dumb = 1
+    set -q theme_damin_ascii; or set -g theme_damin_ascii 1
+    set -q theme_damin_transient; or set -g theme_damin_transient 0
+    set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 0
+    set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 0
+end
+
+# left-prompt segment toggles
 set -q theme_damin_show_context; or set -g theme_damin_show_context 1
-set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
-set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
-set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
-set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
-set -q theme_damin_show_env; or set -g theme_damin_show_env 1
-set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
-set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
-set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
-set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code 1
-set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
-set -q theme_damin_transient; or set -g theme_damin_transient 1
-set -q theme_damin_async_git; or set -g theme_damin_async_git 1
-set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
-set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
-set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
-set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
-set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
-set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
-set -q theme_damin_ascii; or set -g theme_damin_ascii 0
-set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
 set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
 set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
 set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
 set -q theme_damin_show_azure; or set -g theme_damin_show_azure 0
+set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
+set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
+set -q theme_damin_show_git; or set -g theme_damin_show_git 1
+set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
+set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
+set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
+set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code 1
+
+# right-prompt segment toggles
+set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
+set -q theme_damin_show_env; or set -g theme_damin_show_env 1
+set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
+set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
+set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
+
+# behavior toggles
+set -q theme_damin_status_names; or set -g theme_damin_status_names 0
+set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
+set -q theme_damin_transient; or set -g theme_damin_transient 1
+set -q theme_damin_async_git; or set -g theme_damin_async_git 1
+set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
+set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
+set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
+set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
+set -q theme_damin_ascii; or set -g theme_damin_ascii 0
+
+# numeric thresholds + lengths
+set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
+set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
+set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
+set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_gh_pr_ttl; or set -g theme_damin_gh_pr_ttl 300
+set -q theme_damin_notify_threshold; or set -g theme_damin_notify_threshold 30000
 
 # transient flag is session-global only; drain any universal-scope leak.
 set -qU _damin_in_transient; and set -eU _damin_in_transient
 
+# glyphs (defaults flip when ascii=1; theme_damin_glyph_* overrides win)
 set -l _ds_prompt ✿
 set -l _ds_cwd ❥
 set -l _ds_clean ✧
@@ -65,6 +88,7 @@ set -q theme_damin_glyph_ahead; or set -g theme_damin_glyph_ahead $_ds_ahead
 set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
 set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
 
+# catppuccin mocha palette — only fills unset slots so user customizations win.
 if test "$theme_damin_apply_colors" = 1
     set -q fish_color_normal; or set -U fish_color_normal cdd6f4
     set -q fish_color_command; or set -U fish_color_command 89b4fa
@@ -94,6 +118,7 @@ if test "$theme_damin_apply_colors" = 1
     set -q fish_pager_color_progress; or set -U fish_pager_color_progress 6c7086
 end
 
+# pre-computed color escapes (set_color is a fork; do it once at theme load).
 set -g _damin_c_normal (set_color normal)
 set -g _damin_c_branch (set_color 98ABCC)
 set -g _damin_c_meta (set_color E890B0)
@@ -107,6 +132,9 @@ set -g _damin_c_deco (set_color E890B0)
 set -g _damin_c_sep (set_color E890B0 --dim)
 set -g _damin_c_long (set_color E890B0 -o)
 
+# per-session caches and memos.
+set -g _damin_pwd_key_pwd ""
+set -g _damin_pwd_key_value ""
 set -g _damin_vcs_pwd ""
 set -g _damin_vcs_value ""
 set -g _damin_vcs_dir ""
@@ -114,8 +142,6 @@ set -g _damin_lang_pwd ""
 set -g _damin_lang_value ""
 set -g _damin_battery_value ""
 set -g _damin_battery_at 0
-set -g _damin_pwd_key_pwd ""
-set -g _damin_pwd_key_value ""
 set -g _damin_k8s_mt ""
 set -g _damin_k8s_ctx ""
 set -g _damin_k8s_ns ""
@@ -138,6 +164,9 @@ set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
 test (id -u 2>/dev/null) = 0; and set -g _damin_is_root 1
 
+
+# cache + i/o helpers.
+
 function _damin_pwd_key
     if test "$_damin_pwd_key_pwd" != "$PWD"
         set -g _damin_pwd_key_pwd "$PWD"
@@ -157,6 +186,13 @@ function _damin_read_lines --argument-names file
     end <$file
 end
 
+function _damin_write_cache --argument-names cache_file pwd
+    mkdir -p (path dirname $cache_file) 2>/dev/null
+    set -l tmp "$cache_file.tmp.$fish_pid"
+    printf '%s\n' "$pwd" $argv[3..] >$tmp 2>/dev/null
+    mv $tmp $cache_file 2>/dev/null
+end
+
 function _damin_cache_prune
     test -d $_damin_cache_dir; or return
     set -l marker "$_damin_cache_dir/.last-prune"
@@ -171,7 +207,6 @@ function _damin_cache_prune
     command touch $marker 2>/dev/null
 end
 
-_damin_cache_prune
 
 # osc 7 = cwd advertise (new tabs reuse dir); osc 133 = semantic prompt markers
 # (jump-to-prompt, select-output). unsupporting terminals drop them silently.
@@ -223,6 +258,49 @@ end
 function _damin_osc133_c --on-event fish_preexec
     _damin_osc_enabled; and printf '\e]133;C\a'
 end
+
+
+# vcs detection — shared by context segment + vcs render.
+
+function _damin_detect_vcs
+    if test "$_damin_vcs_pwd" != "$PWD"
+        set -g _damin_vcs_pwd "$PWD"
+        set -l dir $PWD
+        set -l levels 0
+        set -l result ""
+        set -l found ""
+        while test "$dir" != / -a $levels -lt 16
+            if test -d "$dir/.jj"
+                set result jj
+                set found "$dir/.jj"
+                break
+            end
+            if test -d "$dir/.git"
+                set result git
+                set found "$dir/.git"
+                break
+            end
+            if test -f "$dir/.git"
+                set result git
+                set -l gd (command cat "$dir/.git" 2>/dev/null | string match -gr '^gitdir: (.+)')
+                if test -n "$gd"
+                    string match -q '/*' -- $gd[1]; and set found $gd[1]; or set found "$dir/$gd[1]"
+                else
+                    set found "$dir/.git"
+                end
+                break
+            end
+            set dir (path dirname $dir)
+            set levels (math $levels + 1)
+        end
+        set -g _damin_vcs_value $result
+        set -g _damin_vcs_dir $found
+    end
+    echo $_damin_vcs_value
+end
+
+
+# left prompt: context segments (aws / gcp / azure / k8s).
 
 # `[default]` for the default profile, `[profile <name>]` for the rest.
 function _damin_aws_region_for --argument-names profile cfg
@@ -367,87 +445,6 @@ function _damin_azure_render
     echo -n -s $_damin_c_dim "az:$sub " $_damin_c_normal
 end
 
-# silent skip when gh is missing, remote isn't github, or no PR is open.
-function _damin_gh_compute --argument-names branch
-    type -q gh 2>/dev/null; or return
-    set -l remote (command git remote get-url origin 2>/dev/null)
-    string match -q '*github.com*' -- $remote; or return
-    set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
-    test -z "$out"; and return
-    echo $out
-end
-
-function _damin_gh_render --argument-names branch
-    test "$theme_damin_show_gh_pr" = 1; or return
-    test -n "$branch"; or return
-    set -l now (date +%s)
-    set -l ttl $theme_damin_gh_pr_ttl
-    if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
-        set -g _damin_gh_branch "$branch"
-        set -g _damin_gh_at $now
-        set -g _damin_gh_value (_damin_gh_compute "$branch")
-    end
-    test -n "$_damin_gh_value"; or return
-    set -l parts (string split ' ' -- $_damin_gh_value)
-    set -l num $parts[1]
-    set -l draft $parts[2]
-    set -l color $_damin_c_meta
-    test "$draft" = true; and set color $_damin_c_dim
-    echo -n -s " " $color "#$num" $_damin_c_normal
-end
-
-function _damin_detect_vcs
-    if test "$_damin_vcs_pwd" != "$PWD"
-        set -g _damin_vcs_pwd "$PWD"
-        set -l dir $PWD
-        set -l levels 0
-        set -l result ""
-        set -l found ""
-        while test "$dir" != / -a $levels -lt 16
-            if test -d "$dir/.jj"
-                set result jj
-                set found "$dir/.jj"
-                break
-            end
-            if test -d "$dir/.git"
-                set result git
-                set found "$dir/.git"
-                break
-            end
-            if test -f "$dir/.git"
-                set result git
-                set -l gd (command cat "$dir/.git" 2>/dev/null | string match -gr '^gitdir: (.+)')
-                if test -n "$gd"
-                    string match -q '/*' -- $gd[1]; and set found $gd[1]; or set found "$dir/$gd[1]"
-                else
-                    set found "$dir/.git"
-                end
-                break
-            end
-            set dir (path dirname $dir)
-            set levels (math $levels + 1)
-        end
-        set -g _damin_vcs_value $result
-        set -g _damin_vcs_dir $found
-    end
-    echo $_damin_vcs_value
-end
-
-function _damin_context_render
-    test "$theme_damin_show_context" = 1; or return
-    test -n "$SSH_CONNECTION"; and echo -n -s $_damin_c_dim ssh $_damin_c_normal " "
-    test "$_damin_is_root" = 1; and echo -n -s $_damin_c_err root $_damin_c_normal " "
-    if test -f /.dockerenv
-        echo -n -s $_damin_c_dim dkr $_damin_c_normal " "
-    else if test -f /run/.containerenv
-        echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
-    end
-    _damin_aws_render
-    _damin_gcp_render
-    _damin_azure_render
-    _damin_k8s_render
-end
-
 function _damin_k8s_config_path
     if set -q KUBECONFIG; and test -n "$KUBECONFIG"
         echo (string split : -- $KUBECONFIG)[1]
@@ -553,12 +550,23 @@ function _damin_k8s_render
     echo -n -s $_damin_c_dim "$label " $_damin_c_normal
 end
 
-function _damin_jobs_render
-    test "$theme_damin_show_jobs" = 1; or return
-    set -l n (count (jobs -p 2>/dev/null))
-    test $n -gt 0; or return
-    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
+function _damin_context_render
+    test "$theme_damin_show_context" = 1; or return
+    test -n "$SSH_CONNECTION"; and echo -n -s $_damin_c_dim ssh $_damin_c_normal " "
+    test "$_damin_is_root" = 1; and echo -n -s $_damin_c_err root $_damin_c_normal " "
+    if test -f /.dockerenv
+        echo -n -s $_damin_c_dim dkr $_damin_c_normal " "
+    else if test -f /run/.containerenv
+        echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
+    end
+    _damin_aws_render
+    _damin_gcp_render
+    _damin_azure_render
+    _damin_k8s_render
 end
+
+
+# left prompt: vcs — git, jj, and gh PR badge.
 
 function _damin_git_compute
     set -l info (command git rev-parse --is-inside-work-tree --git-dir --git-common-dir 2>/dev/null)
@@ -634,37 +642,17 @@ function _damin_git_compute
     printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$op"
 end
 
-function _damin_write_cache --argument-names cache_file pwd
-    mkdir -p (path dirname $cache_file) 2>/dev/null
-    set -l tmp "$cache_file.tmp.$fish_pid"
-    printf '%s\n' "$pwd" $argv[3..] >$tmp 2>/dev/null
-    mv $tmp $cache_file 2>/dev/null
-end
-
-function _damin_postexec --on-event fish_postexec
-    set -l exit $status
-    _damin_osc_enabled; and printf '\e]133;D;%s\a' $exit
-    set -l cmd "$argv"
-    if string match -qr '\b(git|jj|hub|gh)\b' -- $cmd
-        if not string match -qr '\bgit\s+(status|log|diff|show|blame|ls-(files|tree)|cat-file|rev-(list|parse)|describe|name-rev|shortlog|whatchanged|reflog|grep|ls-remote|help|version)\b' -- $cmd
-            command rm -f (_damin_cache_path git) 2>/dev/null
-        end
-        # state-changing gh pr subcommands invalidate the cached number.
-        if string match -qr '\bgh\s+pr\s+(create|close|reopen|merge|edit)\b' -- $cmd
-            set -g _damin_gh_branch ""
-            set -g _damin_gh_at 0
-        end
+function _damin_git_cache_stale --argument-names cache_file
+    test -n "$_damin_vcs_dir"; or return 1
+    # `path mtime` is a builtin (no fork); missing files are dropped silently so order is preserved.
+    # index/HEAD/logs/HEAD cover working-tree, branch, and ref changes — catches out-of-shell commits.
+    set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
+    test (count $mt) -lt 2; and return 1
+    set -l cm $mt[1]
+    for m in $mt[2..]
+        test $m -gt $cm; and return 0
     end
-    if string match -qr '\b(nvm|fnm|asdf|mise|pyenv|rbenv|rustup|volta|conda)\b' -- $cmd
-        command rm -f (_damin_cache_path lang) 2>/dev/null
-    end
-    # `aws configure` / `gcloud config set` / `az account set` mutate same-second; force refresh.
-    if string match -qr '\b(aws|gcloud|az)\b' -- $cmd
-        set -g _damin_aws_cfg_mt ""
-        set -g _damin_gcp_active_mt ""
-        set -g _damin_gcp_cfg_mt ""
-        set -g _damin_azure_mt ""
-    end
+    return 1
 end
 
 function _damin_git_part
@@ -707,19 +695,6 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     end
 
     _damin_gh_render "$branch"
-end
-
-function _damin_git_cache_stale --argument-names cache_file
-    test -n "$_damin_vcs_dir"; or return 1
-    # `path mtime` is a builtin (no fork); missing files are dropped silently so order is preserved.
-    # index/HEAD/logs/HEAD cover working-tree, branch, and ref changes — catches out-of-shell commits.
-    set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
-    test (count $mt) -lt 2; and return 1
-    set -l cm $mt[1]
-    for m in $mt[2..]
-        test $m -gt $cm; and return 0
-    end
-    return 1
 end
 
 function _damin_git_render
@@ -766,6 +741,35 @@ function _damin_jj_render
     echo -n -s $_damin_c_branch $name $_damin_c_normal " " $_damin_c_deco $theme_damin_glyph_clean $_damin_c_normal
 end
 
+# silent skip when gh is missing, remote isn't github, or no PR is open.
+function _damin_gh_compute --argument-names branch
+    type -q gh 2>/dev/null; or return
+    set -l remote (command git remote get-url origin 2>/dev/null)
+    string match -q '*github.com*' -- $remote; or return
+    set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
+    test -z "$out"; and return
+    echo $out
+end
+
+function _damin_gh_render --argument-names branch
+    test "$theme_damin_show_gh_pr" = 1; or return
+    test -n "$branch"; or return
+    set -l now (date +%s)
+    set -l ttl $theme_damin_gh_pr_ttl
+    if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
+        set -g _damin_gh_branch "$branch"
+        set -g _damin_gh_at $now
+        set -g _damin_gh_value (_damin_gh_compute "$branch")
+    end
+    test -n "$_damin_gh_value"; or return
+    set -l parts (string split ' ' -- $_damin_gh_value)
+    set -l num $parts[1]
+    set -l draft $parts[2]
+    set -l color $_damin_c_meta
+    test "$draft" = true; and set color $_damin_c_dim
+    echo -n -s " " $color "#$num" $_damin_c_normal
+end
+
 function _damin_vcs_render
     test "$theme_damin_show_git" = 1; or return
     set -l vcs (_damin_detect_vcs)
@@ -777,6 +781,37 @@ function _damin_vcs_render
             _damin_git_render
     end
 end
+
+
+# left prompt: tail (jobs + status name).
+
+function _damin_jobs_render
+    test "$theme_damin_show_jobs" = 1; or return
+    set -l n (count (jobs -p 2>/dev/null))
+    test $n -gt 0; or return
+    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
+end
+
+# 126 = no-exec, 127 = not-found; 128+N = signal name via fish_status_to_signal.
+function _damin_status_name --argument-names code
+    switch $code
+        case 126
+            echo noexec
+            return
+        case 127
+            echo not-found
+            return
+    end
+    set -l sig (fish_status_to_signal $code 2>/dev/null)
+    if test -n "$sig" -a "$sig" != "$code"
+        echo $sig
+    else
+        echo $code
+    end
+end
+
+
+# right prompt segments.
 
 function _damin_cwd_pretty
     set -l result (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
@@ -929,6 +964,9 @@ function _damin_duration_render
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $color (_damin_duration_format) $_damin_c_normal
 end
 
+
+# shared rendering for functions/damin_{help,doctor}.fish.
+
 function _damin_help_row --argument-names name default
     set -l val
     set -q $name; and set val $$name
@@ -947,6 +985,50 @@ function _damin_doctor_check
     end
     printf '  %s%s%s %s%s%s\n' $col $sym (set_color normal) $argv[1] (set_color --dim) " $argv[3..]"(set_color normal)
 end
+
+
+# fish_postexec handler — osc 133;D, long-command notification, cache invalidation.
+
+function _damin_postexec --on-event fish_postexec
+    set -l exit $status
+    _damin_osc_enabled; and printf '\e]133;D;%s\a' $exit
+    set -l cmd "$argv"
+
+    if test "$theme_damin_notify_long_command" = 1 -a -n "$cmd"
+        if test $CMD_DURATION -gt $theme_damin_notify_threshold
+            set -l short (string sub -l 60 -- $cmd)
+            set -l secs (math --scale=1 $CMD_DURATION/1000)
+            # osc 9 = universal notification (iTerm2, Konsole, Windows Terminal, Final Term, ConEmu).
+            printf '\e]9;%s (%ss, exit %s)\a' $short $secs $exit
+            # also fire notify-send in background when available so the alert survives focus changes.
+            type -q notify-send; and command notify-send -t 5000 "fish: $short" "$secs s · exit $exit" &
+        end
+    end
+
+    if string match -qr '\b(git|jj|hub|gh)\b' -- $cmd
+        if not string match -qr '\bgit\s+(status|log|diff|show|blame|ls-(files|tree)|cat-file|rev-(list|parse)|describe|name-rev|shortlog|whatchanged|reflog|grep|ls-remote|help|version)\b' -- $cmd
+            command rm -f (_damin_cache_path git) 2>/dev/null
+        end
+        # state-changing gh pr subcommands invalidate the cached number.
+        if string match -qr '\bgh\s+pr\s+(create|close|reopen|merge|edit)\b' -- $cmd
+            set -g _damin_gh_branch ""
+            set -g _damin_gh_at 0
+        end
+    end
+    if string match -qr '\b(nvm|fnm|asdf|mise|pyenv|rbenv|rustup|volta|conda)\b' -- $cmd
+        command rm -f (_damin_cache_path lang) 2>/dev/null
+    end
+    # `aws configure` / `gcloud config set` / `az account set` mutate same-second; force refresh.
+    if string match -qr '\b(aws|gcloud|az)\b' -- $cmd
+        set -g _damin_aws_cfg_mt ""
+        set -g _damin_gcp_active_mt ""
+        set -g _damin_gcp_cfg_mt ""
+        set -g _damin_azure_mt ""
+    end
+end
+
+
+# transient prompt — collapse past prompts to a single florette after enter.
 
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
@@ -968,14 +1050,14 @@ function _damin_install_transient_bindings
     end
 end
 
-_damin_install_transient_bindings
-
 # `fish_{default,vi}_key_bindings` wipe all bindings; re-install after the swap.
 function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
     _damin_install_transient_bindings
 end
 
+
 # defined in conf.d/ (not functions/) so fisher doesn't copy a stub that omf would flag as conflicting.
+
 function fish_prompt
     set -l last_status $status
 
@@ -1002,7 +1084,11 @@ function fish_prompt
         echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
     else
         echo -n -s " " $_damin_c_err "$theme_damin_glyph_prompt " $_damin_c_normal
-        test "$theme_damin_show_exit_code" = 1; and echo -n -s $_damin_c_exit "$last_status " $_damin_c_normal
+        if test "$theme_damin_show_exit_code" = 1
+            set -l label $last_status
+            test "$theme_damin_status_names" = 1; and set label (_damin_status_name $last_status)
+            echo -n -s $_damin_c_exit "$label " $_damin_c_normal
+        end
     end
 
     _damin_osc133_b
@@ -1021,3 +1107,9 @@ function fish_right_prompt
     _damin_battery_render
     _damin_duration_render
 end
+
+
+# init: bare calls run after every function is defined.
+
+_damin_cache_prune
+_damin_install_transient_bindings

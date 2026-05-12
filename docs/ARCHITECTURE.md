@@ -41,7 +41,7 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
    - **jj** — bookmark name (or change-id short). No status counts (yet).
 3. **Background-job count** — `&N` when `count (jobs -p)` > 0.
 4. **Florette `✿`** — bold pink on success, bold red on the previous command's non-zero exit. Trailing space holds the cursor.
-5. **Exit code** — dim red `123` right after the florette on failure.
+5. **Exit code** — dim red `123` right after the florette on failure. With `theme_damin_status_names=1`, `126` → `noexec`, `127` → `not-found`, and `128+N` → signal names (`SIGINT` / `SIGKILL` / `SIGTERM` …) via fish's `fish_status_to_signal` builtin; the raw number stays for codes without a known mapping.
 
 ### Right prompt segments
 
@@ -87,6 +87,26 @@ Unsupported terminals are required by the OSC spec to silently drop unrecognized
 
 In transient mode, the `A`/`B` pair still wraps the collapsed stub so navigation features keep working across the scrollback.
 
+### Long-command notification
+
+`_damin_postexec` fires when a command's `$CMD_DURATION` exceeds `theme_damin_notify_threshold` (default 30 000 ms). Two channels:
+
+- **OSC 9** (`\e]9;<msg>\a`) — the closest thing to a universal terminal notification API. Picked up by iTerm2, Konsole, Windows Terminal, Final Term, ConEmu, Warp, and others. Unsupporting terminals print nothing.
+- **`notify-send`** — fired in the background (`&`) when the binary is on `$PATH`. Survives focus loss on Linux and BSD desktops.
+
+Message includes the command (truncated to 60 chars), elapsed seconds, and exit code. Off by default (`theme_damin_notify_long_command 0`) — noisy if you frequently run commands that legitimately take longer than the threshold.
+
+### TRAMP / dumb terminal auto-detect
+
+Theme load checks `$TERM = dumb` or `$INSIDE_EMACS` set. If either is true, the dumb block runs *before* the regular default block and sets four toggles to their minimal values *only if the user hasn't explicitly set them*:
+
+- `theme_damin_ascii = 1` (no dingbats)
+- `theme_damin_transient = 0` (no terminal repaints — TRAMP/dumb terminals can't render them)
+- `theme_damin_osc_integration = 0` (escape sequences leak as literal text)
+- `theme_damin_apply_colors = 0` (no palette mutation)
+
+User-explicit `set -U theme_damin_*` values always win because the dumb block uses the same `set -q; or set` idiom. `damin_doctor` reports which trigger fired.
+
 ## Configuration
 
 Every toggle is a fish universal variable (`set -U …` persists across sessions, `set -g …` is session-only). Defaults are applied at theme load only when the variable is unset. Run `damin_help` to see all current values.
@@ -113,6 +133,8 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_show_gcp`               | `0`     | `gcp:<project>` context indicator (opt-in)                        |
 | `theme_damin_show_azure`             | `0`     | `az:<subscription>` context indicator (opt-in)                    |
 | `theme_damin_show_gh_pr`             | `0`     | `#<num>` for the current branch's open PR via `gh` (opt-in)       |
+| `theme_damin_status_names`           | `0`     | `SIGINT` / `not-found` instead of raw `130` / `127` next to florette |
+| `theme_damin_notify_long_command`    | `0`     | Emit OSC 9 + `notify-send` when CMD_DURATION > threshold          |
 | `theme_damin_git_counts`             | `1`     | Show counts next to git indicators (`?3 ✓5` vs `? ✓`)             |
 | `theme_damin_transient`              | `1`     | Collapse past prompts to `✿` after Enter                          |
 | `theme_damin_async_git`              | `1`     | Cache git status + postexec invalidation. `0` = pure sync         |
@@ -123,6 +145,7 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 | `theme_damin_long_command_threshold` | `3000`  | Duration (ms) above which the right-prompt time renders bold      |
 | `theme_damin_battery_threshold`      | `30`    | Show battery only when `%` is at or below this number             |
 | `theme_damin_gh_pr_ttl`              | `300`   | Seconds the cached GitHub PR result is reused before re-fetching  |
+| `theme_damin_notify_threshold`       | `30000` | Duration (ms) above which long-command notification fires         |
 | `theme_damin_ascii`                  | `0`     | Swap every glyph default to ASCII for fonts missing dingbats      |
 
 ### Glyph overrides

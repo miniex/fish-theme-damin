@@ -46,7 +46,7 @@ function damin_doctor
     end
 
     set -l missing
-    for cmd in damin_help damin_reset_cache
+    for cmd in damin_config damin_help damin_reset_cache
         type -q $cmd; or set missing $missing $cmd
     end
     if test (count $missing) -gt 0
@@ -68,6 +68,15 @@ function damin_doctor
         _damin_doctor_check "ascii glyph mode" ok "(theme_damin_ascii=1)"
     else
         _damin_doctor_check "ascii glyph mode" ok "off — set -U theme_damin_ascii 1 if any glyph below shows as '?'"
+    end
+
+    set -l dumb_reason
+    test "$TERM" = dumb; and set dumb_reason "TERM=dumb"
+    set -q INSIDE_EMACS; and test -n "$INSIDE_EMACS"; and set dumb_reason "INSIDE_EMACS=$INSIDE_EMACS"
+    if test -n "$dumb_reason"
+        _damin_doctor_check "dumb terminal" ok "auto-minimal applied ($dumb_reason)"
+    else
+        _damin_doctor_check "dumb terminal" ok "no — full prompt active"
     end
 
     if test "$theme_damin_transient" = 1

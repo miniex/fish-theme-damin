@@ -50,15 +50,20 @@ Requires **fish ≥ 3.7** (for the `path mtime` builtin). Works with **Fisher** 
 - **Cloud context** — opt-in `aws:<profile>@<region>` (env + `~/.aws/config`), `gcp:<project>` (`~/.config/gcloud/`), `az:<subscription>` (env + `~/.azure/azureProfile.json`). Pure-fish, mtime-cached, no CLI forks
 - **Language + env** — `node:22`, `rust:1.78`, `py:3.12`, etc. with active `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)` display — direnv shows the project dir, `nix:` shows the flake's `name` attr
 - **Terminal-native shell integration** — OSC 7 (advertises cwd so new tabs/splits open in the same directory) + OSC 133 (semantic prompt markers for "jump to prompt" / "select command output" in Ghostty, iTerm2, Kitty, WezTerm, VS Code, Windows Terminal). Unsupporting terminals silently ignore; opt out via `theme_damin_osc_integration 0`
+- **Long-command notification** — opt-in desktop alert (OSC 9 + `notify-send`) when a command runs longer than `theme_damin_notify_threshold` (default 30 s). Walk away, the prompt taps you back
+- **Named exit codes** — opt-in `SIGINT` / `not-found` / `SIGKILL` instead of bare `130` / `127` / `137` (via fish's `fish_status_to_signal`); cuts the "what does 130 mean again" tax
+- **Auto-minimal on TRAMP / dumb terminals** — `$TERM=dumb` or `$INSIDE_EMACS` set ⇒ ascii glyphs, no transient, no OSC, no palette mutation, all without nuking user-explicit settings
 - **Transient prompt** — past prompts collapse to `✿` after Enter
 - **Catppuccin Mocha** `fish_color_*` palette applied on theme activation (opt-out via `theme_damin_apply_colors 0`)
 - **ASCII fallback** — if your terminal font is missing dingbats (`⇡ ⇣ ❥ ✧`), `set -U theme_damin_ascii 1` swaps every glyph for safe ASCII; or override one at a time via `theme_damin_glyph_*`
-- **25+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
+- **Interactive setup** — `damin_config` wizard walks you through the high-value toggles. `damin_help` is the full reference; the wizard is the onramp
+- **30+ toggles** via `set -U theme_damin_*` — run `damin_help` to discover
 
 ## Commands
 
 | Command             | Purpose                                           |
 |---------------------|---------------------------------------------------|
+| `damin_config`      | Interactive setup wizard — opinionated walkthrough of the high-value toggles |
 | `damin_help`        | List every toggle, current value, and default     |
 | `damin_doctor`      | Environment, install, font-width, and prompt-source diagnostic |
 | `damin_reset_cache` | Wipe the on-disk cache when something looks wrong |

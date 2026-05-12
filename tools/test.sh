@@ -552,6 +552,75 @@ got=$(fish -c "
 expect "osc: path encoding preserves slashes" "$got" "/usr/local/bin"
 
 echo
+echo "=== damin status name + dumb detect tests ==="
+echo
+
+run_status() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        _damin_status_name $1
+        true
+    " 2>/dev/null
+}
+
+got=$(run_status 126)
+expect "status: 126 = noexec" "$got" "noexec"
+
+got=$(run_status 127)
+expect "status: 127 = not-found" "$got" "not-found"
+
+got=$(run_status 130)
+expect "status: 130 = SIGINT" "$got" "SIGINT"
+
+got=$(run_status 137)
+expect "status: 137 = SIGKILL" "$got" "SIGKILL"
+
+got=$(run_status 143)
+expect "status: 143 = SIGTERM" "$got" "SIGTERM"
+
+got=$(run_status 1)
+expect "status: 1 stays raw (no mapping)" "$got" "1"
+
+got=$(run_status 42)
+expect "status: 42 stays raw (no mapping)" "$got" "42"
+
+# temp HOME isolates the test fish from user-set universals (omf-installed damin etc.).
+run_dumb() {
+    tmphome=$(mktemp -d -t damin-test-home.XXXXXX)
+    HOME="$tmphome" XDG_CONFIG_HOME="$tmphome/.config" XDG_DATA_HOME="$tmphome/.local/share" \
+        fish --no-config -c "$1" 2>/dev/null
+    rm -rf "$tmphome"
+}
+
+got=$(run_dumb "
+    set -gx TERM dumb
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_ascii \$theme_damin_transient \$theme_damin_osc_integration \$theme_damin_apply_colors
+    true
+")
+expect "dumb: TERM=dumb auto-minimal" "$got" "1 0 0 0"
+
+got=$(run_dumb "
+    set -gx INSIDE_EMACS 'tramp,29.1'
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_ascii \$theme_damin_transient \$theme_damin_osc_integration \$theme_damin_apply_colors
+    true
+")
+expect "dumb: INSIDE_EMACS auto-minimal" "$got" "1 0 0 0"
+
+got=$(run_dumb "
+    set -gx TERM dumb
+    set -g theme_damin_ascii 0
+    set -g theme_damin_transient 1
+    set -g theme_damin_osc_integration 1
+    set -g theme_damin_apply_colors 1
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_ascii \$theme_damin_transient \$theme_damin_osc_integration \$theme_damin_apply_colors
+    true
+")
+expect "dumb: explicit user values override auto-minimal" "$got" "0 1 1 1"
+
+echo
 TOTAL=$((PASS + FAIL))
 if [ $FAIL -gt 0 ]; then
     printf '%d/%d failed:%s\n' "$FAIL" "$TOTAL" "$FAILED_NAMES"

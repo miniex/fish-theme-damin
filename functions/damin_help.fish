@@ -24,6 +24,8 @@ function damin_help
     _damin_help_row theme_damin_show_gcp 0
     _damin_help_row theme_damin_show_azure 0
     _damin_help_row theme_damin_show_gh_pr 0
+    _damin_help_row theme_damin_status_names 0
+    _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_transient 1
     _damin_help_row theme_damin_async_git 1
@@ -38,6 +40,7 @@ function damin_help
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
     _damin_help_row theme_damin_gh_pr_ttl 300
+    _damin_help_row theme_damin_notify_threshold 30000
     echo
     echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
     if test "$theme_damin_ascii" = 1
@@ -65,6 +68,7 @@ function damin_help
     end
     echo
     echo "  commands"
+    printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard"
     printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
     printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
