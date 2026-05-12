@@ -332,7 +332,6 @@ set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
 test (id -u 2>/dev/null) = 0; and set -g _damin_is_root 1
 
-
 function _damin_pwd_key
     if test "$_damin_pwd_key_pwd" != "$PWD"
         set -g _damin_pwd_key_pwd "$PWD"
@@ -372,7 +371,6 @@ function _damin_cache_prune
     command find $_damin_cache_dir -type f -mtime +7 -delete 2>/dev/null
     command touch $marker 2>/dev/null
 end
-
 
 # osc 7 advertises cwd; osc 133 marks prompt regions. unknown OSC = ignored.
 function _damin_osc_enabled
@@ -423,7 +421,6 @@ function _damin_osc133_c --on-event fish_preexec
     _damin_osc_enabled; and printf '\e]133;C\a'
 end
 
-
 function _damin_detect_vcs
     if test "$_damin_vcs_pwd" != "$PWD"
         set -g _damin_vcs_pwd "$PWD"
@@ -463,7 +460,6 @@ function _damin_detect_vcs
     end
     echo $_damin_vcs_value
 end
-
 
 # `[default]` for the default profile, `[profile <name>]` for the rest.
 function _damin_aws_region_for --argument-names profile cfg
@@ -766,7 +762,6 @@ function _damin_context_render
     _damin_k8s_render
 end
 
-
 function _damin_git_compute
     set -l info (command git rev-parse --is-inside-work-tree --git-dir --git-common-dir 2>/dev/null)
     test "$info[1]" = true; or return
@@ -1031,7 +1026,6 @@ function _damin_vcs_render
     end
 end
 
-
 function _damin_jobs_render
     test "$theme_damin_show_jobs" = 1; or return
     set -l n (count (jobs -p 2>/dev/null))
@@ -1131,7 +1125,6 @@ function _damin_exit_label --argument-names code
             end
     end
 end
-
 
 function _damin_cwd_pretty
     set -l result (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
@@ -1494,7 +1487,6 @@ function _damin_duration_render
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $color (_damin_duration_format) $_damin_c_normal
 end
 
-
 function _damin_help_row --argument-names name default
     set -l val
     set -q $name; and set val $$name
@@ -1513,7 +1505,6 @@ function _damin_doctor_check
     end
     printf '  %s%s%s %s%s%s\n' $col $sym (set_color normal) $argv[1] (set_color --dim) " $argv[3..]"(set_color normal)
 end
-
 
 function _damin_postexec --on-event fish_postexec
     set -l exit $status
@@ -1562,7 +1553,6 @@ function _damin_postexec --on-event fish_postexec
     end
 end
 
-
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
         # skip incomplete buffers (status 2) — enter inserts a newline, no execute.
@@ -1587,7 +1577,6 @@ end
 function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
     _damin_install_transient_bindings
 end
-
 
 # defined in conf.d/ (not functions/) so fisher doesn't copy a stub that omf would flag as conflicting.
 
@@ -1641,7 +1630,6 @@ function fish_right_prompt
     _damin_duration_render
     _damin_extra_segments_render right
 end
-
 
 # one bg fork warms every prefill — fish's `&` forks the current shell, no reload.
 function _damin_warmup

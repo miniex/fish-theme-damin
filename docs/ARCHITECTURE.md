@@ -21,6 +21,10 @@ fish_right_prompt.fish     — omf shim: sources conf.d/damin.fish
 key_bindings.fish          — omf shim: sources conf.d/damin.fish
 fish_title.fish            — empty
 
+hooks/install.fish         — omf install hook: drops stale fish_prompt.fish symlink
+                              from a prior `omf remove` so reinstall doesn't trip
+                              OMF's "Conflicting prompt setting" check
+
 tools/format.sh            — fish_indent + shfmt
 tools/lint.sh              — fish_indent --check + fish -n + shfmt --diff + shellcheck
 tools/bench.sh             — 100-iteration hot-loop bench across scenarios
@@ -34,6 +38,8 @@ tools/test.sh              — fixture-repo assertions for _damin_git_compute
 **Oh My Fish** clones the theme to `~/.local/share/omf/themes/fish-theme-damin/` and adds it to `$fish_function_path`. The root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that `source conf.d/damin.fish`; the first `fish_prompt` call autoloads the shim, which loads conf.d and defines both prompt functions.
 
 `fish_prompt` / `fish_right_prompt` live in `conf.d/damin.fish`, **not** in `functions/`. Under `functions/`, fisher would copy them to `~/.config/fish/functions/` — which OMF treats as a "Conflicting prompt setting" and refuses to activate. Keeping them in conf.d makes Fisher ↔ OMF transitions conflict-free. `damin_help` / `damin_doctor` / `damin_reset_cache` stay in `functions/` since OMF doesn't gate on those names.
+
+`hooks/install.fish` runs on `omf install` (OMF executes it from the just-installed theme dir). It drops `~/.config/fish/functions/fish_prompt.fish` if that symlink points into this theme dir — the orphan that `omf remove` leaves behind, which would otherwise trip OMF's prompt-conflict check on the next `omf theme <name>`.
 
 ## Features
 

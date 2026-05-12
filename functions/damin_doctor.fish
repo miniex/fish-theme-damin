@@ -17,12 +17,21 @@ function damin_doctor
         _damin_doctor_check "plugin manager" fail "(neither omf nor fisher detected)"
     end
 
+    # accept any installed name (omf install → fish-theme-damin, local symlink → anything).
+    set -l omf_root $OMF_PATH
+    test -z "$omf_root"; and set omf_root $HOME/.local/share/omf
     if functions -q omf
         set -l theme (command cat ~/.config/omf/theme 2>/dev/null)
-        if test "$theme" = fish-theme-damin
+        set -l damin_names
+        for d in $omf_root/themes/*/
+            test -f $d/conf.d/damin.fish; and set damin_names $damin_names (path basename $d)
+        end
+        if contains -- $theme $damin_names
             _damin_doctor_check "omf active theme" ok "($theme)"
+        else if test (count $damin_names) -gt 0
+            _damin_doctor_check "omf active theme" fail "(current: $theme — run: omf theme $damin_names[1])"
         else
-            _damin_doctor_check "omf active theme" fail "(current: $theme — run: omf theme fish-theme-damin)"
+            _damin_doctor_check "omf active theme" fail "(current: $theme — no damin theme found under $omf_root/themes/)"
         end
     end
 
@@ -33,16 +42,26 @@ function damin_doctor
         _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
     end
 
-    # damin defines prompts in conf.d/, so nothing should land in ~/.config/fish/functions/.
-    # catch leftovers (old damin, manual installs, other plugins) that block omf activation.
-    set -l strays
-    for f in fish_prompt.fish fish_right_prompt.fish
-        test -e ~/.config/fish/functions/$f; and set strays $strays $f
-    end
-    if test (count $strays) -gt 0
-        _damin_doctor_check "no stray prompt files" fail "(found in ~/.config/fish/functions/: $strays — damin doesn't ship these; delete to unblock OMF theme switching)"
+    # only OMF should leave a fish_prompt.fish here, as a symlink to themes/<active>/.
+    # anything else trips OMF's "Conflicting prompt setting" check.
+    set -l user_fp ~/.config/fish/functions/fish_prompt.fish
+    if not test -e $user_fp -o -L $user_fp
+        _damin_doctor_check "fish_prompt symlink" ok "(none — fisher-style install)"
+    else if functions -q omf
+        set -l theme (command cat ~/.config/omf/theme 2>/dev/null)
+        set -l want $omf_root/themes/$theme/fish_prompt.fish
+        if test -L $user_fp; and contains -- (readlink $user_fp) $want
+            _damin_doctor_check "fish_prompt symlink" ok "(omf → themes/$theme)"
+        else
+            _damin_doctor_check "fish_prompt symlink" fail "(target ≠ themes/$theme — fix: rm $user_fp; then omf theme $theme)"
+        end
     else
-        _damin_doctor_check "no stray prompt files" ok
+        _damin_doctor_check "fish_prompt symlink" fail "($user_fp exists without omf — delete it: rm $user_fp)"
+    end
+    if test -e ~/.config/fish/functions/fish_right_prompt.fish
+        _damin_doctor_check "no stray fish_right_prompt.fish" fail "(damin doesn't ship this — delete to avoid override)"
+    else
+        _damin_doctor_check "no stray fish_right_prompt.fish" ok
     end
 
     set -l missing

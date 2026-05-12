@@ -99,22 +99,20 @@ damin_reset_cache
 rm -rf ~/.cache/damin
 
 # 2. uninstall
-fisher remove miniex/fish-theme-damin   # Fisher
-# OR — OMF: switch off the theme, then delete the dir yourself
-#         (omf remove can leave stale theme files behind)
-omf theme default
-rm -rf ~/.local/share/omf/themes/fish-theme-damin
+fisher remove miniex/fish-theme-damin                                       # Fisher
+omf theme default; and rm -rf ~/.local/share/omf/themes/fish-theme-damin    # OMF
 
 # 3. reinstall
-fisher install miniex/fish-theme-damin  # Fisher
-# OR
-omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme-damin
+fisher install miniex/fish-theme-damin                                              # Fisher
+omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme-damin  # OMF
 
 # 4. apply in the current shell
 exec fish
 ```
 
-Still off? Run `damin_doctor` — it reports cache state, font width, where `fish_prompt` is loaded from, and any stray prompt files in `~/.config/fish/functions/`. The prompt definitions live in `conf.d/damin.fish`, not in `functions/`, so Fisher never copies a `fish_prompt.fish` into your autoload dir and switching between Fisher / OMF doesn't leave a `Conflicting prompt setting` behind.
+Still off? Run `damin_doctor` — it reports cache state, font width, where `fish_prompt` is loaded from, and whether the `~/.config/fish/functions/fish_prompt.fish` symlink matches the OMF active theme. Prompt definitions live in `conf.d/damin.fish`, not `functions/`, so Fisher doesn't deposit a stub into the autoload dir.
+
+If you hit `Conflicting prompt setting` after `omf remove` → `omf install`, OMF left a stale symlink pointing into the now-removed theme dir. The bundled `hooks/install.fish` cleans this up automatically on `omf install`; if you're on an older install, drop it manually: `rm ~/.config/fish/functions/fish_prompt.fish; omf theme fish-theme-damin`.
 
 ## Contributing
 
