@@ -55,14 +55,18 @@ The split keeps helpers/state in `conf.d/` and user-callable functions (`fish_pr
 
 ### Transient prompt
 
-`key_bindings.fish` binds `\r` / `\n` to `_damin_transient_enter` which:
+`_damin_install_transient_bindings` binds `\r` / `\n` to `_damin_transient_enter` across all six fish modes (`default`, `insert`, `visual`, `replace`, `replace_one`, `paste`) — a single-mode bind would leave vi `insert` (where editing happens) inert. An `--on-variable fish_key_bindings` hook re-installs after `fish_{default,vi}_key_bindings`, which wipe all bindings on swap.
 
-1. Sets `_damin_in_transient`
-2. Calls `commandline -f repaint` — fish re-runs `fish_prompt` / `fish_right_prompt` which see the flag and emit a single `✿` (left) / nothing (right). `fish_right_prompt` also clears the flag on the way out.
-3. Calls `commandline -f execute` — the command runs, output flows below the now-minimal past prompt.
-4. The next prompt cycle sees no flag, renders fully.
+`_damin_transient_enter`:
 
-The flag is cleared in `fish_right_prompt`'s render so empty-Enter still falls back cleanly.
+1. If `commandline --is-valid` returns 2 (incomplete buffer: open quote, line continuation), skips to step 4 — Enter inserts a newline rather than executing, so collapsing the prompt mid-edit would look corrupted.
+2. Sets `_damin_in_transient=1` at global scope (session only).
+3. `commandline -f repaint` — `fish_prompt` / `fish_right_prompt` see the flag and emit `✿` (left) / blank (right).
+4. `commandline -f execute`.
+
+`fish_prompt` owns the flag as a two-phase state machine: `1` → render stub and advance to `2`; `2` → `set -eg` clear and render full. `fish_right_prompt` only reads the flag, so a user-overridden right prompt can't strand it — trade-off is one tick of the user's right prompt rendering alongside our stub.
+
+`conf.d/damin.fish` runs `set -eU _damin_in_transient` at theme load to drain a universal-scope leak (which would otherwise survive `set -eg` and pin every prompt to the stub). `damin_doctor` checks the same leak plus binding presence in `default` / `insert`.
 
 ## Configuration
 

@@ -69,6 +69,28 @@ function damin_doctor
         _damin_doctor_check "ascii glyph mode" ok "off — set -U theme_damin_ascii 1 if any glyph below shows as '?'"
     end
 
+    if test "$theme_damin_transient" = 1
+        set -l missing_modes
+        for mode in default insert
+            if not bind -M $mode \r 2>/dev/null | string match -q '*_damin_transient_enter*'
+                set missing_modes $missing_modes $mode
+            end
+        end
+        if test (count $missing_modes) -gt 0
+            _damin_doctor_check "transient binding" fail "(Enter not bound in modes: $missing_modes — another plugin (fzf, atuin, …) likely rebound \r after damin loaded; rebind with bind -M <mode> \\r _damin_transient_enter)"
+        else
+            _damin_doctor_check "transient binding" ok
+        end
+
+        if set -qU _damin_in_transient
+            _damin_doctor_check "transient state clean" fail "(_damin_in_transient leaked to universal scope — run: set -eU _damin_in_transient)"
+        else
+            _damin_doctor_check "transient state clean" ok
+        end
+    else
+        _damin_doctor_check "transient prompt" ok "(disabled via theme_damin_transient=0)"
+    end
+
     echo
     echo "  font width sanity — each glyph should sit immediately before the |:"
     for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ ?

@@ -22,6 +22,9 @@ set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
 
+# transient flag is session-global only; drain any universal-scope leak.
+set -qU _damin_in_transient; and set -eU _damin_in_transient
+
 set -l _ds_prompt ✿
 set -l _ds_cwd ❥
 set -l _ds_clean ✧
@@ -688,11 +691,27 @@ end
 
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
-        set -g _damin_in_transient 1
-        commandline -f repaint
+        # skip incomplete buffers (status 2) — Enter inserts a newline, no execute.
+        commandline --is-valid 2>/dev/null
+        if test $status -ne 2
+            set -g _damin_in_transient 1
+            commandline -f repaint
+        end
     end
     commandline -f execute
 end
 
-bind \r _damin_transient_enter
-bind \n _damin_transient_enter
+# bind in every mode so vi's `insert` (where editing happens) is covered too.
+function _damin_install_transient_bindings
+    for mode in default insert visual replace replace_one paste
+        bind -M $mode \r _damin_transient_enter 2>/dev/null
+        bind -M $mode \n _damin_transient_enter 2>/dev/null
+    end
+end
+
+_damin_install_transient_bindings
+
+# fish_{default,vi}_key_bindings wipe all bindings; re-install after the swap.
+function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
+    _damin_install_transient_bindings
+end

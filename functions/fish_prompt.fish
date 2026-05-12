@@ -1,9 +1,15 @@
 function fish_prompt
     set -l last_status $status
 
-    if set -q _damin_in_transient
-        echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
-        return
+    # 1 = render stub then advance, 2 = clear and render full. owning the clear
+    # here keeps lifecycle independent of fish_right_prompt (user-overridable).
+    switch "$_damin_in_transient"
+        case 1
+            echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
+            set -g _damin_in_transient 2
+            return
+        case 2
+            set -eg _damin_in_transient
     end
 
     _damin_context_render

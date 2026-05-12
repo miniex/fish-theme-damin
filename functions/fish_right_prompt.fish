@@ -1,6 +1,6 @@
 function fish_right_prompt
+    # fish_prompt owns the flag lifecycle; render blank while it's set.
     if set -q _damin_in_transient
-        set -e _damin_in_transient
         return
     end
 
