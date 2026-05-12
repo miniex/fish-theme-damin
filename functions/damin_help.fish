@@ -79,10 +79,12 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch catppuccin flavor (mocha|frappe|macchiato|latte)"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "symlink .theme files for fish_config theme show"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo
     echo "  set:        $c_dim""set -U theme_damin_show_jobs 0$c_norm"
     echo "  unset:      $c_dim""set -e theme_damin_show_jobs$c_norm"
+    echo "  hooks:      $c_dim""set -U theme_damin_extra_left  <fn1> <fn2>$c_norm  (defines damin_segment_<fn>)"
+    echo "              $c_dim""set -U theme_damin_extra_right <fn>$c_norm"
     echo
 end
