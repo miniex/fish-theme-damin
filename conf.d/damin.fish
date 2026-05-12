@@ -1580,6 +1580,11 @@ end
 
 # defined in conf.d/ (not functions/) so fisher doesn't copy a stub that omf would flag as conflicting.
 
+# fish renders fish_mode_prompt (default `[I] ` etc.) before fish_prompt; damin already
+# renders its own vi badge inline, so the default doubles up — blank it out.
+function fish_mode_prompt
+end
+
 function fish_prompt
     set -l last_status $status
 
