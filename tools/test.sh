@@ -584,6 +584,42 @@ expect "status: 1 stays raw (no mapping)" "$got" "1"
 got=$(run_status 42)
 expect "status: 42 stays raw (no mapping)" "$got" "42"
 
+run_exit_label() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        set -g theme_damin_show_exit_code $1
+        _damin_exit_label $2
+        true
+    " 2>/dev/null
+}
+
+got=$(run_exit_label off 130)
+expect "exit label: off → empty" "$got" ""
+
+got=$(run_exit_label 0 127)
+expect "exit label: 0 → empty (legacy)" "$got" ""
+
+got=$(run_exit_label hidden 130)
+expect "exit label: hidden → empty" "$got" ""
+
+got=$(run_exit_label 1 127)
+expect "exit label: 1 → 127 (legacy)" "$got" "127"
+
+got=$(run_exit_label number 130)
+expect "exit label: number → 130" "$got" "130"
+
+got=$(run_exit_label name 130)
+expect "exit label: name → SIGINT" "$got" "SIGINT"
+
+got=$(run_exit_label name 127)
+expect "exit label: name → not-found" "$got" "not-found"
+
+got=$(run_exit_label both 130)
+expect "exit label: both → 130 SIGINT" "$got" "130 SIGINT"
+
+got=$(run_exit_label both 42)
+expect "exit label: both → 42 (unmapped stays raw)" "$got" "42"
+
 # temp HOME isolates the test fish from user-set universals (omf-installed damin etc.).
 run_dumb() {
     tmphome=$(mktemp -d -t damin-test-home.XXXXXX)
@@ -619,6 +655,38 @@ got=$(run_dumb "
     true
 ")
 expect "dumb: explicit user values override auto-minimal" "$got" "0 1 1 1"
+
+got=$(run_dumb "
+    set -g theme_damin_palette mocha
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: mocha → text=cdd6f4" "$got" "cdd6f4"
+
+got=$(run_dumb "
+    set -g theme_damin_palette frappe
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: frappe → text=c6d0f5" "$got" "c6d0f5"
+
+got=$(run_dumb "
+    set -g theme_damin_palette macchiato
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: macchiato → text=cad3f5" "$got" "cad3f5"
+
+got=$(run_dumb "
+    set -g theme_damin_palette latte
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: latte → text=4c4f69" "$got" "4c4f69"
 
 echo
 TOTAL=$((PASS + FAIL))

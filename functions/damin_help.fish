@@ -18,21 +18,25 @@ function damin_help
     _damin_help_row theme_damin_show_lang 1
     _damin_help_row theme_damin_show_battery 0
     _damin_help_row theme_damin_show_duration 1
-    _damin_help_row theme_damin_show_exit_code 1
+    _damin_help_row theme_damin_show_vi_mode 1
     _damin_help_row theme_damin_show_aws 0
     _damin_help_row theme_damin_show_aws_region 1
     _damin_help_row theme_damin_show_gcp 0
     _damin_help_row theme_damin_show_azure 0
     _damin_help_row theme_damin_show_gh_pr 0
-    _damin_help_row theme_damin_status_names 0
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_transient 1
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
+    _damin_help_row theme_damin_async_warmup 1
     _damin_help_row theme_damin_osc_integration 1
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0
+    echo
+    echo "  enums"
+    _damin_help_row theme_damin_show_exit_code number
+    _damin_help_row theme_damin_palette mocha
     echo
     echo "  numeric"
     _damin_help_row theme_damin_cwd_keep 3
@@ -68,10 +72,12 @@ function damin_help
     end
     echo
     echo "  commands"
-    printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard"
-    printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
-    printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
-    printf '    %s%-18s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch catppuccin flavor (mocha|frappe|macchiato|latte)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "symlink .theme files for fish_config theme show"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo
     echo "  set:        $c_dim""set -U theme_damin_show_jobs 0$c_norm"
     echo "  unset:      $c_dim""set -e theme_damin_show_jobs$c_norm"

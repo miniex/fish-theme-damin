@@ -23,7 +23,9 @@ set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
 set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
-set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code 1
+# show_exit_code: 0|off|hidden, 1|number (default), name, both.
+set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code number
+set -q theme_damin_show_vi_mode; or set -g theme_damin_show_vi_mode 1
 
 # right-prompt segment toggles
 set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
@@ -33,14 +35,15 @@ set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
 set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
 
 # behavior toggles
-set -q theme_damin_status_names; or set -g theme_damin_status_names 0
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
 set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
+set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
 set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
 set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
+set -q theme_damin_palette; or set -g theme_damin_palette mocha
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
 
 # numeric thresholds + lengths
@@ -88,34 +91,97 @@ set -q theme_damin_glyph_ahead; or set -g theme_damin_glyph_ahead $_ds_ahead
 set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
 set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
 
-# catppuccin mocha palette — only fills unset slots so user customizations win.
+# catppuccin palette — defaults to mocha; latte/frappe/macchiato switch the hex codes.
+# fills unset fish_color_* slots only so user customizations win; switch palettes via
+# `damin_set_palette <flavor>` which erases the universals first.
 if test "$theme_damin_apply_colors" = 1
-    set -q fish_color_normal; or set -U fish_color_normal cdd6f4
-    set -q fish_color_command; or set -U fish_color_command 89b4fa
-    set -q fish_color_keyword; or set -U fish_color_keyword cba6f7
-    set -q fish_color_quote; or set -U fish_color_quote a6e3a1
-    set -q fish_color_redirection; or set -U fish_color_redirection f5c2e7
-    set -q fish_color_end; or set -U fish_color_end fab387
-    set -q fish_color_error; or set -U fish_color_error f38ba8
-    set -q fish_color_param; or set -U fish_color_param f2cdcd
-    set -q fish_color_comment; or set -U fish_color_comment 7f849c
-    set -q fish_color_selection; or set -U fish_color_selection --background=313244
-    set -q fish_color_search_match; or set -U fish_color_search_match --background=313244
-    set -q fish_color_operator; or set -U fish_color_operator f5c2e7
-    set -q fish_color_escape; or set -U fish_color_escape eba0ac
-    set -q fish_color_autosuggestion; or set -U fish_color_autosuggestion 6c7086
-    set -q fish_color_cancel; or set -U fish_color_cancel f38ba8
-    set -q fish_color_option; or set -U fish_color_option a6e3a1
-    set -q fish_color_gray; or set -U fish_color_gray 6c7086
-    set -q fish_color_status; or set -U fish_color_status f38ba8
-    set -q fish_color_cwd; or set -U fish_color_cwd f9e2af
-    set -q fish_color_user; or set -U fish_color_user 94e2d5
-    set -q fish_color_host; or set -U fish_color_host 89b4fa
-    set -q fish_color_host_remote; or set -U fish_color_host_remote a6e3a1
-    set -q fish_pager_color_completion; or set -U fish_pager_color_completion cdd6f4
-    set -q fish_pager_color_description; or set -U fish_pager_color_description 6c7086
-    set -q fish_pager_color_prefix; or set -U fish_pager_color_prefix f5c2e7
-    set -q fish_pager_color_progress; or set -U fish_pager_color_progress 6c7086
+    set -l text cdd6f4
+    set -l blue 89b4fa
+    set -l mauve cba6f7
+    set -l green a6e3a1
+    set -l pink f5c2e7
+    set -l peach fab387
+    set -l red f38ba8
+    set -l flamingo f2cdcd
+    set -l overlay1 7f849c
+    set -l surface0 313244
+    set -l maroon eba0ac
+    set -l overlay0 6c7086
+    set -l yellow f9e2af
+    set -l teal 94e2d5
+    switch "$theme_damin_palette"
+        case latte
+            set text 4c4f69
+            set blue 1e66f5
+            set mauve 8839ef
+            set green 40a02b
+            set pink ea76cb
+            set peach fe640b
+            set red d20f39
+            set flamingo dd7878
+            set overlay1 8c8fa1
+            set surface0 ccd0da
+            set maroon e64553
+            set overlay0 9ca0b0
+            set yellow df8e1d
+            set teal 179299
+        case frappe
+            set text c6d0f5
+            set blue 8caaee
+            set mauve ca9ee6
+            set green a6d189
+            set pink f4b8e4
+            set peach ef9f76
+            set red e78284
+            set flamingo eebebe
+            set overlay1 838ba7
+            set surface0 414559
+            set maroon ea999c
+            set overlay0 737994
+            set yellow e5c890
+            set teal 81c8be
+        case macchiato
+            set text cad3f5
+            set blue 8aadf4
+            set mauve c6a0f6
+            set green a6da95
+            set pink f5bde6
+            set peach f5a97f
+            set red ed8796
+            set flamingo f0c6c6
+            set overlay1 8087a2
+            set surface0 363a4f
+            set maroon ee99a0
+            set overlay0 6e738d
+            set yellow eed49f
+            set teal 8bd5ca
+    end
+    set -q fish_color_normal; or set -U fish_color_normal $text
+    set -q fish_color_command; or set -U fish_color_command $blue
+    set -q fish_color_keyword; or set -U fish_color_keyword $mauve
+    set -q fish_color_quote; or set -U fish_color_quote $green
+    set -q fish_color_redirection; or set -U fish_color_redirection $pink
+    set -q fish_color_end; or set -U fish_color_end $peach
+    set -q fish_color_error; or set -U fish_color_error $red
+    set -q fish_color_param; or set -U fish_color_param $flamingo
+    set -q fish_color_comment; or set -U fish_color_comment $overlay1
+    set -q fish_color_selection; or set -U fish_color_selection --background=$surface0
+    set -q fish_color_search_match; or set -U fish_color_search_match --background=$surface0
+    set -q fish_color_operator; or set -U fish_color_operator $pink
+    set -q fish_color_escape; or set -U fish_color_escape $maroon
+    set -q fish_color_autosuggestion; or set -U fish_color_autosuggestion $overlay0
+    set -q fish_color_cancel; or set -U fish_color_cancel $red
+    set -q fish_color_option; or set -U fish_color_option $green
+    set -q fish_color_gray; or set -U fish_color_gray $overlay0
+    set -q fish_color_status; or set -U fish_color_status $red
+    set -q fish_color_cwd; or set -U fish_color_cwd $yellow
+    set -q fish_color_user; or set -U fish_color_user $teal
+    set -q fish_color_host; or set -U fish_color_host $blue
+    set -q fish_color_host_remote; or set -U fish_color_host_remote $green
+    set -q fish_pager_color_completion; or set -U fish_pager_color_completion $text
+    set -q fish_pager_color_description; or set -U fish_pager_color_description $overlay0
+    set -q fish_pager_color_prefix; or set -U fish_pager_color_prefix $pink
+    set -q fish_pager_color_progress; or set -U fish_pager_color_progress $overlay0
 end
 
 # pre-computed color escapes (set_color is a fork; do it once at theme load).
@@ -697,6 +763,13 @@ function _damin_git_render_data --argument-names branch u m s st a b op
     _damin_gh_render "$branch"
 end
 
+# compute + write the git cache without rendering. used by warmup.
+function _damin_git_prefill
+    set -l cache_file (_damin_cache_path git)
+    set -l data (_damin_git_compute 2>/dev/null)
+    test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
+end
+
 function _damin_git_render
     if test "$theme_damin_async_git" != 1
         set -l data (_damin_git_compute)
@@ -783,13 +856,42 @@ function _damin_vcs_render
 end
 
 
-# left prompt: tail (jobs + status name).
+# left prompt: tail (jobs + vi mode + status name).
 
 function _damin_jobs_render
     test "$theme_damin_show_jobs" = 1; or return
     set -l n (count (jobs -p 2>/dev/null))
     test $n -gt 0; or return
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
+end
+
+# vi mode badge — only shown when vi keybindings are active.
+function _damin_vi_mode_render
+    test "$theme_damin_show_vi_mode" = 1; or return
+    test "$fish_key_bindings" = fish_vi_key_bindings; or return
+    set -l label
+    set -l color
+    switch $fish_bind_mode
+        case default
+            set label N
+            set color (set_color 98ABCC -o)
+        case insert
+            set label I
+            set color (set_color a6e3a1 -o)
+        case visual
+            set label V
+            set color (set_color f9e2af -o)
+        case replace replace_one
+            set label R
+            set color (set_color f38ba8 -o)
+        case '*'
+            return
+    end
+    echo -n -s " " $color "[$label]" $_damin_c_normal
+end
+
+function _damin_vi_mode_repaint --on-variable fish_bind_mode
+    commandline -f repaint 2>/dev/null
 end
 
 # 126 = no-exec, 127 = not-found; 128+N = signal name via fish_status_to_signal.
@@ -807,6 +909,25 @@ function _damin_status_name --argument-names code
         echo $sig
     else
         echo $code
+    end
+end
+
+# show_exit_code mode: 0|off|hidden | 1|number | name | both. empty = render nothing.
+function _damin_exit_label --argument-names code
+    switch "$theme_damin_show_exit_code"
+        case 0 off hidden
+            return
+        case 1 number
+            echo $code
+        case name
+            echo (_damin_status_name $code)
+        case both
+            set -l n (_damin_status_name $code)
+            if test "$n" = "$code"
+                echo $code
+            else
+                echo "$code $n"
+            end
     end
 end
 
@@ -1079,16 +1200,14 @@ function fish_prompt
     _damin_context_render
     _damin_vcs_render
     _damin_jobs_render
+    _damin_vi_mode_render
 
     if test $last_status -eq 0
         echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
     else
         echo -n -s " " $_damin_c_err "$theme_damin_glyph_prompt " $_damin_c_normal
-        if test "$theme_damin_show_exit_code" = 1
-            set -l label $last_status
-            test "$theme_damin_status_names" = 1; and set label (_damin_status_name $last_status)
-            echo -n -s $_damin_c_exit "$label " $_damin_c_normal
-        end
+        set -l label (_damin_exit_label $last_status)
+        test -n "$label"; and echo -n -s $_damin_c_exit "$label " $_damin_c_normal
     end
 
     _damin_osc133_b
@@ -1113,3 +1232,12 @@ end
 
 _damin_cache_prune
 _damin_install_transient_bindings
+
+# warmup: prefill the git cache in the background when fish opens directly into a repo,
+# so the next prompt doesn't pay the cold-cache compute on the hot path.
+if test "$theme_damin_async_warmup" = 1 -a "$theme_damin_async_git" = 1
+    if test (_damin_detect_vcs) = git
+        _damin_git_prefill >/dev/null 2>&1 &
+        disown 2>/dev/null
+    end
+end

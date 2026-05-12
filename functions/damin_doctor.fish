@@ -46,7 +46,7 @@ function damin_doctor
     end
 
     set -l missing
-    for cmd in damin_config damin_help damin_reset_cache
+    for cmd in damin_config damin_help damin_set_palette damin_install_themes damin_reset_cache
         type -q $cmd; or set missing $missing $cmd
     end
     if test (count $missing) -gt 0

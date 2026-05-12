@@ -113,40 +113,42 @@ Every toggle is a fish universal variable (`set -U …` persists across sessions
 
 ### Toggles
 
-| Variable                             | Default | Effect                                                            |
-|--------------------------------------|---------|-------------------------------------------------------------------|
-| `theme_damin_show_git`               | `1`     | Branch + meta on the left (also gates jj)                         |
-| `theme_damin_show_jj`                | `1`     | Use jj when `.jj/` is encountered before `.git/`                  |
-| `theme_damin_show_git_op`            | `1`     | `(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)` state |
-| `theme_damin_show_context`           | `1`     | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                 |
-| `theme_damin_show_k8s_context`       | `1`     | Append `:<context>` to the `k8s` indicator                        |
-| `theme_damin_show_k8s_namespace`     | `0`     | Append `/<namespace>` to the `k8s:<context>` indicator (opt-in)   |
-| `theme_damin_show_jobs`              | `1`     | `&N` background-job count                                         |
-| `theme_damin_show_env`               | `1`     | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)` indicator |
-| `theme_damin_show_nix_name`          | `1`     | Show the nix devshell's `name` attr when inside `IN_NIX_SHELL`    |
-| `theme_damin_show_lang`              | `1`     | Project language + version                                        |
-| `theme_damin_show_battery`           | `0`     | Battery % when ≤ threshold (opt-in — laptops only)                |
-| `theme_damin_show_duration`          | `1`     | Last command duration                                             |
-| `theme_damin_show_exit_code`         | `1`     | Exit code next to the florette on failure                         |
-| `theme_damin_show_aws`               | `0`     | `aws:<profile>` context indicator (opt-in)                        |
-| `theme_damin_show_aws_region`        | `1`     | Append `@<region>` to the AWS indicator                           |
-| `theme_damin_show_gcp`               | `0`     | `gcp:<project>` context indicator (opt-in)                        |
-| `theme_damin_show_azure`             | `0`     | `az:<subscription>` context indicator (opt-in)                    |
-| `theme_damin_show_gh_pr`             | `0`     | `#<num>` for the current branch's open PR via `gh` (opt-in)       |
-| `theme_damin_status_names`           | `0`     | `SIGINT` / `not-found` instead of raw `130` / `127` next to florette |
-| `theme_damin_notify_long_command`    | `0`     | Emit OSC 9 + `notify-send` when CMD_DURATION > threshold          |
-| `theme_damin_git_counts`             | `1`     | Show counts next to git indicators (`?3 ✓5` vs `? ✓`)             |
-| `theme_damin_transient`              | `1`     | Collapse past prompts to `✿` after Enter                          |
-| `theme_damin_async_git`              | `1`     | Cache git status + postexec invalidation. `0` = pure sync         |
-| `theme_damin_async_lang`             | `1`     | Cache lang detection + postexec invalidation. `0` = sync          |
-| `theme_damin_osc_integration`        | `1`     | Emit OSC 7 (cwd advertise) + OSC 133 (semantic prompt markers)    |
-| `theme_damin_cwd_keep`               | `3`     | Trailing path segments shown in full                              |
-| `theme_damin_cwd_short`              | `4`     | Character length each earlier segment is truncated to             |
-| `theme_damin_long_command_threshold` | `3000`  | Duration (ms) above which the right-prompt time renders bold      |
-| `theme_damin_battery_threshold`      | `30`    | Show battery only when `%` is at or below this number             |
-| `theme_damin_gh_pr_ttl`              | `300`   | Seconds the cached GitHub PR result is reused before re-fetching  |
-| `theme_damin_notify_threshold`       | `30000` | Duration (ms) above which long-command notification fires         |
-| `theme_damin_ascii`                  | `0`     | Swap every glyph default to ASCII for fonts missing dingbats      |
+| Variable                             | Default  | Effect                                                               |
+|--------------------------------------|----------|----------------------------------------------------------------------|
+| `theme_damin_show_git`               | `1`      | Branch + meta on the left (also gates jj)                            |
+| `theme_damin_show_jj`                | `1`      | Use jj when `.jj/` is encountered before `.git/`                     |
+| `theme_damin_show_git_op`            | `1`      | `(rebase)` / `(merge)` / `(pick)` / `(revert)` / `(bisect)` state    |
+| `theme_damin_show_context`           | `1`      | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                    |
+| `theme_damin_show_k8s_context`       | `1`      | Append `:<context>` to the `k8s` indicator                           |
+| `theme_damin_show_k8s_namespace`     | `0`      | Append `/<namespace>` to the `k8s:<context>` indicator (opt-in)      |
+| `theme_damin_show_jobs`              | `1`      | `&N` background-job count                                            |
+| `theme_damin_show_env`               | `1`      | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)` indicator  |
+| `theme_damin_show_nix_name`          | `1`      | Show the nix devshell's `name` attr when inside `IN_NIX_SHELL`       |
+| `theme_damin_show_lang`              | `1`      | Project language + version                                           |
+| `theme_damin_show_battery`           | `0`      | Battery % when ≤ threshold (opt-in — laptops only)                   |
+| `theme_damin_show_duration`          | `1`      | Last command duration                                                |
+| `theme_damin_show_vi_mode`           | `1`      | `[N]`/`[I]`/`[V]`/`[R]` badge — auto-skipped under emacs keybindings |
+| `theme_damin_show_exit_code`         | `number` | Enum: `number` / `name` / `both` / `off` (`0`/`1` still accepted)    |
+| `theme_damin_show_aws`               | `0`      | `aws:<profile>` context indicator (opt-in)                           |
+| `theme_damin_show_aws_region`        | `1`      | Append `@<region>` to the AWS indicator                              |
+| `theme_damin_show_gcp`               | `0`      | `gcp:<project>` context indicator (opt-in)                           |
+| `theme_damin_show_azure`             | `0`      | `az:<subscription>` context indicator (opt-in)                       |
+| `theme_damin_show_gh_pr`             | `0`      | `#<num>` for the current branch's open PR via `gh` (opt-in)          |
+| `theme_damin_notify_long_command`    | `0`      | Emit OSC 9 + `notify-send` when CMD_DURATION > threshold             |
+| `theme_damin_palette`                | `mocha`  | Catppuccin flavor — `mocha` / `frappe` / `macchiato` / `latte`       |
+| `theme_damin_git_counts`             | `1`      | Show counts next to git indicators (`?3 ✓5` vs `? ✓`)                |
+| `theme_damin_transient`              | `1`      | Collapse past prompts to `✿` after Enter                             |
+| `theme_damin_async_git`              | `1`      | Cache git status + postexec invalidation. `0` = pure sync            |
+| `theme_damin_async_lang`             | `1`      | Cache lang detection + postexec invalidation. `0` = sync             |
+| `theme_damin_async_warmup`           | `1`      | Background-prefill git cache at theme load when in a repo            |
+| `theme_damin_osc_integration`        | `1`      | Emit OSC 7 (cwd advertise) + OSC 133 (semantic prompt markers)       |
+| `theme_damin_cwd_keep`               | `3`      | Trailing path segments shown in full                                 |
+| `theme_damin_cwd_short`              | `4`      | Character length each earlier segment is truncated to                |
+| `theme_damin_long_command_threshold` | `3000`   | Duration (ms) above which the right-prompt time renders bold         |
+| `theme_damin_battery_threshold`      | `30`     | Show battery only when `%` is at or below this number                |
+| `theme_damin_gh_pr_ttl`              | `300`    | Seconds the cached GitHub PR result is reused before re-fetching     |
+| `theme_damin_notify_threshold`       | `30000`  | Duration (ms) above which long-command notification fires            |
+| `theme_damin_ascii`                  | `0`      | Swap every glyph default to ASCII for fonts missing dingbats         |
 
 ### Glyph overrides
 
@@ -190,6 +192,19 @@ set -U theme_damin_glyph_behind v
 | Battery (≤10%)                 | terminal `red` (bold)       |
 
 Reskins should swap both anchor colors together — losing one breaks the tone-on-tone identity.
+
+### Catppuccin flavors
+
+The `fish_color_*` block (separate from the two anchor colors above) picks a Catppuccin palette via `theme_damin_palette`. Hex values come straight from `catppuccin/palette` `palette.json`.
+
+| Flavor      | text     | base accent feel                            |
+|-------------|----------|---------------------------------------------|
+| `mocha`     | dark bg  | default, warm violet/peach pop              |
+| `macchiato` | dark bg  | slightly muted vs mocha                     |
+| `frappe`    | dark bg  | softest dark, cooler/grayer accents         |
+| `latte`     | light bg | the light theme — high-contrast deep colors |
+
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` universals so the apply block re-fills them, and re-sources the conf.d file. `damin_install_themes` symlinks the four `themes/Damin *.theme` files into `~/.config/fish/themes/` so they appear in `fish_config theme show` and can be applied via the standard fish theming flow.
 
 ## Cache architecture
 
