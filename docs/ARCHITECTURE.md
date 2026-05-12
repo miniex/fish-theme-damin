@@ -8,14 +8,12 @@ Detailed reference for fish-theme-damin: every feature, every toggle, the cache 
 conf.d/damin.fish        — defaults, color cache, all _damin_* helpers, postexec hook,
                             transient keybindings, Catppuccin palette apply
 functions/
-  fish_prompt.fish       — fish_prompt definition
-  fish_right_prompt.fish — fish_right_prompt definition
   damin_help.fish        — user command
   damin_doctor.fish      — user command
   damin_reset_cache.fish — user command
 
-fish_prompt.fish         — omf shim: sources conf.d/damin.fish + functions/fish_prompt.fish
-fish_right_prompt.fish   — omf shim: sources conf.d/damin.fish + functions/fish_right_prompt.fish
+fish_prompt.fish         — omf shim: sources conf.d/damin.fish
+fish_right_prompt.fish   — omf shim: sources conf.d/damin.fish
 key_bindings.fish        — omf shim: sources conf.d/damin.fish
 fish_title.fish          — empty
 
@@ -29,9 +27,9 @@ tools/test.sh            — fixture-repo assertions for _damin_git_compute
 
 **Fisher** uses fish's standard autoload paths. On install, fisher copies `conf.d/*.fish` to `~/.config/fish/conf.d/` (sourced at fish startup) and `functions/*.fish` to `~/.config/fish/functions/` (autoloaded on first call). Root-level files are ignored.
 
-**Oh My Fish** sources `fish_prompt.fish`, `fish_right_prompt.fish`, `fish_title.fish`, `key_bindings.fish` from the theme directory at theme-switch time. The root files are minimal shims — each does `source $dir/conf.d/damin.fish` and (for prompts) `source $dir/functions/fish_prompt.fish`. The same code path runs as fisher's, just triggered differently.
+**Oh My Fish** clones the theme to `~/.local/share/omf/themes/fish-theme-damin/` and adds it to `$fish_function_path`. The root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that `source conf.d/damin.fish`; the first `fish_prompt` call autoloads the shim, which loads conf.d and defines both prompt functions.
 
-The split keeps helpers/state in `conf.d/` and user-callable functions (`fish_prompt`, `damin_*`) in `functions/`, matching fish's idiomatic plugin structure.
+`fish_prompt` / `fish_right_prompt` live in `conf.d/damin.fish`, **not** in `functions/`. Under `functions/`, fisher would copy them to `~/.config/fish/functions/` — which OMF treats as a "Conflicting prompt setting" and refuses to activate. Keeping them in conf.d makes Fisher ↔ OMF transitions conflict-free. `damin_help` / `damin_doctor` / `damin_reset_cache` stay in `functions/` since OMF doesn't gate on those names.
 
 ## Features
 

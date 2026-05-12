@@ -33,15 +33,17 @@ function damin_doctor
         _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
     end
 
-    # Neither OMF nor Fisher creates symlinks here — manual install or stale leftover.
+    # damin defines fish_prompt / fish_right_prompt inside conf.d/, so nothing should
+    # land in ~/.config/fish/functions/ for those names. Catch leftovers (older damin
+    # versions, manual installs, other plugins) that would block OMF activation.
     set -l strays
     for f in fish_prompt.fish fish_right_prompt.fish
-        test -L ~/.config/fish/functions/$f; and set strays $strays $f
+        test -e ~/.config/fish/functions/$f; and set strays $strays $f
     end
     if test (count $strays) -gt 0
-        _damin_doctor_check "no stray prompt symlinks" fail "(symlinks in ~/.config/fish/functions/: $strays — neither OMF nor Fisher creates these; delete to unblock theme switching)"
+        _damin_doctor_check "no stray prompt files" fail "(found in ~/.config/fish/functions/: $strays — damin doesn't ship these; delete to unblock OMF theme switching)"
     else
-        _damin_doctor_check "no stray prompt symlinks" ok
+        _damin_doctor_check "no stray prompt files" ok
     end
 
     set -l missing

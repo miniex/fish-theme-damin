@@ -18,6 +18,5 @@ fi
 
 fish_indent -w fish_prompt.fish fish_right_prompt.fish fish_title.fish key_bindings.fish \
     conf.d/damin.fish \
-    functions/fish_prompt.fish functions/fish_right_prompt.fish \
     functions/damin_help.fish functions/damin_doctor.fish functions/damin_reset_cache.fish
 shfmt -w -i 4 -ci -bn -s tools/bench.sh tools/format.sh tools/lint.sh tools/test.sh

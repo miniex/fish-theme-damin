@@ -715,3 +715,45 @@ _damin_install_transient_bindings
 function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
     _damin_install_transient_bindings
 end
+
+# defined here (not in functions/) so Fisher doesn't copy a stub into
+# ~/.config/fish/functions/ that OMF would flag as a "Conflicting prompt setting".
+function fish_prompt
+    set -l last_status $status
+
+    # 1 = render stub then advance, 2 = clear and render full. owning the clear
+    # here keeps lifecycle independent of fish_right_prompt (user-overridable).
+    switch "$_damin_in_transient"
+        case 1
+            echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
+            set -g _damin_in_transient 2
+            return
+        case 2
+            set -eg _damin_in_transient
+    end
+
+    _damin_context_render
+    _damin_vcs_render
+    _damin_jobs_render
+
+    if test $last_status -eq 0
+        echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
+    else
+        echo -n -s " " $_damin_c_err "$theme_damin_glyph_prompt " $_damin_c_normal
+        test "$theme_damin_show_exit_code" = 1; and echo -n -s $_damin_c_exit "$last_status " $_damin_c_normal
+    end
+end
+
+function fish_right_prompt
+    # fish_prompt owns the flag lifecycle; render blank while it's set.
+    if set -q _damin_in_transient
+        return
+    end
+
+    echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
+
+    _damin_lang_render
+    _damin_env_render
+    _damin_battery_render
+    _damin_duration_render
+end

@@ -97,14 +97,7 @@ omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme
 exec fish
 ```
 
-Still off? Run `damin_doctor` — it reports cache state, font width, where `fish_prompt` is loaded from, and any stray prompt symlinks in `~/.config/fish/functions/` left over from a previous install method.
-
-**`Conflicting prompt setting` from `omf theme …` or `omf doctor`?** A `fish_prompt.fish` left behind by a previous install method is blocking OMF — typically a leftover from Fisher (which copies files into `~/.config/fish/functions/`) when switching to OMF without `fisher remove` first. Delete it and retry:
-
-```fish
-rm -f ~/.config/fish/functions/fish_prompt.fish ~/.config/fish/functions/fish_right_prompt.fish
-omf theme fish-theme-damin
-```
+Still off? Run `damin_doctor` — it reports cache state, font width, where `fish_prompt` is loaded from, and any stray prompt files in `~/.config/fish/functions/`. The prompt definitions live in `conf.d/damin.fish`, not in `functions/`, so Fisher never copies a `fish_prompt.fish` into your autoload dir and switching between Fisher / OMF doesn't leave a `Conflicting prompt setting` behind.
 
 ## Contributing
 

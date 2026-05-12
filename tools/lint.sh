@@ -21,7 +21,6 @@ fi
 
 for f in fish_prompt.fish fish_right_prompt.fish fish_title.fish key_bindings.fish \
     conf.d/damin.fish \
-    functions/fish_prompt.fish functions/fish_right_prompt.fish \
     functions/damin_help.fish functions/damin_doctor.fish functions/damin_reset_cache.fish; do
     fish_indent --check "$f"
     fish -n "$f"
