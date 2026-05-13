@@ -109,6 +109,13 @@ exec fish
 
 Run `damin_doctor` if anything still looks off. `Conflicting prompt setting` after a reinstall = stale symlink — `hooks/install.fish` handles this automatically; on older installs, `rm ~/.config/fish/functions/fish_prompt.fish; omf theme fish-theme-damin`.
 
+## Companion repos
+
+- [btop-theme-damin](https://github.com/miniex/btop-theme-damin) — btop theme
+- [dotfiles.tmux](https://github.com/miniex/dotfiles.tmux) — tmux config
+- [dotfiles.kitty](https://github.com/miniex/dotfiles.kitty) — kitty terminal config
+- [dotfiles.nvim](https://github.com/miniex/dotfiles.nvim) — Neovim config
+
 ## Contributing
 
 PRs welcome. Run `./tools/format.sh`, `./tools/lint.sh`, `./tools/test.sh`. Hot-path changes need before / after `./tools/bench.sh` numbers. See [CONTRIBUTING.md](CONTRIBUTING.md).
