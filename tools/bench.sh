@@ -1,5 +1,5 @@
 #!/bin/sh
-# bench damin prompt latency. needs python3 for sub-second timestamps.
+# prompt latency bench. needs python3 for sub-second timestamps on macOS.
 # shellcheck disable=SC2154  # $start/$end are fish vars inside the fish -c body
 set -e
 

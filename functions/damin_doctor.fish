@@ -42,8 +42,8 @@ function damin_doctor
         _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
     end
 
-    # only OMF should leave a fish_prompt.fish here, as a symlink to themes/<active>/.
-    # anything else trips OMF's "Conflicting prompt setting" check.
+    # only OMF should leave this here (symlink → themes/<active>/). anything
+    # else trips OMF's "Conflicting prompt setting" check.
     set -l user_fp ~/.config/fish/functions/fish_prompt.fish
     if not test -e $user_fp -o -L $user_fp
         _damin_doctor_check "fish_prompt symlink" ok "(none — fisher-style install)"
@@ -65,7 +65,7 @@ function damin_doctor
     end
 
     set -l missing
-    for cmd in damin_config damin_help damin_set_palette damin_install_themes damin_reset_cache damin_profile
+    for cmd in damin_config damin_help damin_set_palette damin_install_themes damin_reset_cache damin_profile damin_bench
         type -q $cmd; or set missing $missing $cmd
     end
     if test (count $missing) -gt 0

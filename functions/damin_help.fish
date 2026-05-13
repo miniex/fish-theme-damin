@@ -28,6 +28,7 @@ function damin_help
     _damin_help_row theme_damin_show_gh_pr 0
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
+    _damin_help_row theme_damin_git_count_untracked 1
     _damin_help_row theme_damin_transient 1
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
@@ -85,6 +86,7 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (mocha|frappe|macchiato|latte|gruvbox|tokyonight|rosepine|nord|dracula)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"

@@ -1,6 +1,6 @@
-# gnu date %N gives ns; bsd/macos drops it silently — fall through gdate/python3/perl.
-# divide via string-slice (drop trailing 6 digits) — fish math is double-precision and
-# loses the low bits of a 19-digit ns count.
+# GNU `date %N` gives ns; BSD silently drops it — fall through to gdate/python3/perl.
+# Divide via string-slice (drop trailing 6 digits) because fish math is f64 and
+# loses precision on 19-digit ns values.
 function _damin_profile_now_ms
     set -l n (command date +%s%N 2>/dev/null)
     if string match -rq '^[0-9]{13,}$' -- $n

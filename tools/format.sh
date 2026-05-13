@@ -17,6 +17,6 @@ if [ -n "$missing" ]; then
 fi
 
 fish_indent -w fish_prompt.fish fish_right_prompt.fish fish_title.fish key_bindings.fish \
-    conf.d/damin.fish \
-    functions/damin_help.fish functions/damin_doctor.fish functions/damin_reset_cache.fish
+    conf.d/damin.fish conf.d/_damin_async_core.fish \
+    functions/damin_*.fish functions/_damin_*.fish
 shfmt -w -i 4 -ci -bn -s tools/bench.sh tools/format.sh tools/lint.sh tools/test.sh

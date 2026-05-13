@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `damin_bench` — per-segment P50/P95/P99 via batched sampling. `damin_bench [N=1000] [--json]`. Complements `damin_profile` (means only)
+- `theme_damin_git_count_untracked` (default `1`). `0` passes `-uno` to `git status` — 30-100× faster in big repos ([fish-shell#7705](https://github.com/fish-shell/fish-shell/issues/7705)). Trade-off: `?N` blank
+- `--no-optional-locks` on every internal `git` call — prompt never blocks on `.git/index.lock`
+
+### Changed
+
+- **Hot-path in-memory memoization wave.** lang / git / cwd / duration renderers keep PWD-keyed (or `$CMD_DURATION`-keyed) in-process cache. Second prompt onward in the same dir skips disk i/o. M-series Mac: out-of-repo `/tmp` **0.80 → 0.46 ms (-43%)**, dirty + node **1.28 → 0.70 ms (-45%)**
+  - `_damin_lang_render` — disk cache used to be re-read every prompt; in-memory check now fires first
+  - `_damin_git_render` — key: `(PWD, cache-mt, stale=0)`. Postexec deletes the cache file → cache_mt empty → forced re-read
+  - `_damin_cwd_pretty` — `prompt_pwd` only runs on cd
+  - `_damin_duration_format` — `$CMD_DURATION` stable within a prompt cycle
+  - `_damin_git_path_mtimes` — one batched `path mtime` call drives both the memo key and the staleness signal
+- **Async refresh subshell sources only `conf.d/_damin_async_core.fish` (~3 KB)** instead of the full theme. Main theme `source`s it explicitly so direct `source conf.d/damin.fish` (tests, dev) still works
+- **Async kickoff cancels prior in-flight refresh** via tracked `$_damin_git_refresh_pid` + `kill`. Rapid `cd` no longer piles up stale work
+- **Cloud / DevOps / battery / jj renderers moved to `functions/`** — autoloaded only when their toggle is on. `conf.d/damin.fish`: 1572 → 1245 lines (-21%)
+- `_damin_context_render` / `fish_right_prompt` gate each renderer on its toggle before calling — disabled segments don't autoload
+- Stash count via fish `count` builtin (no `wc -l` fork)
+- `uname` cached once per session in `_damin_battery_render`
+
+### Fixed
+
+- `_damin_git_compute` `case '\?'` matched the literal 2-char string, never the `?` untracked marker. Unquoted `case \?` now counts `?N` correctly (regression from 1.1.0's prior fix attempt)
+
+### Reviewed
+
+- `_damin_git_cache_stale` — already optimal. Single `path mtime` builtin, index first in loop for early stale-return. Splitting would add dispatch overhead
+
 ## [1.1.0] - 20260512214953 KST
 
 ### Added

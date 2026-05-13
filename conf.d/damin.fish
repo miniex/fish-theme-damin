@@ -1,8 +1,16 @@
-# record the source path so the async-repaint subshell can re-source helpers.
 set -g _damin_theme_file (status filename)
+set -g _damin_async_core_file (path dirname $_damin_theme_file)/_damin_async_core.fish
+# explicit source for dev workflows that bypass conf.d auto-load (tests etc.).
+# idempotent — the auto-load already ran at fish startup.
+source $_damin_async_core_file 2>/dev/null
 
-# tramp / dumb terminals (emacs shell, basic ttys) — adjust defaults before they're set.
-# user-explicit values still win because the regular defaults below use `set -q; or set`.
+# put functions/ on $fish_function_path for dev workflows (`source conf.d/damin.fish`).
+# Fisher/OMF installs already register the dir; the contains-check makes this a no-op.
+set -l _damin_functions (path dirname $_damin_theme_file)/../functions
+test -d $_damin_functions; and not contains -- $_damin_functions $fish_function_path; and set -p fish_function_path $_damin_functions
+
+# tramp / dumb terminals — adjust defaults before the `set -q; or set` block below
+# so user-explicit values still win.
 set -l _damin_dumb 0
 test "$TERM" = dumb; and set _damin_dumb 1
 set -q INSIDE_EMACS; and test -n "$INSIDE_EMACS"; and set _damin_dumb 1
@@ -38,6 +46,7 @@ set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
 set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
 
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
+set -q theme_damin_git_count_untracked; or set -g theme_damin_git_count_untracked 1
 set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
@@ -298,14 +307,19 @@ set -g _damin_c_deco (set_color $theme_damin_accent_secondary)
 set -g _damin_c_sep (set_color $theme_damin_accent_secondary --dim)
 set -g _damin_c_long (set_color $theme_damin_accent_secondary -o)
 
-set -g _damin_pwd_key_pwd ""
-set -g _damin_pwd_key_value ""
 set -g _damin_vcs_pwd ""
 set -g _damin_vcs_value ""
 set -g _damin_vcs_dir ""
 set -g _damin_vcs_worktree ""
 set -g _damin_lang_pwd ""
 set -g _damin_lang_value ""
+set -g _damin_git_cached_pwd ""
+set -g _damin_git_cached_mt ""
+set -g _damin_git_cached_data ""
+set -g _damin_cwd_pwd ""
+set -g _damin_cwd_value ""
+set -g _damin_duration_ms ""
+set -g _damin_duration_value ""
 set -g _damin_battery_value ""
 set -g _damin_battery_at 0
 set -g _damin_k8s_mt ""
@@ -328,34 +342,16 @@ set -g _damin_devops_pwd ""
 set -g _damin_devops_tf ""
 set -g _damin_devops_pl ""
 
-set -g _damin_cache_dir "$HOME/.cache/damin"
 set -g _damin_is_root 0
 test (id -u 2>/dev/null) = 0; and set -g _damin_is_root 1
 
-function _damin_pwd_key
-    if test "$_damin_pwd_key_pwd" != "$PWD"
-        set -g _damin_pwd_key_pwd "$PWD"
-        set -g _damin_pwd_key_value (string replace -a / % -- "$PWD")
-    end
-    echo $_damin_pwd_key_value
-end
-
-function _damin_cache_path --argument-names key
-    echo "$_damin_cache_dir/"(_damin_pwd_key)"-$key"
-end
+# _damin_pwd_key / _damin_cache_path / _damin_write_cache live in _damin_async_core.fish.
 
 function _damin_read_lines --argument-names file
     test -f $file; or return 1
     while read -l line
         printf '%s\n' "$line"
     end <$file
-end
-
-function _damin_write_cache --argument-names cache_file pwd
-    mkdir -p (path dirname $cache_file) 2>/dev/null
-    set -l tmp "$cache_file.tmp.$fish_pid"
-    printf '%s\n' "$pwd" $argv[3..] >$tmp 2>/dev/null
-    mv $tmp $cache_file 2>/dev/null
 end
 
 function _damin_cache_prune
@@ -461,292 +457,8 @@ function _damin_detect_vcs
     echo $_damin_vcs_value
 end
 
-# `[default]` for the default profile, `[profile <name>]` for the rest.
-function _damin_aws_region_for --argument-names profile cfg
-    test -f $cfg; or return
-    set -l target
-    if test "$profile" = default
-        set target '[default]'
-    else
-        set target "[profile $profile]"
-    end
-    set -l in_section 0
-    for line in (command cat $cfg 2>/dev/null)
-        if string match -qr '^\[' -- $line
-            test "$line" = "$target"; and set in_section 1; or set in_section 0
-            continue
-        end
-        test $in_section = 1; or continue
-        set -l m (string match -r '^region *= *(.*)$' -- $line)
-        test (count $m) -ge 2; and echo (string trim -- $m[2]); and return
-    end
-end
-
-function _damin_aws_render
-    test "$theme_damin_show_aws" = 1; or return
-    set -l profile
-    if set -q AWS_PROFILE; and test -n "$AWS_PROFILE"
-        set profile $AWS_PROFILE
-    else if set -q AWS_DEFAULT_PROFILE; and test -n "$AWS_DEFAULT_PROFILE"
-        set profile $AWS_DEFAULT_PROFILE
-    end
-    test -n "$profile"; or return
-
-    set -l region
-    if set -q AWS_REGION; and test -n "$AWS_REGION"
-        set region $AWS_REGION
-    else if set -q AWS_DEFAULT_REGION; and test -n "$AWS_DEFAULT_REGION"
-        set region $AWS_DEFAULT_REGION
-    else if test "$theme_damin_show_aws_region" = 1
-        set -l cfg "$HOME/.aws/config"
-        set -q AWS_CONFIG_FILE; and test -n "$AWS_CONFIG_FILE"; and set cfg $AWS_CONFIG_FILE
-        if test -f $cfg
-            set -l mt (path mtime $cfg 2>/dev/null)
-            set -l key "$mt|$profile"
-            if test "$_damin_aws_cfg_mt" = "$key"
-                set region $_damin_aws_cfg_value
-            else
-                set region (_damin_aws_region_for $profile $cfg)
-                set -g _damin_aws_cfg_mt "$key"
-                set -g _damin_aws_cfg_value "$region"
-            end
-        end
-    end
-
-    set -l label "aws:$profile"
-    test "$theme_damin_show_aws_region" = 1 -a -n "$region"; and set label "$label@$region"
-    echo -n -s $_damin_c_dim "$label " $_damin_c_normal
-end
-
-# active_config names the live config; configurations/config_<name> [core] holds the project.
-function _damin_gcp_render
-    test "$theme_damin_show_gcp" = 1; or return
-
-    set -l project
-    if set -q CLOUDSDK_CORE_PROJECT; and test -n "$CLOUDSDK_CORE_PROJECT"
-        set project $CLOUDSDK_CORE_PROJECT
-    else
-        set -l cfg_root "$HOME/.config/gcloud"
-        set -q CLOUDSDK_CONFIG; and test -n "$CLOUDSDK_CONFIG"; and set cfg_root $CLOUDSDK_CONFIG
-        set -l active "$cfg_root/active_config"
-        test -f $active; or return
-
-        set -l mt (path mtime $active 2>/dev/null)
-        set -l name
-        if test "$_damin_gcp_active_mt" = "$mt"
-            set name $_damin_gcp_active_name
-        else
-            set name (command cat $active 2>/dev/null | string trim | head -1)
-            set -g _damin_gcp_active_mt "$mt"
-            set -g _damin_gcp_active_name "$name"
-        end
-        test -n "$name"; or return
-
-        set -l cfg "$cfg_root/configurations/config_$name"
-        test -f $cfg; or return
-        set -l cmt (path mtime $cfg 2>/dev/null)
-        if test "$_damin_gcp_cfg_mt" = "$cmt|$name"
-            set project $_damin_gcp_cfg_value
-        else
-            set -l in_core 0
-            for line in (command cat $cfg 2>/dev/null)
-                if string match -qr '^\[' -- $line
-                    test "$line" = '[core]'; and set in_core 1; or set in_core 0
-                    continue
-                end
-                test $in_core = 1; or continue
-                set -l m (string match -r '^project *= *(.*)$' -- $line)
-                test (count $m) -ge 2; and set project (string trim -- $m[2]); and break
-            end
-            set -g _damin_gcp_cfg_mt "$cmt|$name"
-            set -g _damin_gcp_cfg_value "$project"
-        end
-    end
-
-    test -n "$project"; or return
-    echo -n -s $_damin_c_dim "gcp:$project " $_damin_c_normal
-end
-
-# split azureProfile.json on `},` to get per-subscription chunks (schema is flat).
-function _damin_azure_compute --argument-names file
-    test -f $file; or return
-    set -l data (command cat $file 2>/dev/null | string collect)
-    test -z "$data"; and return
-    set -l chunks (string split '},' -- $data)
-    for chunk in $chunks
-        string match -qr '"isDefault"\s*:\s*true' -- $chunk; or continue
-        set -l m (string match -r '"name"\s*:\s*"([^"]+)"' -- $chunk)
-        test (count $m) -ge 2; and echo $m[2]; and return
-    end
-end
-
-function _damin_azure_render
-    test "$theme_damin_show_azure" = 1; or return
-    set -l sub
-    if set -q AZURE_SUBSCRIPTION_NAME; and test -n "$AZURE_SUBSCRIPTION_NAME"
-        set sub $AZURE_SUBSCRIPTION_NAME
-    else if set -q AZURE_DEFAULTS_SUBSCRIPTION; and test -n "$AZURE_DEFAULTS_SUBSCRIPTION"
-        set sub $AZURE_DEFAULTS_SUBSCRIPTION
-    else
-        set -l file "$HOME/.azure/azureProfile.json"
-        set -q AZURE_CONFIG_DIR; and test -n "$AZURE_CONFIG_DIR"; and set file "$AZURE_CONFIG_DIR/azureProfile.json"
-        test -f $file; or return
-        set -l mt (path mtime $file 2>/dev/null)
-        if test "$_damin_azure_mt" = "$mt"
-            set sub $_damin_azure_value
-        else
-            set sub (_damin_azure_compute $file)
-            set -g _damin_azure_mt "$mt"
-            set -g _damin_azure_value "$sub"
-        end
-    end
-    test -n "$sub"; or return
-    echo -n -s $_damin_c_dim "az:$sub " $_damin_c_normal
-end
-
-function _damin_k8s_config_path
-    if set -q KUBECONFIG; and test -n "$KUBECONFIG"
-        echo (string split : -- $KUBECONFIG)[1]
-        return
-    end
-    echo "$HOME/.kube/config"
-end
-
-# collect all blocks first so order of current-context vs contexts: doesn't matter.
-function _damin_k8s_compute --argument-names cfg
-    set -l current
-    set -l in_contexts 0
-    set -l block_ns
-    set -l block_name
-    set -l names
-    set -l namespaces
-
-    for line in (command cat $cfg 2>/dev/null)
-        set -l m (string match -r '^current-context: *(.*)$' -- $line)
-        if test (count $m) -ge 2
-            set current (string trim --chars '"' -- $m[2])
-            continue
-        end
-
-        if string match -q 'contexts:*' -- $line
-            set in_contexts 1
-            continue
-        else if string match -qr '^[a-zA-Z]' -- $line
-            if test -n "$block_name"
-                set -a names $block_name
-                set -a namespaces $block_ns
-                set block_name ""
-                set block_ns ""
-            end
-            set in_contexts 0
-            continue
-        end
-
-        test $in_contexts = 1; or continue
-
-        if test (string trim -- $line) = '- context:'
-            if test -n "$block_name"
-                set -a names $block_name
-                set -a namespaces $block_ns
-            end
-            set block_ns ""
-            set block_name ""
-            continue
-        end
-
-        set m (string match -r '^    namespace: *(.*)$' -- $line)
-        test (count $m) -ge 2; and set block_ns (string trim --chars '"' -- $m[2])
-
-        set m (string match -r '^  name: *(.*)$' -- $line)
-        test (count $m) -ge 2; and set block_name (string trim --chars '"' -- $m[2])
-    end
-
-    if test -n "$block_name"
-        set -a names $block_name
-        set -a namespaces $block_ns
-    end
-
-    test -z "$current"; and return
-
-    set -l found_ns ""
-    for i in (seq (count $names))
-        if test "$names[$i]" = "$current"
-            set found_ns $namespaces[$i]
-            break
-        end
-    end
-    printf '%s\n%s\n' "$current" "$found_ns"
-end
-
-# disk cache (mtime|ctx|ns) so cold-start skips the kubeconfig yaml walk.
-function _damin_k8s_prefill
-    set -l cfg (_damin_k8s_config_path)
-    test -f $cfg; or return
-    set -l mt (path mtime $cfg 2>/dev/null)
-    test -n "$mt"; or return
-    set -l cache "$_damin_cache_dir/cloud-k8s"
-    if test -f $cache
-        set -l lines (_damin_read_lines $cache)
-        test (count $lines) -ge 1 -a "$lines[1]" = "$mt"; and return
-    end
-    set -l data (_damin_k8s_compute $cfg)
-    set -l ctx ""
-    set -l ns ""
-    test (count $data) -ge 1; and set ctx $data[1]
-    test (count $data) -ge 2; and set ns $data[2]
-    mkdir -p $_damin_cache_dir 2>/dev/null
-    set -l tmp "$cache.tmp.$fish_pid"
-    printf '%s\n%s\n%s\n' "$mt" "$ctx" "$ns" >$tmp 2>/dev/null
-    mv $tmp $cache 2>/dev/null
-end
-
-function _damin_k8s_render
-    set -l cfg (_damin_k8s_config_path)
-    set -l in_pod 0
-    set -q KUBERNETES_SERVICE_HOST; and set in_pod 1
-
-    set -l ctx ""
-    set -l ns ""
-
-    if test -f $cfg
-        set -l mt (path mtime $cfg 2>/dev/null)
-        if test "$mt" = "$_damin_k8s_mt"
-            set ctx $_damin_k8s_ctx
-            set ns $_damin_k8s_ns
-        else
-            set -l used_cache 0
-            set -l cache "$_damin_cache_dir/cloud-k8s"
-            if test -f $cache
-                set -l lines (_damin_read_lines $cache)
-                if test (count $lines) -ge 1 -a "$lines[1]" = "$mt"
-                    test (count $lines) -ge 2; and set ctx $lines[2]
-                    test (count $lines) -ge 3; and set ns $lines[3]
-                    set used_cache 1
-                end
-            end
-            if test $used_cache = 0
-                set -l data (_damin_k8s_compute $cfg)
-                test (count $data) -ge 1; and set ctx $data[1]
-                test (count $data) -ge 2; and set ns $data[2]
-                mkdir -p $_damin_cache_dir 2>/dev/null
-                set -l tmp "$cache.tmp.$fish_pid"
-                printf '%s\n%s\n%s\n' "$mt" "$ctx" "$ns" >$tmp 2>/dev/null
-                mv $tmp $cache 2>/dev/null
-            end
-            set -g _damin_k8s_mt $mt
-            set -g _damin_k8s_ctx $ctx
-            set -g _damin_k8s_ns $ns
-        end
-    end
-
-    test -n "$ctx" -o $in_pod = 1; or return
-
-    set -l label k8s
-    test "$theme_damin_show_k8s_context" = 1 -a -n "$ctx"; and set label "$label:$ctx"
-    test "$theme_damin_show_k8s_namespace" = 1 -a -n "$ns"; and set label "$label/$ns"
-    echo -n -s $_damin_c_dim "$label " $_damin_c_normal
-end
-
+# aws / gcp / azure / k8s renderers + helpers live in functions/ — autoloaded
+# on first use; disabled segments cost zero parse time.
 function _damin_context_render
     test "$theme_damin_show_context" = 1; or return
     test -n "$SSH_CONNECTION"; and echo -n -s $_damin_c_dim ssh $_damin_c_normal " "
@@ -756,92 +468,27 @@ function _damin_context_render
     else if test -f /run/.containerenv
         echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
     end
-    _damin_aws_render
-    _damin_gcp_render
-    _damin_azure_render
-    _damin_k8s_render
+    # gate at the caller — disabled cloud segments don't autoload at all.
+    test "$theme_damin_show_aws" = 1; and _damin_aws_render
+    test "$theme_damin_show_gcp" = 1; and _damin_gcp_render
+    test "$theme_damin_show_azure" = 1; and _damin_azure_render
+    # k8s also fires inside a pod (bare `k8s` indicator) even without toggle.
+    if test "$theme_damin_show_k8s_context" = 1; or set -q KUBERNETES_SERVICE_HOST
+        _damin_k8s_render
+    end
 end
 
-function _damin_git_compute
-    set -l info (command git rev-parse --is-inside-work-tree --git-dir --git-common-dir 2>/dev/null)
-    test "$info[1]" = true; or return
-    set -l git_dir $info[2]
-    set -l git_common $info[3]
+# _damin_git_compute lives in conf.d/_damin_async_core.fish.
 
-    set -l branch
-    set -l oid
-    set -l has_upstream 0
-    set -l untracked 0
-    set -l modified 0
-    set -l staged 0
-    set -l ahead 0
-    set -l behind 0
-    set -l conflict 0
-
-    for line in (command git status --porcelain=v2 --branch 2>/dev/null)
-        switch (string sub -l 1 -- "$line")
-            case '\?'
-                set untracked (math $untracked + 1)
-            case u
-                set conflict (math $conflict + 1)
-            case 1 2
-                set -l xy (string sub -s 3 -l 2 -- "$line")
-                test (string sub -s 1 -l 1 -- "$xy") != .; and set staged (math $staged + 1)
-                test (string sub -s 2 -l 1 -- "$xy") != .; and set modified (math $modified + 1)
-            case '#'
-                set -l parts (string split ' ' -- "$line")
-                switch $parts[2]
-                    case branch.head
-                        set branch $parts[3]
-                    case branch.oid
-                        set oid $parts[3]
-                    case branch.upstream
-                        set has_upstream 1
-                    case branch.ab
-                        set ahead (string sub -s 2 -- $parts[3])
-                        set behind (string sub -s 2 -- $parts[4])
-                end
-        end
-    end
-
-    # no upstream → porcelain v2 omits branch.ab; rev-list against remotes to keep ⇡N alive.
-    if test $has_upstream = 0 -a "$ahead" = 0
-        if test -n "$(command git remote 2>/dev/null)"
-            set -l unpushed (command git rev-list --count HEAD --not --remotes 2>/dev/null)
-            string match -rq '^\d+$' -- "$unpushed"; and set ahead $unpushed
-        end
-    end
-
-    test "$branch" = '(detached)'; and set branch (string sub -l 8 -- $oid)
-    test -z "$branch"; and set branch '?'
-
-    set -l stashed 0
-    set -l stash_log "$git_common/logs/refs/stash"
-    test -f $stash_log; and set stashed (command wc -l <$stash_log 2>/dev/null | string trim)
-    test -z "$stashed"; and set stashed 0
-
-    set -l op ""
-    if test "$theme_damin_show_git_op" = 1
-        if test -d "$git_dir/rebase-merge" -o -d "$git_dir/rebase-apply"
-            set op rebase
-        else if test -f "$git_dir/MERGE_HEAD"
-            set op merge
-        else if test -f "$git_dir/CHERRY_PICK_HEAD"
-            set op pick
-        else if test -f "$git_dir/REVERT_HEAD"
-            set op revert
-        else if test -f "$git_dir/BISECT_LOG"
-            set op bisect
-        end
-    end
-
-    printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$conflict" "$op"
+# single batched mtime call → [cache, index, HEAD, logs/HEAD] (missing paths dropped).
+# output drives BOTH the cache-freshness key AND the stale check — one builtin invocation.
+function _damin_git_path_mtimes --argument-names cache_file
+    test -n "$_damin_vcs_dir"; or return 1
+    path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null
 end
 
 function _damin_git_cache_stale --argument-names cache_file
-    test -n "$_damin_vcs_dir"; or return 1
-    # path mtime is a builtin (no fork). index/HEAD/logs/HEAD catch out-of-shell commits.
-    set -l mt (path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null)
+    set -l mt (_damin_git_path_mtimes $cache_file)
     test (count $mt) -lt 2; and return 1
     set -l cm $mt[1]
     for m in $mt[2..]
@@ -902,31 +549,31 @@ function _damin_git_render_data --argument-names branch u m s st a b c op
     _damin_gh_render "$branch"
 end
 
-# compute + write the git cache without rendering. used by warmup + async repaint.
-function _damin_git_prefill
-    set -l cache_file (_damin_cache_path git)
-    set -l data (_damin_git_compute 2>/dev/null)
-    test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
-end
+# _damin_git_prefill lives in _damin_async_core.fish.
 
-# universal-var IPC instead of --on-process-exit: backgrounded fish funcs don't set $last_pid.
+# IPC via universal var: backgrounded fish funcs don't set $last_pid, so
+# --on-process-exit isn't viable. subshell sources the ~3 KB core, not the full theme.
 function _damin_git_async_kickoff
-    set -q _damin_git_refresh_running; and return
+    # cancel any in-flight refresh — last cd wins, no piled-up stale work.
+    if set -q _damin_git_refresh_pid; and test -n "$_damin_git_refresh_pid"
+        kill $_damin_git_refresh_pid 2>/dev/null
+    end
     set -g _damin_git_refresh_running 1
-    set -l theme_file $_damin_theme_file
+    set -l core $_damin_async_core_file
     set -l pwd $PWD
     fish -c "
-        set -gx _damin_subshell 1
         cd '$pwd' 2>/dev/null
-        source '$theme_file' 2>/dev/null
+        source '$core' 2>/dev/null
         _damin_git_prefill
         set -U _damin_async_repaint_token (random)
     " >/dev/null 2>&1 &
+    set -g _damin_git_refresh_pid $last_pid
     disown 2>/dev/null
 end
 
 function _damin_async_repaint_handler --on-variable _damin_async_repaint_token
     set -e _damin_git_refresh_running
+    set -e _damin_git_refresh_pid
     commandline -f repaint 2>/dev/null
 end
 
@@ -939,14 +586,34 @@ function _damin_git_render
     end
 
     set -l cache_file (_damin_cache_path git)
-    set -l data
+    set -l cache_mt ""
     set -l stale 0
 
+    # `test -f` gate: path mtime silently drops missing paths, so without this
+    # mt[1] could be the index mtime instead of the cache mtime.
     if test -f $cache_file
+        set -l mt (_damin_git_path_mtimes $cache_file)
+        if test (count $mt) -ge 1
+            set cache_mt $mt[1]
+            for m in $mt[2..]
+                test $m -gt $cache_mt; and set stale 1; and break
+            end
+        end
+    end
+
+    set -l data
+
+    # in-memory shortcut: same pwd + same cache mtime + fresh → reuse parsed data.
+    # postexec deletes the cache file on git-mutating commands → cache_mt empty → forced re-read.
+    if test -n "$cache_mt" -a "$_damin_git_cached_pwd" = "$PWD" -a "$_damin_git_cached_mt" = "$cache_mt" -a $stale = 0
+        set data $_damin_git_cached_data
+    else if test -n "$cache_mt"
         set -l lines (_damin_read_lines $cache_file)
         if test (count $lines) -ge 10 -a "$lines[1]" = "$PWD"
             set data $lines[2..10]
-            _damin_git_cache_stale $cache_file; and set stale 1
+            set -g _damin_git_cached_pwd "$PWD"
+            set -g _damin_git_cached_mt "$cache_mt"
+            set -g _damin_git_cached_data $data
         end
     end
 
@@ -963,27 +630,19 @@ function _damin_git_render
     # default: sync compute on miss or stale.
     if test -z "$data" -o $stale = 1
         set data (_damin_git_compute)
-        test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
+        if test -n "$data"
+            _damin_write_cache $cache_file "$PWD" $data
+            set -g _damin_git_cached_pwd "$PWD"
+            set -g _damin_git_cached_mt (path mtime $cache_file 2>/dev/null)
+            set -g _damin_git_cached_data $data
+        end
     end
 
     test -z "$data"; and return
     _damin_git_render_data $data
 end
 
-function _damin_jj_compute
-    set -l info (command jj log -r @ --no-graph --no-pager --color=never --template 'bookmarks.join(",") ++ "|" ++ change_id.short()' 2>/dev/null)
-    test -z "$info"; and return
-    set -l parts (string split '|' -- $info)
-    set -l bookmark $parts[1]
-    set -l change $parts[2]
-    test -n "$bookmark"; and echo $bookmark; or echo $change
-end
-
-function _damin_jj_render
-    set -l name (_damin_jj_compute)
-    test -z "$name"; and return
-    echo -n -s $_damin_c_branch $name $_damin_c_normal " " $_damin_c_deco $theme_damin_glyph_clean $_damin_c_normal
-end
+# jj helpers live in functions/ — autoloaded only when in a jj repo.
 
 # silent skip when gh is missing, remote isn't github, or no PR is open.
 function _damin_gh_compute --argument-names branch
@@ -1127,9 +786,13 @@ function _damin_exit_label --argument-names code
 end
 
 function _damin_cwd_pretty
-    set -l result (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
-    test -n "$result"; and echo $result; and return
-    prompt_pwd
+    # PWD-memo: prompt_pwd's string work only runs on cd.
+    if test "$_damin_cwd_pwd" != "$PWD"
+        set -g _damin_cwd_pwd "$PWD"
+        set -g _damin_cwd_value (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
+        test -z "$_damin_cwd_value"; and set -g _damin_cwd_value (prompt_pwd)
+    end
+    echo $_damin_cwd_value
 end
 
 # first non-empty/non-# line, strips leading `v` (.nvmrc `v18.18` → `18.18`).
@@ -1300,6 +963,12 @@ end
 function _damin_lang_render
     test "$theme_damin_show_lang" = 1; or return
 
+    # in-memory PWD memo first; postexec on version-manager commands clears it.
+    if test "$_damin_lang_pwd" = "$PWD"
+        test -n "$_damin_lang_value"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "$_damin_lang_value" $_damin_c_normal
+        return
+    end
+
     set -l value
 
     if test "$theme_damin_async_lang" = 1
@@ -1311,97 +980,21 @@ function _damin_lang_render
             end
         end
 
-        if test -z "$value" -a "$_damin_lang_pwd" != "$PWD"
+        if test -z "$value"
             set value (_damin_lang_compute)
-            set -g _damin_lang_pwd "$PWD"
-            set -g _damin_lang_value "$value"
             _damin_write_cache $cache_file "$PWD" "$value"
         end
     else
-        if test "$_damin_lang_pwd" != "$PWD"
-            set -g _damin_lang_pwd "$PWD"
-            set -g _damin_lang_value (_damin_lang_compute)
-        end
-        set value $_damin_lang_value
+        set value (_damin_lang_compute)
     end
+
+    set -g _damin_lang_pwd "$PWD"
+    set -g _damin_lang_value "$value"
 
     test -n "$value"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "$value" $_damin_c_normal
 end
 
-# $PULUMI_STACK wins; else read workspace file iff exactly one matches the project name
-# (the *-<hash>-workspace.json suffix isn't reverse-engineerable from the path).
-function _damin_pulumi_stack_for --argument-names proj_dir
-    set -l proj_name
-    for yaml in $proj_dir/Pulumi.yaml $proj_dir/Pulumi.yml
-        test -f $yaml; or continue
-        for line in (command cat $yaml 2>/dev/null)
-            set -l m (string match -r '^name: *(.*)$' -- $line)
-            if test (count $m) -ge 2
-                set proj_name (string trim --chars '"' -- $m[2])
-                break
-            end
-        end
-        test -n "$proj_name"; and break
-    end
-    test -n "$proj_name"; or return
-
-    set -q PULUMI_STACK; and test -n "$PULUMI_STACK"; and echo $PULUMI_STACK; and return
-
-    set -l home_pulumi "$HOME/.pulumi"
-    set -q PULUMI_HOME; and test -n "$PULUMI_HOME"; and set home_pulumi $PULUMI_HOME
-    set -l ws_dir "$home_pulumi/workspaces"
-    test -d $ws_dir; or return
-
-    set -l matches
-    for f in $ws_dir/$proj_name-*-workspace.json
-        test -f $f; and set -a matches $f
-    end
-    test (count $matches) -eq 1; or return
-    set -l stack (command cat $matches[1] 2>/dev/null | string match -gr '"stack":\s*"([^"]+)"' | head -1)
-    test -n "$stack"; and echo $stack
-end
-
-# pwd-cached single walk-up; exits early once both segments resolve.
-function _damin_devops_resolve
-    test "$_damin_devops_pwd" = "$PWD"; and return
-    set -g _damin_devops_pwd "$PWD"
-    set -g _damin_devops_tf ""
-    set -g _damin_devops_pl ""
-    set -l want_tf 0
-    set -l want_pl 0
-    test "$theme_damin_show_terraform" = 1; and set want_tf 1
-    test "$theme_damin_show_pulumi" = 1; and set want_pl 1
-    test $want_tf = 0 -a $want_pl = 0; and return
-
-    set -l dir $PWD
-    set -l levels 0
-    while test "$dir" != / -a $levels -lt 8
-        if test $want_tf = 1 -a -d "$dir/.terraform"
-            set -l env "$dir/.terraform/environment"
-            if test -f $env
-                set -l ws (command cat $env 2>/dev/null | string trim)
-                test -n "$ws" -a "$ws" != default; and set -g _damin_devops_tf "$ws"
-            end
-            set want_tf 0
-        end
-        if test $want_pl = 1
-            if test -f "$dir/Pulumi.yaml" -o -f "$dir/Pulumi.yml"
-                set -g _damin_devops_pl (_damin_pulumi_stack_for $dir)
-                set want_pl 0
-            end
-        end
-        test $want_tf = 0 -a $want_pl = 0; and break
-        set dir (path dirname $dir)
-        set levels (math $levels + 1)
-    end
-end
-
-function _damin_devops_render
-    test "$theme_damin_show_terraform" = 1 -o "$theme_damin_show_pulumi" = 1; or return
-    _damin_devops_resolve
-    test -n "$_damin_devops_tf"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "tf:$_damin_devops_tf" $_damin_c_normal
-    test -n "$_damin_devops_pl"; and echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "pulumi:$_damin_devops_pl" $_damin_c_normal
-end
+# devops helpers (pulumi / terraform) live in functions/ — autoloaded on demand.
 
 function _damin_env_render
     test "$theme_damin_show_env" = 1; or return
@@ -1434,50 +1027,25 @@ function _damin_env_render
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "($joined)" $_damin_c_normal
 end
 
-function _damin_battery_render
-    test "$theme_damin_show_battery" = 1; or return
-    set -l now (date +%s)
-    if test (math $now - $_damin_battery_at) -ge 60
-        set -g _damin_battery_at $now
-        set -l pct
-        switch (uname)
-            case Darwin
-                set pct (command pmset -g batt 2>/dev/null | string match -gr '(\d+)%')
-                set pct $pct[1]
-            case Linux
-                for f in /sys/class/power_supply/BAT*/capacity
-                    if test -f $f
-                        set pct (command cat $f 2>/dev/null | string trim)
-                        break
-                    end
-                end
-            case FreeBSD OpenBSD NetBSD DragonFly
-                set pct (command apm -l 2>/dev/null | string trim)
-                if not string match -rq '^\d+$' -- "$pct"
-                    set pct (command sysctl -n hw.acpi.battery.life 2>/dev/null | string trim)
-                end
-        end
-        string match -rq '^\d+$' -- "$pct"; or set pct ""
-        set -g _damin_battery_value "$pct"
-    end
-    set -l pct $_damin_battery_value
-    test -z "$pct"; and return
-    test $pct -gt $theme_damin_battery_threshold; and return
-    set -l color $_damin_c_dim
-    test $pct -le 10; and set color $_damin_c_err
-    echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $color "$pct%" $_damin_c_normal
-end
+# battery renderer lives in functions/ — autoloaded only when show_battery=1.
 
 function _damin_duration_format
+    # CMD_DURATION is stable within a prompt cycle — repaints (arrow-key, etc.) skip the math.
+    if test "$_damin_duration_ms" = "$CMD_DURATION"
+        echo $_damin_duration_value
+        return
+    end
+    set -g _damin_duration_ms $CMD_DURATION
     set -l s (math $CMD_DURATION/1000)
     set -l m (math $s/60)
     if test $m -gt 1
-        echo $m m
+        set -g _damin_duration_value "$m m"
     else if test $s -gt 1
-        echo $s s
+        set -g _damin_duration_value "$s s"
     else
-        echo $CMD_DURATION ms
+        set -g _damin_duration_value "$CMD_DURATION ms"
     end
+    echo $_damin_duration_value
 end
 
 function _damin_duration_render
@@ -1515,9 +1083,9 @@ function _damin_postexec --on-event fish_postexec
         if test $CMD_DURATION -gt $theme_damin_notify_threshold
             set -l short (string sub -l 60 -- $cmd)
             set -l secs (math --scale=1 $CMD_DURATION/1000)
-            # osc 9 = universal notification (iTerm2, Konsole, Windows Terminal, Final Term, ConEmu).
+            # OSC 9 = universal terminal notification (iTerm2, Konsole, Win Terminal, …).
             printf '\e]9;%s (%ss, exit %s)\a' $short $secs $exit
-            # also fire notify-send in background when available so the alert survives focus changes.
+            # notify-send (Linux/BSD desktops) survives focus loss; backgrounded so it doesn't block.
             type -q notify-send; and command notify-send -t 5000 "fish: $short" "$secs s · exit $exit" &
         end
     end
@@ -1534,19 +1102,22 @@ function _damin_postexec --on-event fish_postexec
     end
     if string match -qr '\b(nvm|fnm|asdf|mise|pyenv|rbenv|rustup|volta|conda)\b' -- $cmd
         command rm -f (_damin_cache_path lang) 2>/dev/null
+        # also clear in-memory memo, else next prompt serves the stale version.
+        set -g _damin_lang_pwd ""
+        set -g _damin_lang_value ""
     end
-    # `aws configure` / `gcloud config set` / `az account set` mutate same-second; force refresh.
+    # aws/gcloud/az config writes hit same-second mtime; force-refresh on next prompt.
     if string match -qr '\b(aws|gcloud|az)\b' -- $cmd
         set -g _damin_aws_cfg_mt ""
         set -g _damin_gcp_active_mt ""
         set -g _damin_gcp_cfg_mt ""
         set -g _damin_azure_mt ""
     end
-    # terraform workspace / pulumi stack swaps invalidate the devops cache.
+    # terraform workspace / pulumi stack swaps.
     if string match -qr '\b(terraform|tf|pulumi)\b' -- $cmd
         set -g _damin_devops_pwd ""
     end
-    # kubectl mutating subcommands rewrite kubeconfig within the same mtime second.
+    # kubectl config writes can hit same-second mtime; drop both caches.
     if string match -qr '\bkubectl\s+config\b' -- $cmd
         set -g _damin_k8s_mt ""
         command rm -f "$_damin_cache_dir/cloud-k8s" 2>/dev/null
@@ -1555,7 +1126,7 @@ end
 
 function _damin_transient_enter
     if test "$theme_damin_transient" = 1
-        # skip incomplete buffers (status 2) — enter inserts a newline, no execute.
+        # status 2 = incomplete buffer (open quote etc.) — enter inserts newline, no execute.
         commandline --is-valid 2>/dev/null
         if test $status -ne 2
             set -g _damin_in_transient 1
@@ -1565,7 +1136,7 @@ function _damin_transient_enter
     commandline -f execute
 end
 
-# bind in every mode so vi `insert` (where editing happens) is covered too.
+# bind every mode — vi `insert` (where editing happens) needs its own bind.
 function _damin_install_transient_bindings
     for mode in default insert visual replace replace_one paste
         bind -M $mode \r _damin_transient_enter 2>/dev/null
@@ -1573,15 +1144,15 @@ function _damin_install_transient_bindings
     end
 end
 
-# `fish_{default,vi}_key_bindings` wipe all bindings; re-install after the swap.
+# fish_{default,vi}_key_bindings wipe all binds on swap; re-install after.
 function _damin_reinstall_transient_bindings --on-variable fish_key_bindings
     _damin_install_transient_bindings
 end
 
-# defined in conf.d/ (not functions/) so fisher doesn't copy a stub that omf would flag as conflicting.
+# fish_prompt + fish_right_prompt live in conf.d/ (not functions/) so fisher
+# doesn't copy them as autoload stubs — omf would flag those as conflicting.
 
-# fish renders fish_mode_prompt (default `[I] ` etc.) before fish_prompt; damin already
-# renders its own vi badge inline, so the default doubles up — blank it out.
+# blank fish's default `[I] ` mode prompt — damin renders its vi badge inline.
 function fish_mode_prompt
 end
 
@@ -1591,8 +1162,8 @@ function fish_prompt
     _damin_osc133_a
     _damin_osc7_emit
 
-    # 1 = render stub then advance; 2 = clear + render full. owned here so an overridden
-    # fish_right_prompt can't strand the flag.
+    # transient state machine: 1 = stub-then-advance, 2 = clear + render full.
+    # owned in fish_prompt so an overridden fish_right_prompt can't strand the flag.
     switch "$_damin_in_transient"
         case 1
             echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
@@ -1629,14 +1200,18 @@ function fish_right_prompt
     echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
 
     _damin_lang_render
-    _damin_devops_render
+    # gate at caller — disabled segments don't autoload.
+    if test "$theme_damin_show_terraform" = 1; or test "$theme_damin_show_pulumi" = 1
+        _damin_devops_render
+    end
     _damin_env_render
-    _damin_battery_render
+    test "$theme_damin_show_battery" = 1; and _damin_battery_render
     _damin_duration_render
     _damin_extra_segments_render right
 end
 
-# one bg fork warms every prefill — fish's `&` forks the current shell, no reload.
+# one backgrounded fork at theme load fills both caches. `&` forks the current
+# shell, so all functions are already defined — no source reload needed.
 function _damin_warmup
     if test "$theme_damin_async_git" = 1
         test (_damin_detect_vcs) = git; and _damin_git_prefill
@@ -1644,7 +1219,8 @@ function _damin_warmup
     test "$theme_damin_show_k8s_context" = 1; and _damin_k8s_prefill
 end
 
-# async_repaint subshell needs only the function defs; skip init side effects.
+# subshell-mode guard kept as a safety net; current async kickoff sources only
+# _damin_async_core.fish so this branch isn't normally hit anymore.
 if not set -q _damin_subshell
     _damin_cache_prune
     _damin_install_transient_bindings
