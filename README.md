@@ -118,7 +118,7 @@ PRs welcome. Run `./tools/format.sh`, `./tools/lint.sh`, `./tools/test.sh`. Hot-
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: **1.1.0**.
+See [CHANGELOG.md](CHANGELOG.md). Current version: **1.2.0**.
 
 ## License
 
