@@ -53,7 +53,7 @@ function _damin_git_compute
     test "$theme_damin_git_count_untracked" = 0; and set untracked_flag --untracked-files=no
     for line in (command git --no-optional-locks status --porcelain=v2 --branch $untracked_flag 2>/dev/null)
         switch (string sub -l 1 -- "$line")
-            case \?
+            case '\?'
                 set untracked (math $untracked + 1)
             case u
                 set conflict (math $conflict + 1)

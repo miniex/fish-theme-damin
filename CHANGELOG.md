@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `_damin_git_compute` — restore `case '\?'`. Unquoted `\?` lets fish strip the backslash, leaving glob `?` (any single char) that matches every status line's first char — `case '#'` (branch parsing) never ran, branch fell through to the literal `?` fallback, and untracked counted every line. The 1.2.0 "fix" was a regression; the quoted form preserves the escape into glob and matches only literal `?`
+
+### Changed
+
+- `damin_doctor` font width sanity check now exercises `·` (right-prompt separator) alongside the other glyphs — was the only common prompt glyph missing from the test
+
 ## [1.2.0] - 20260513222728 KST
 
 ### Added

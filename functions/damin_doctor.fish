@@ -122,7 +122,7 @@ function damin_doctor
 
     echo
     echo "  font width sanity — each glyph should sit immediately before the |:"
-    for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ ?
+    for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ · ?
         printf '    %s|\n' $c
     end
     echo "  (a '?' or visible gap before | = font is missing the glyph; enable ascii mode)"
