@@ -155,66 +155,67 @@ Every toggle is a universal var (`set -U`). Defaults apply only when unset. `dam
 
 ### Toggles
 
-| Variable                               | Default    | Effect                                                                            |
-|----------------------------------------|------------|-----------------------------------------------------------------------------------|
-| `theme_damin_show_git`                 | `1`        | Branch + meta (gates jj too)                                                      |
-| `theme_damin_show_jj`                  | `1`        | Use jj when `.jj/` found before `.git/`                                           |
-| `theme_damin_show_git_op`              | `1`        | `(rebase|merge|pick|revert|bisect)` state                                         |
-| `theme_damin_show_context`             | `1`        | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                                 |
-| `theme_damin_show_k8s_context`         | `1`        | Append `:<context>` to `k8s`                                                      |
-| `theme_damin_show_k8s_namespace`       | `0`        | Append `/<namespace>` to `k8s:<context>`                                          |
-| `theme_damin_show_jobs`                | `1`        | `&N` background-job count                                                         |
-| `theme_damin_show_env`                 | `1`        | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)`                         |
-| `theme_damin_show_nix_name`            | `1`        | Show nix devshell name inside `IN_NIX_SHELL`                                      |
-| `theme_damin_show_lang`                | `1`        | Project language + version                                                        |
-| `theme_damin_show_battery`             | `0`        | Battery % when ≤ threshold (laptops)                                              |
-| `theme_damin_show_duration`            | `1`        | Last command duration                                                             |
-| `theme_damin_show_vi_mode`             | `1`        | `[N]`/`[I]`/`[V]`/`[R]` badge (skipped under emacs binds)                         |
-| `theme_damin_show_exit_code`           | `number`   | `number` / `name` / `both` / `off`                                                |
-| `theme_damin_show_aws`                 | `0`        | `aws:<profile>` indicator                                                         |
-| `theme_damin_show_aws_region`          | `1`        | Append `@<region>` to AWS                                                         |
-| `theme_damin_show_gcp`                 | `0`        | `gcp:<project>` indicator                                                         |
-| `theme_damin_show_azure`               | `0`        | `az:<subscription>` indicator                                                     |
-| `theme_damin_show_terraform`           | `1`        | `tf:<workspace>` from `.terraform/environment`                                    |
-| `theme_damin_show_pulumi`              | `1`        | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                               |
-| `theme_damin_show_gh_pr`               | `0`        | `#<num>` for current branch's open PR (via `gh`)                                  |
-| `theme_damin_notify_long_command`      | `0`        | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                             |
-| `theme_damin_palette`                  | `mocha`    | mocha/frappe/macchiato/latte/gruvbox/tokyonight/rosepine/nord/dracula             |
-| `theme_damin_accent_primary`           | palette    | Brand accent hex (cwd, branch)                                                    |
-| `theme_damin_accent_secondary`         | palette    | Brand accent hex (florette, meta)                                                 |
-| `theme_damin_git_counts`               | `1`        | Show counts next to git indicators (`?3` vs `?`)                                  |
-| `theme_damin_git_count_untracked`      | `1`        | `0` → `-uno` (30-100× faster in big repos, hides `?N`)                            |
-| `theme_damin_transient`                | `1`        | Collapse past prompts to `✿` after Enter                                          |
-| `theme_damin_async_git`                | `1`        | Cache git + postexec invalidation. `0` = sync                                     |
-| `theme_damin_async_lang`               | `1`        | Cache lang + postexec invalidation. `0` = sync                                    |
-| `theme_damin_async_warmup`             | `1`        | Background-prefill caches at theme load                                           |
-| `theme_damin_async_repaint`            | `0`        | Stale-while-revalidate git via `fish -c` subshell                                 |
-| `theme_damin_osc_integration`          | `1`        | Emit OSC 7 + OSC 133                                                              |
-| `theme_damin_cwd_keep`                 | `3`        | Trailing path segments kept full                                                  |
-| `theme_damin_cwd_short`                | `4`        | Chars to truncate earlier segments to                                             |
-| `theme_damin_long_command_threshold`   | `3000`     | Duration (ms) above which time renders bold                                       |
-| `theme_damin_battery_threshold`        | `30`       | Show battery when `%` ≤ this                                                      |
-| `theme_damin_gh_pr_ttl`                | `300`      | Seconds the GitHub PR result is cached                                            |
-| `theme_damin_notify_threshold`         | `30000`    | Duration (ms) for long-command notification                                       |
-| `theme_damin_ascii`                    | `0`        | Swap all glyph defaults to ASCII                                                  |
+| Variable                             | Default   | Effect                                                                |
+|--------------------------------------|-----------|-----------------------------------------------------------------------|
+| `theme_damin_show_git`               | `1`       | Branch + meta (gates jj too)                                          |
+| `theme_damin_show_jj`                | `1`       | Use jj when `.jj/` found before `.git/`                               |
+| `theme_damin_show_git_op`            | `1`       | `(rebase\|merge\|pick\|revert\|bisect)` state                         |
+| `theme_damin_show_context`           | `1`       | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                     |
+| `theme_damin_show_k8s_context`       | `1`       | Append `:<context>` to `k8s`                                          |
+| `theme_damin_show_k8s_namespace`     | `0`       | Append `/<namespace>` to `k8s:<context>`                              |
+| `theme_damin_show_jobs`              | `1`       | `&N` background-job count                                             |
+| `theme_damin_show_env`               | `1`       | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)`             |
+| `theme_damin_show_nix_name`          | `1`       | Show nix devshell name inside `IN_NIX_SHELL`                          |
+| `theme_damin_show_lang`              | `1`       | Project language + version                                            |
+| `theme_damin_show_battery`           | `0`       | Battery % when ≤ threshold (laptops)                                  |
+| `theme_damin_show_duration`          | `1`       | Last command duration                                                 |
+| `theme_damin_show_vi_mode`           | `1`       | `[N]`/`[I]`/`[V]`/`[R]` badge (skipped under emacs binds)             |
+| `theme_damin_show_exit_code`         | `number`  | `number` / `name` / `both` / `off`                                    |
+| `theme_damin_show_aws`               | `0`       | `aws:<profile>` indicator                                             |
+| `theme_damin_show_aws_region`        | `1`       | Append `@<region>` to AWS                                             |
+| `theme_damin_show_gcp`               | `0`       | `gcp:<project>` indicator                                             |
+| `theme_damin_show_azure`             | `0`       | `az:<subscription>` indicator                                         |
+| `theme_damin_show_terraform`         | `1`       | `tf:<workspace>` from `.terraform/environment`                        |
+| `theme_damin_show_pulumi`            | `1`       | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                   |
+| `theme_damin_show_gh_pr`             | `0`       | `#<num>` for current branch's open PR (via `gh`)                      |
+| `theme_damin_notify_long_command`    | `0`       | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                 |
+| `theme_damin_palette`                | `mocha`   | mocha/frappe/macchiato/latte/gruvbox/tokyonight/rosepine/nord/dracula |
+| `theme_damin_accent_primary`         | palette   | Brand accent hex (cwd, branch)                                        |
+| `theme_damin_accent_secondary`       | palette   | Brand accent hex (florette, meta)                                     |
+| `theme_damin_git_counts`             | `1`       | Show counts next to git indicators (`?3` vs `?`)                      |
+| `theme_damin_git_count_untracked`    | `1`       | `0` → `-uno` (30-100× faster in big repos, hides `?N`)                |
+| `theme_damin_transient`              | `1`       | Collapse past prompts to `✿` after Enter                              |
+| `theme_damin_async_git`              | `1`       | Cache git + postexec invalidation. `0` = sync                         |
+| `theme_damin_async_lang`             | `1`       | Cache lang + postexec invalidation. `0` = sync                        |
+| `theme_damin_async_warmup`           | `1`       | Background-prefill caches at theme load                               |
+| `theme_damin_async_repaint`          | `0`       | Stale-while-revalidate git via `fish -c` subshell                     |
+| `theme_damin_async_signal`           | `SIGUSR1` | Signal the async-refresh subshell sends to repaint the parent         |
+| `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 133                                                  |
+| `theme_damin_cwd_keep`               | `3`       | Trailing path segments kept full                                      |
+| `theme_damin_cwd_short`              | `4`       | Chars to truncate earlier segments to                                 |
+| `theme_damin_long_command_threshold` | `3000`    | Duration (ms) above which time renders bold                           |
+| `theme_damin_battery_threshold`      | `30`      | Show battery when `%` ≤ this                                          |
+| `theme_damin_gh_pr_ttl`              | `300`     | Seconds the GitHub PR result is cached                                |
+| `theme_damin_notify_threshold`       | `30000`   | Duration (ms) for long-command notification                           |
+| `theme_damin_ascii`                  | `0`       | Swap all glyph defaults to ASCII                                      |
 
 ### Glyph overrides
 
 Each symbol comes from `theme_damin_glyph_*` — override one without flipping the whole theme to ASCII. User override wins; otherwise the default below switches on `theme_damin_ascii`.
 
-| Variable                           | Default (fancy)   | Default (`ascii=1`)   | Where it renders                                  |
-|------------------------------------|-------------------|-----------------------|---------------------------------------------------|
-| `theme_damin_glyph_prompt`         | `✿`               | `*`                   | Florette at end of left prompt + transient stub   |
-| `theme_damin_glyph_cwd`            | `❥`               | `>`                   | Right-prompt cwd marker                           |
-| `theme_damin_glyph_clean`          | `✧`               | `~`                   | Sparkle when working tree is fully clean          |
-| `theme_damin_glyph_modified`       | `✗`               | `!`                   | Modified-file count                               |
-| `theme_damin_glyph_added`          | `✓`               | `+`                   | Staged-file count                                 |
-| `theme_damin_glyph_untracked`      | `?`               | `?`                   | Untracked-file count (matches porcelain)          |
-| `theme_damin_glyph_stashed`        | `$`               | `$`                   | Stash count                                       |
-| `theme_damin_glyph_ahead`          | `⇡`               | `^`                   | Ahead-of-upstream count                           |
-| `theme_damin_glyph_behind`         | `⇣`               | `v`                   | Behind-upstream count                             |
-| `theme_damin_glyph_conflict`       | `X`               | `X`                   | Unmerged-file count (rendered in bold red)        |
-| `theme_damin_glyph_sep`            | `·`               | `\|`                  | Right-prompt segment separator                    |
+| Variable                      | Default (fancy) | Default (`ascii=1`) | Where it renders                                |
+|-------------------------------|-----------------|---------------------|-------------------------------------------------|
+| `theme_damin_glyph_prompt`    | `✿`             | `*`                 | Florette at end of left prompt + transient stub |
+| `theme_damin_glyph_cwd`       | `❥`             | `>`                 | Right-prompt cwd marker                         |
+| `theme_damin_glyph_clean`     | `✧`             | `~`                 | Sparkle when working tree is fully clean        |
+| `theme_damin_glyph_modified`  | `✗`             | `!`                 | Modified-file count                             |
+| `theme_damin_glyph_added`     | `✓`             | `+`                 | Staged-file count                               |
+| `theme_damin_glyph_untracked` | `?`             | `?`                 | Untracked-file count (matches porcelain)        |
+| `theme_damin_glyph_stashed`   | `$`             | `$`                 | Stash count                                     |
+| `theme_damin_glyph_ahead`     | `⇡`             | `^`                 | Ahead-of-upstream count                         |
+| `theme_damin_glyph_behind`    | `⇣`             | `v`                 | Behind-upstream count                           |
+| `theme_damin_glyph_conflict`  | `X`             | `X`                 | Unmerged-file count (rendered in bold red)      |
+| `theme_damin_glyph_sep`       | `·`             | `\|`                | Right-prompt segment separator                  |
 
 Override one at a time:
 
@@ -227,20 +228,20 @@ set -U theme_damin_glyph_behind v
 
 Two brand accents (`primary`, `secondary`) are palette-driven. Catppuccin keeps `#98ABCC` / `#E890B0`; others map to palette-native (Gruvbox blue/purple, Dracula cyan/purple, …). Override via `theme_damin_accent_primary` / `_secondary`.
 
-| Element                          | Color                          |
-|----------------------------------|--------------------------------|
-| Branch name / cwd                | `accent_primary`               |
-| Meta symbols (`?$✗✓⇣⇡`) / `✧`    | `accent_secondary`             |
-| Meta counts / right-prompt `·`   | `accent_secondary` (dim)       |
-| Florette `✿` on success          | `accent_secondary` (bold)      |
-| Florette `✿` on failure          | terminal `red` (bold)          |
-| Exit code / op state             | terminal `red` (dim)           |
-| `root` context indicator         | terminal `red` (bold)          |
-| Other context (`ssh`/`dkr`/…)    | `--dim`                        |
-| Heart bullet `❥`                 | `accent_secondary`             |
-| Lang / env / duration            | `--dim`                        |
-| Long-command duration            | `accent_secondary` (bold)      |
-| Battery (≤10%)                   | terminal `red` (bold)          |
+| Element                        | Color                     |
+|--------------------------------|---------------------------|
+| Branch name / cwd              | `accent_primary`          |
+| Meta symbols (`?$✗✓⇣⇡`) / `✧`  | `accent_secondary`        |
+| Meta counts / right-prompt `·` | `accent_secondary` (dim)  |
+| Florette `✿` on success        | `accent_secondary` (bold) |
+| Florette `✿` on failure        | terminal `red` (bold)     |
+| Exit code / op state           | terminal `red` (dim)      |
+| `root` context indicator       | terminal `red` (bold)     |
+| Other context (`ssh`/`dkr`/…)  | `--dim`                   |
+| Heart bullet `❥`               | `accent_secondary`        |
+| Lang / env / duration          | `--dim`                   |
+| Long-command duration          | `accent_secondary` (bold) |
+| Battery (≤10%)                 | terminal `red` (bold)     |
 
 Reskins swap both accents together — losing one breaks the tone-on-tone identity.
 
@@ -248,17 +249,17 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 
 `fish_color_*` (separate from brand accents) is picked via `theme_damin_palette`. Hex values from upstream sources; see `LICENSES/`.
 
-| Flavor         | text       | base accent feel                              |
-|----------------|------------|-----------------------------------------------|
-| `mocha`        | dark bg    | catppuccin default, warm violet/peach pop     |
-| `macchiato`    | dark bg    | catppuccin, slightly muted vs mocha           |
-| `frappe`       | dark bg    | catppuccin, softest dark, cooler accents      |
-| `latte`        | light bg   | catppuccin light — high-contrast deep colors  |
-| `gruvbox`      | dark bg    | retro groove, warm earth tones                |
-| `tokyonight`   | dark bg    | downtown-tokyo neon, blue/purple accents      |
-| `rosepine`     | dark bg    | soho-vibe muted rose/pine                     |
-| `nord`         | dark bg    | arctic north-bluish pastels                   |
-| `dracula`      | dark bg    | classic vampire — cyan/purple/pink pop        |
+| Flavor       | text     | base accent feel                             |
+|--------------|----------|----------------------------------------------|
+| `mocha`      | dark bg  | catppuccin default, warm violet/peach pop    |
+| `macchiato`  | dark bg  | catppuccin, slightly muted vs mocha          |
+| `frappe`     | dark bg  | catppuccin, softest dark, cooler accents     |
+| `latte`      | light bg | catppuccin light — high-contrast deep colors |
+| `gruvbox`    | dark bg  | retro groove, warm earth tones               |
+| `tokyonight` | dark bg  | downtown-tokyo neon, blue/purple accents     |
+| `rosepine`   | dark bg  | soho-vibe muted rose/pine                    |
+| `nord`       | dark bg  | arctic north-bluish pastels                  |
+| `dracula`    | dark bg  | classic vampire — cyan/purple/pink pop       |
 
 `damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes nine `Damin <Palette>.theme` files into `~/.config/fish/themes/` (generated inline — no `themes/` dir in the repo) for `fish_config theme show`.
 
@@ -304,13 +305,13 @@ Pure-sync mode (`async_git=0` / `async_lang=0`) skips the disk cache, but the in
 - Cache miss → render without git segment + kick off background `fish -c`.
 - Stale cache → render with stale data + kick off same bg refresh.
 
-On finish, the subshell sets `_damin_async_repaint_token` universally; `--on-variable` handler clears the guard and runs `commandline -f repaint`.
+On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler clears the guard and runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
 
-The subshell sources **only** `_damin_async_core.fish` (~3 KB / 128 lines), not the full theme (1245 lines).
+The subshell sources **only** `_damin_async_core.fish` (~4.8 KB / 121 lines), not the full theme (1242 lines).
 
-Universal vars are the only fish IPC primitive without a known PID. `&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — kickoff captures it into `$_damin_git_refresh_pid` and `kill`s the prior pid on the next kickoff. Most recent intent wins.
+`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — kickoff captures it into `$_damin_git_refresh_pid` and `kill`s the prior pid on the next kickoff. Most recent intent wins.
 
-Repaint fires in every fish shell with the theme loaded, not just the originator — harmless, each re-renders from its own cache.
+`--on-signal` captures the signal name at function-define time; changing `$theme_damin_async_signal` needs a shell restart. Override only if `SIGUSR1` collides with another tool.
 
 ### Atomicity
 

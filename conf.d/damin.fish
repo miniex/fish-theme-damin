@@ -52,6 +52,8 @@ set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
 set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
 set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 0
+# IPC signal — override only if SIGUSR1 collides.
+set -q theme_damin_async_signal; or set -g theme_damin_async_signal SIGUSR1
 set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
 set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
@@ -67,6 +69,8 @@ set -q theme_damin_notify_threshold; or set -g theme_damin_notify_threshold 3000
 
 # transient flag is session-global only; drain any universal-scope leak.
 set -qU _damin_in_transient; and set -eU _damin_in_transient
+# legacy IPC token from pre-signal versions; persists in fish_variables.
+set -qU _damin_async_repaint_token; and set -eU _damin_async_repaint_token
 
 # glyphs (defaults flip when ascii=1; theme_damin_glyph_* overrides win)
 set -l _ds_prompt ✿
@@ -551,8 +555,8 @@ end
 
 # _damin_git_prefill lives in _damin_async_core.fish.
 
-# IPC via universal var: backgrounded fish funcs don't set $last_pid, so
-# --on-process-exit isn't viable. subshell sources the ~3 KB core, not the full theme.
+# IPC via signal: avoids the per-refresh fish_variables disk write set -U
+# triggers. subshell sources only the small core file, not the full theme.
 function _damin_git_async_kickoff
     # cancel any in-flight refresh — last cd wins, no piled-up stale work.
     if set -q _damin_git_refresh_pid; and test -n "$_damin_git_refresh_pid"
@@ -561,17 +565,20 @@ function _damin_git_async_kickoff
     set -g _damin_git_refresh_running 1
     set -l core $_damin_async_core_file
     set -l pwd $PWD
+    set -l parent $fish_pid
+    set -l signal $theme_damin_async_signal
     fish -c "
         cd '$pwd' 2>/dev/null
         source '$core' 2>/dev/null
         _damin_git_prefill
-        set -U _damin_async_repaint_token (random)
+        kill -s $signal $parent 2>/dev/null
     " >/dev/null 2>&1 &
     set -g _damin_git_refresh_pid $last_pid
     disown 2>/dev/null
 end
 
-function _damin_async_repaint_handler --on-variable _damin_async_repaint_token
+# signal captured at define time — changing the var requires shell restart.
+function _damin_async_signal_handler --on-signal $theme_damin_async_signal
     set -e _damin_git_refresh_running
     set -e _damin_git_refresh_pid
     commandline -f repaint 2>/dev/null

@@ -77,16 +77,16 @@ omf update         # framework + all packages
 
 ## Commands
 
-| Command                | Purpose                                                                |
-|------------------------|------------------------------------------------------------------------|
-| `damin_config`         | Interactive setup wizard                                               |
-| `damin_help`           | List every toggle, current value, default                              |
-| `damin_doctor`         | Environment + install diagnostic                                       |
-| `damin_profile`        | Per-segment ms/render timer (means)                                    |
-| `damin_bench`          | Per-segment P50/P95/P99 distribution                                   |
-| `damin_set_palette`    | Switch palette                                                         |
-| `damin_install_themes` | Write `.theme` files into `~/.config/fish/themes/`                     |
-| `damin_reset_cache`    | Wipe on-disk cache                                                     |
+| Command                | Purpose                                            |
+|------------------------|----------------------------------------------------|
+| `damin_config`         | Interactive setup wizard                           |
+| `damin_help`           | List every toggle, current value, default          |
+| `damin_doctor`         | Environment + install diagnostic                   |
+| `damin_profile`        | Per-segment ms/render timer (means)                |
+| `damin_bench`          | Per-segment P50/P95/P99 distribution               |
+| `damin_set_palette`    | Switch palette                                     |
+| `damin_install_themes` | Write `.theme` files into `~/.config/fish/themes/` |
+| `damin_reset_cache`    | Wipe on-disk cache                                 |
 
 ## Configuration
 

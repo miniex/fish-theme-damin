@@ -7,17 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `theme_damin_async_signal` (default `SIGUSR1`). Override if `SIGUSR1` collides with another tool
+
 ### Changed
 
 - **Oh My Fish install path** — registered in [`oh-my-fish/packages-main`](https://github.com/oh-my-fish/packages-main/pull/215) as `damin`. Install is now `omf install damin && omf theme damin` instead of the GitHub URL form. Update via `omf update damin` (or `omf update` for everything)
+- **Async-done IPC: universal var → POSIX signal.** Subshell signals the parent (`SIGUSR1` by default) on finish instead of writing `_damin_async_repaint_token` universally — drops a `~/.config/fish/fish_variables` write per refresh and stops broadcasting to every fish session. Legacy token is auto-erased on theme load
+- `damin_doctor` font width sanity check now exercises `·` (right-prompt separator) alongside the other glyphs — was the only common prompt glyph missing from the test
 
 ### Fixed
 
 - `_damin_git_compute` — restore `case '\?'`. Unquoted `\?` lets fish strip the backslash, leaving glob `?` (any single char) that matches every status line's first char — `case '#'` (branch parsing) never ran, branch fell through to the literal `?` fallback, and untracked counted every line. The 1.2.0 "fix" was a regression; the quoted form preserves the escape into glob and matches only literal `?`
-
-### Changed
-
-- `damin_doctor` font width sanity check now exercises `·` (right-prompt separator) alongside the other glyphs — was the only common prompt glyph missing from the test
 
 ## [1.2.0] - 20260513222728 KST
 
