@@ -52,6 +52,7 @@ set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
 set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
 set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 0
+set -q theme_damin_async_gh_pr; or set -g theme_damin_async_gh_pr 1
 # IPC signal — override only if SIGUSR1 collides.
 set -q theme_damin_async_signal; or set -g theme_damin_async_signal SIGUSR1
 set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
@@ -342,6 +343,7 @@ set -g _damin_osc_host ""
 set -g _damin_gh_branch ""
 set -g _damin_gh_value ""
 set -g _damin_gh_at 0
+set -g _damin_gh_refresh_pid ""
 set -g _damin_devops_pwd ""
 set -g _damin_devops_tf ""
 set -g _damin_devops_pl ""
@@ -581,6 +583,7 @@ end
 function _damin_async_signal_handler --on-signal $theme_damin_async_signal
     set -e _damin_git_refresh_running
     set -e _damin_git_refresh_pid
+    set -g _damin_gh_refresh_pid ""
     commandline -f repaint 2>/dev/null
 end
 
@@ -651,28 +654,68 @@ end
 
 # jj helpers live in functions/ — autoloaded only when in a jj repo.
 
-# silent skip when gh is missing, remote isn't github, or no PR is open.
-function _damin_gh_compute --argument-names branch
-    type -q gh 2>/dev/null; or return
-    set -l remote (command git remote get-url origin 2>/dev/null)
-    string match -q '*github.com*' -- $remote; or return
-    set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
-    test -z "$out"; and return
-    echo $out
+# _damin_gh_compute / _damin_gh_prefill live in _damin_async_core.fish.
+
+function _damin_gh_async_kickoff --argument-names branch
+    if test -n "$_damin_gh_refresh_pid"
+        kill $_damin_gh_refresh_pid 2>/dev/null
+    end
+    set -l core $_damin_async_core_file
+    set -l pwd $PWD
+    set -l parent $fish_pid
+    set -l signal $theme_damin_async_signal
+    fish -c "
+        cd '$pwd' 2>/dev/null
+        source '$core' 2>/dev/null
+        _damin_gh_prefill '$branch'
+        kill -s $signal $parent 2>/dev/null
+    " >/dev/null 2>&1 &
+    set -g _damin_gh_refresh_pid $last_pid
+    disown 2>/dev/null
 end
 
+# disk cache: line1=PWD, line2=branch, line3=`<num> <isDraft>` or `-`.
 function _damin_gh_render --argument-names branch
     test "$theme_damin_show_gh_pr" = 1; or return
     test -n "$branch"; or return
+
+    if test "$theme_damin_async_gh_pr" != 1
+        set -l now (date +%s)
+        set -l ttl $theme_damin_gh_pr_ttl
+        if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
+            set -g _damin_gh_branch "$branch"
+            set -g _damin_gh_at $now
+            set -g _damin_gh_value (_damin_gh_compute "$branch")
+        end
+        _damin_gh_render_value "$_damin_gh_value"
+        return
+    end
+
+    set -l cache_file (_damin_cache_path gh-(_damin_gh_branch_key $branch))
+    set -l cache_mt (path mtime $cache_file 2>/dev/null)
     set -l now (date +%s)
     set -l ttl $theme_damin_gh_pr_ttl
-    if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
-        set -g _damin_gh_branch "$branch"
-        set -g _damin_gh_at $now
-        set -g _damin_gh_value (_damin_gh_compute "$branch")
+    set -l fresh 0
+    test -n "$cache_mt" -a (math $now - "0$cache_mt") -lt $ttl; and set fresh 1
+
+    set -l value
+    if test -n "$cache_mt"
+        set -l lines (_damin_read_lines $cache_file)
+        if test (count $lines) -ge 3 -a "$lines[1]" = "$PWD" -a "$lines[2]" = "$branch"
+            set value "$lines[3]"
+        end
     end
-    test -n "$_damin_gh_value"; or return
-    set -l parts (string split ' ' -- $_damin_gh_value)
+
+    # missing or expired → kick off bg refresh; render stale value if any.
+    test $fresh = 0; and _damin_gh_async_kickoff "$branch"
+
+    _damin_gh_render_value "$value"
+end
+
+function _damin_gh_render_value --argument-names value
+    test -n "$value"; or return
+    test "$value" = -; and return
+    set -l parts (string split ' ' -- $value)
     set -l num $parts[1]
     set -l draft $parts[2]
     set -l color $_damin_c_meta
@@ -1101,10 +1144,11 @@ function _damin_postexec --on-event fish_postexec
         if not string match -qr '\bgit\s+(status|log|diff|show|blame|ls-(files|tree)|cat-file|rev-(list|parse)|describe|name-rev|shortlog|whatchanged|reflog|grep|ls-remote|help|version)\b' -- $cmd
             command rm -f (_damin_cache_path git) 2>/dev/null
         end
-        # state-changing gh pr subcommands invalidate the cached number.
+        # state-changing gh pr → drop every per-branch cache for this pwd.
         if string match -qr '\bgh\s+pr\s+(create|close|reopen|merge|edit)\b' -- $cmd
             set -g _damin_gh_branch ""
             set -g _damin_gh_at 0
+            command rm -f "$_damin_cache_dir/"(_damin_pwd_key)"-gh-"* 2>/dev/null
         end
     end
     if string match -qr '\b(nvm|fnm|asdf|mise|pyenv|rbenv|rustup|volta|conda)\b' -- $cmd

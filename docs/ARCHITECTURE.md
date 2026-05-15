@@ -189,6 +189,7 @@ Every toggle is a universal var (`set -U`). Defaults apply only when unset. `dam
 | `theme_damin_async_lang`             | `1`       | Cache lang + postexec invalidation. `0` = sync                        |
 | `theme_damin_async_warmup`           | `1`       | Background-prefill caches at theme load                               |
 | `theme_damin_async_repaint`          | `0`       | Stale-while-revalidate git via `fish -c` subshell                     |
+| `theme_damin_async_gh_pr`            | `1`       | Background-refresh `gh pr view`; `0` = blocking sync                  |
 | `theme_damin_async_signal`           | `SIGUSR1` | Signal the async-refresh subshell sends to repaint the parent         |
 | `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 133                                                  |
 | `theme_damin_cwd_keep`               | `3`       | Trailing path segments kept full                                      |
@@ -307,9 +308,11 @@ Pure-sync mode (`async_git=0` / `async_lang=0`) skips the disk cache, but the in
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler clears the guard and runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
 
-The subshell sources **only** `_damin_async_core.fish` (~4.8 KB / 121 lines), not the full theme (1242 lines).
+The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 146 lines), not the full theme (1284 lines).
 
-`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — kickoff captures it into `$_damin_git_refresh_pid` and `kill`s the prior pid on the next kickoff. Most recent intent wins.
+`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — kickoff captures it into `$_damin_git_refresh_pid` (or `$_damin_gh_refresh_pid` for the PR fetch) and `kill`s the prior pid on the next kickoff. Most recent intent wins.
+
+Same kickoff/signal flow drives `theme_damin_async_gh_pr` (default on). Cache key: `<pwd-key>-gh-<branch-key>`, TTL `theme_damin_gh_pr_ttl`, `-` = negative cache.
 
 `--on-signal` captures the signal name at function-define time; changing `$theme_damin_async_signal` needs a shell restart. Override only if `SIGUSR1` collides with another tool.
 

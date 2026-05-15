@@ -119,3 +119,27 @@ function _damin_git_prefill
     set -l data (_damin_git_compute 2>/dev/null)
     test -n "$data"; and _damin_write_cache $cache_file "$PWD" $data
 end
+
+# branch keys may contain `/`; sanitize to keep one cache file per (pwd, branch).
+function _damin_gh_branch_key --argument-names branch
+    string replace -a / % -- "$branch"
+end
+
+# silent skip when gh is missing, remote isn't github, or no PR is open.
+function _damin_gh_compute --argument-names branch
+    type -q gh 2>/dev/null; or return
+    set -l remote (command git remote get-url origin 2>/dev/null)
+    string match -q '*github.com*' -- $remote; or return
+    set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
+    test -z "$out"; and return
+    echo $out
+end
+
+# "-" = negative cache (no PR); lets TTL gate refetches instead of every prompt.
+function _damin_gh_prefill --argument-names branch
+    test -n "$branch"; or return
+    set -l cache_file (_damin_cache_path gh-(_damin_gh_branch_key $branch))
+    set -l data (_damin_gh_compute "$branch" 2>/dev/null)
+    test -z "$data"; and set data -
+    _damin_write_cache $cache_file "$PWD" "$branch" "$data"
+end
