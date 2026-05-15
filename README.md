@@ -29,8 +29,8 @@ fisher install miniex/fish-theme-damin
 **Oh My Fish**
 
 ```fish
-omf install https://github.com/miniex/fish-theme-damin
-omf theme fish-theme-damin
+omf install damin
+omf theme damin
 ```
 
 **Local hacking — Fisher**
@@ -44,8 +44,23 @@ fisher install (pwd)/fish-theme-damin
 
 ```fish
 git clone https://github.com/miniex/fish-theme-damin.git
-ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/fish-theme-damin
-omf theme fish-theme-damin
+ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/damin
+omf theme damin
+```
+
+## Update
+
+**Fisher**
+
+```fish
+fisher update miniex/fish-theme-damin
+```
+
+**Oh My Fish**
+
+```fish
+omf update damin   # just this theme
+omf update         # framework + all packages
 ```
 
 ## Highlights
@@ -98,12 +113,12 @@ exec fish
 
 ```fish
 damin_reset_cache
-omf theme default; and rm -rf ~/.local/share/omf/themes/fish-theme-damin
-omf install https://github.com/miniex/fish-theme-damin; and omf theme fish-theme-damin
+omf theme default; and rm -rf ~/.local/share/omf/themes/damin
+omf install damin; and omf theme damin
 exec fish
 ```
 
-Run `damin_doctor` if anything looks off. `Conflicting prompt setting` after reinstall = stale symlink (`hooks/install.fish` handles this; on older installs, `rm ~/.config/fish/functions/fish_prompt.fish; omf theme fish-theme-damin`).
+Run `damin_doctor` if anything looks off. `Conflicting prompt setting` after reinstall = stale symlink (`hooks/install.fish` handles this; on older installs, `rm ~/.config/fish/functions/fish_prompt.fish; omf theme damin`).
 
 ## Companion repos
 

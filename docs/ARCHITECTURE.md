@@ -32,7 +32,7 @@ tools/format.sh / lint.sh / bench.sh / test.sh
 
 **Fisher** copies `conf.d/*.fish` to `~/.config/fish/conf.d/` (sourced at startup) and `functions/*.fish` to `~/.config/fish/functions/` (autoloaded on first call). Root-level files are ignored.
 
-**Oh My Fish** clones to `~/.local/share/omf/themes/fish-theme-damin/` and adds it to `$fish_function_path`. Root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that source `conf.d/damin.fish`.
+**Oh My Fish** clones to `~/.local/share/omf/themes/damin/` (the package name registered in `oh-my-fish/packages-main`) and adds it to `$fish_function_path`. Root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that source `conf.d/damin.fish`.
 
 `fish_prompt` / `fish_right_prompt` live in `conf.d/`, **not** `functions/` — Fisher would otherwise copy them to `~/.config/fish/functions/`, which OMF flags as "Conflicting prompt setting".
 
@@ -403,4 +403,4 @@ One conditional extra call: no upstream → porcelain omits `branch.ab`. With at
   - Flags: `_damin_git_refresh_running/_pid` (async-repaint guard + cancel pid), `_damin_in_transient`
 - **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_install_themes`, `damin_reset_cache` — autoloaded from `functions/`.
 - **Warmup** (`_damin_warmup`): one bg fork at theme load runs `_damin_git_prefill` (in git repos) + `_damin_k8s_prefill` (if `show_k8s_context=1`). `&` forks the current shell, so all helpers are inherited.
-- **No `funcsave`** — nothing persists to `~/.config/fish/functions/`. Uninstall: `omf theme <other> && rm -rf ~/.local/share/omf/themes/fish-theme-damin`.
+- **No `funcsave`** — nothing persists to `~/.config/fish/functions/`. Uninstall: `omf theme <other> && rm -rf ~/.local/share/omf/themes/damin`.

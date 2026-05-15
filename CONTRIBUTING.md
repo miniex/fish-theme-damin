@@ -32,8 +32,8 @@ Smoke-test after touching any `*.fish`:
 fisher install (pwd); exec fish
 
 # Oh My Fish
-ln -sfn (pwd) ~/.local/share/omf/themes/fish-theme-damin
-omf theme fish-theme-damin; exec fish
+ln -sfn (pwd) ~/.local/share/omf/themes/damin
+omf theme damin; exec fish
 ```
 
 ## PR expectations

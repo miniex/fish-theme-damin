@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Oh My Fish install path** — registered in [`oh-my-fish/packages-main`](https://github.com/oh-my-fish/packages-main/pull/215) as `damin`. Install is now `omf install damin && omf theme damin` instead of the GitHub URL form. Update via `omf update damin` (or `omf update` for everything)
+
 ### Fixed
 
 - `_damin_git_compute` — restore `case '\?'`. Unquoted `\?` lets fish strip the backslash, leaving glob `?` (any single char) that matches every status line's first char — `case '#'` (branch parsing) never ran, branch fell through to the literal `?` fallback, and untracked counted every line. The 1.2.0 "fix" was a regression; the quoted form preserves the escape into glob and matches only literal `?`
