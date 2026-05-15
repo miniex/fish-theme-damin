@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Oh My Fish install path** — registered in [`oh-my-fish/packages-main`](https://github.com/oh-my-fish/packages-main/pull/215) as `damin`. Install is now `omf install damin && omf theme damin` instead of the GitHub URL form. Update via `omf update damin` (or `omf update` for everything)
 - **Async-done IPC: universal var → POSIX signal.** Subshell signals the parent (`SIGUSR1` by default) on finish instead of writing `_damin_async_repaint_token` universally — drops a `~/.config/fish/fish_variables` write per refresh and stops broadcasting to every fish session. Legacy token is auto-erased on theme load
 - **`gh pr view` no longer blocks the prompt.** Same kickoff/signal path as git; result disk-cached per `(pwd, branch)` with `theme_damin_gh_pr_ttl`. First prompt on a new branch has no `#N` until the bg fetch returns
+- **Generic `_damin_async_kickoff <key> <fn> [<args>...]`.** Replaces the per-segment kickoff functions (git, gh) with one shared helper. New segments need only a `_damin_<seg>_prefill` in core + one render-side call. Per-segment cancel pid renames `_damin_<seg>_refresh_pid` → `$_damin_async_pid_<key>`
 - `damin_doctor` font width sanity check now exercises `·` (right-prompt separator) alongside the other glyphs — was the only common prompt glyph missing from the test
 
 ### Fixed

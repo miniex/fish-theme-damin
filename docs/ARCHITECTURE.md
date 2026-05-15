@@ -308,11 +308,13 @@ Pure-sync mode (`async_git=0` / `async_lang=0`) skips the disk cache, but the in
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler clears the guard and runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
 
-The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 146 lines), not the full theme (1284 lines).
+The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 145 lines), not the full theme (1263 lines).
 
-`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — kickoff captures it into `$_damin_git_refresh_pid` (or `$_damin_gh_refresh_pid` for the PR fetch) and `kill`s the prior pid on the next kickoff. Most recent intent wins.
+`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
 
-Same kickoff/signal flow drives `theme_damin_async_gh_pr` (default on). Cache key: `<pwd-key>-gh-<branch-key>`, TTL `theme_damin_gh_pr_ttl`, `-` = negative cache.
+Used today by `git _damin_git_prefill` (under `theme_damin_async_repaint`) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
+
+The gh disk cache key is `<pwd-key>-gh-<branch-key>` with TTL `theme_damin_gh_pr_ttl`; `-` = negative cache.
 
 `--on-signal` captures the signal name at function-define time; changing `$theme_damin_async_signal` needs a shell restart. Override only if `SIGUSR1` collides with another tool.
 
@@ -404,7 +406,7 @@ One conditional extra call: no upstream → porcelain omits `branch.ab`. With at
   - Hot-path memos: `_damin_vcs_*` (vcs detect), `_damin_lang_pwd/_value`, `_damin_git_cached_pwd/_mt/_data`, `_damin_cwd_pwd/_value`, `_damin_duration_ms/_value`, `_damin_devops_*`
   - Async core (lives in `_damin_async_core.fish`): `_damin_pwd_key_*`, `_damin_cache_dir`
   - Caches: `_damin_c_*` (colors), `_damin_is_root`, `_damin_uname`, `_damin_battery_at/_value`, `_damin_k8s_*`, `_damin_aws_*` / `_gcp_*` / `_azure_*`, `_damin_osc_pwd/_host`, `_damin_gh_branch/_value/_at`
-  - Flags: `_damin_git_refresh_running/_pid` (async-repaint guard + cancel pid), `_damin_in_transient`
+  - Flags: `_damin_async_pid_<key>` (per-segment cancel pid; created on first kickoff), `_damin_in_transient`
 - **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_install_themes`, `damin_reset_cache` — autoloaded from `functions/`.
 - **Warmup** (`_damin_warmup`): one bg fork at theme load runs `_damin_git_prefill` (in git repos) + `_damin_k8s_prefill` (if `show_k8s_context=1`). `&` forks the current shell, so all helpers are inherited.
 - **No `funcsave`** — nothing persists to `~/.config/fish/functions/`. Uninstall: `omf theme <other> && rm -rf ~/.local/share/omf/themes/damin`.

@@ -343,7 +343,6 @@ set -g _damin_osc_host ""
 set -g _damin_gh_branch ""
 set -g _damin_gh_value ""
 set -g _damin_gh_at 0
-set -g _damin_gh_refresh_pid ""
 set -g _damin_devops_pwd ""
 set -g _damin_devops_tf ""
 set -g _damin_devops_pl ""
@@ -557,14 +556,13 @@ end
 
 # _damin_git_prefill lives in _damin_async_core.fish.
 
-# IPC via signal: avoids the per-refresh fish_variables disk write set -U
-# triggers. subshell sources only the small core file, not the full theme.
-function _damin_git_async_kickoff
-    # cancel any in-flight refresh — last cd wins, no piled-up stale work.
-    if set -q _damin_git_refresh_pid; and test -n "$_damin_git_refresh_pid"
-        kill $_damin_git_refresh_pid 2>/dev/null
-    end
-    set -g _damin_git_refresh_running 1
+# bg subshell sources only the small core file (so <fn> must live in core),
+# signals parent on done. new kickoff for the same <key> kills the prior pid.
+function _damin_async_kickoff --argument-names key fn
+    set -l pid_var _damin_async_pid_$key
+    set -l prior $$pid_var
+    test -n "$prior"; and kill $prior 2>/dev/null
+    set -l call (string escape -- $fn $argv[3..])
     set -l core $_damin_async_core_file
     set -l pwd $PWD
     set -l parent $fish_pid
@@ -572,18 +570,16 @@ function _damin_git_async_kickoff
     fish -c "
         cd '$pwd' 2>/dev/null
         source '$core' 2>/dev/null
-        _damin_git_prefill
+        $call
         kill -s $signal $parent 2>/dev/null
     " >/dev/null 2>&1 &
-    set -g _damin_git_refresh_pid $last_pid
+    set -g $pid_var $last_pid
     disown 2>/dev/null
 end
 
-# signal captured at define time — changing the var requires shell restart.
+# signal captured at define time (var change needs shell restart). pid cleanup
+# is left to the next kickoff — kill of a dead pid silently fails.
 function _damin_async_signal_handler --on-signal $theme_damin_async_signal
-    set -e _damin_git_refresh_running
-    set -e _damin_git_refresh_pid
-    set -g _damin_gh_refresh_pid ""
     commandline -f repaint 2>/dev/null
 end
 
@@ -630,7 +626,7 @@ function _damin_git_render
     # async_repaint mode: render stale/empty NOW, bg refresh + repaint on completion.
     if test "$theme_damin_async_repaint" = 1
         if test -z "$data" -o $stale = 1
-            _damin_git_async_kickoff
+            _damin_async_kickoff git _damin_git_prefill
         end
         test -z "$data"; and return
         _damin_git_render_data $data
@@ -655,24 +651,6 @@ end
 # jj helpers live in functions/ — autoloaded only when in a jj repo.
 
 # _damin_gh_compute / _damin_gh_prefill live in _damin_async_core.fish.
-
-function _damin_gh_async_kickoff --argument-names branch
-    if test -n "$_damin_gh_refresh_pid"
-        kill $_damin_gh_refresh_pid 2>/dev/null
-    end
-    set -l core $_damin_async_core_file
-    set -l pwd $PWD
-    set -l parent $fish_pid
-    set -l signal $theme_damin_async_signal
-    fish -c "
-        cd '$pwd' 2>/dev/null
-        source '$core' 2>/dev/null
-        _damin_gh_prefill '$branch'
-        kill -s $signal $parent 2>/dev/null
-    " >/dev/null 2>&1 &
-    set -g _damin_gh_refresh_pid $last_pid
-    disown 2>/dev/null
-end
 
 # disk cache: line1=PWD, line2=branch, line3=`<num> <isDraft>` or `-`.
 function _damin_gh_render --argument-names branch
@@ -707,7 +685,7 @@ function _damin_gh_render --argument-names branch
     end
 
     # missing or expired → kick off bg refresh; render stale value if any.
-    test $fresh = 0; and _damin_gh_async_kickoff "$branch"
+    test $fresh = 0; and _damin_async_kickoff gh _damin_gh_prefill "$branch"
 
     _damin_gh_render_value "$value"
 end
