@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `_damin_git_compute` — restore `case '\?'`. Unquoted `\?` lets fish strip the backslash, leaving glob `?` (any single char) that matches every status line's first char — `case '#'` (branch parsing) never ran, branch fell through to the literal `?` fallback, and untracked counted every line. The 1.2.0 "fix" was a regression; the quoted form preserves the escape into glob and matches only literal `?`
+- `_damin_git_compute` — `case '?'` instead of `case '\?'`. Inside single quotes fish keeps `\?` as a literal 2-char sequence, so the case arm never matched the 1-char `?` returned by `string sub -l 1`; untracked counts read as `0`. Quoted bare `'?'` matches the literal `?` (glob `?` would also work but is less explicit). Verified on macOS + Alpine Linux, fish 4.6.0
 
 ## [1.2.0] - 20260513222728 KST
 
