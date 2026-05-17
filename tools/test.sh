@@ -220,6 +220,46 @@ got=$(fish -c "
 expect "worktree: gitdir basename surfaced" "$got" "feature-x"
 cleanup "$repo" "$wtroot"
 
+# vcs_ignore_paths: glob match short-circuits detection.
+repo=$(mkrepo)
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_vcs_ignore_paths '$repo/*' '$repo'
+    cd '$repo'
+    set -l v (_damin_detect_vcs)
+    echo \"[\$v]\"
+    true
+" 2>/dev/null)
+expect "vcs_ignore_paths: glob match → no detection" "$got" "[]"
+cleanup "$repo"
+
+# hg detection: opt-in via show_hg, .hg/ found.
+hgrepo=$(mktemp -d -t damin-test-hg.XXXXXX)
+mkdir -p "$hgrepo/.hg"
+printf 'feature-branch\n' >"$hgrepo/.hg/branch"
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_hg 1
+    cd '$hgrepo'
+    _damin_detect_vcs
+    true
+" 2>/dev/null)
+expect "hg: detected when show_hg=1 and .hg/ exists" "$got" "hg"
+cleanup "$hgrepo"
+
+hgrepo=$(mktemp -d -t damin-test-hg.XXXXXX)
+mkdir -p "$hgrepo/.hg"
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_hg 0
+    cd '$hgrepo'
+    set -l v (_damin_detect_vcs)
+    echo \"[\$v]\"
+    true
+" 2>/dev/null)
+expect "hg: ignored when show_hg=0" "$got" "[]"
+cleanup "$hgrepo"
+
 echo
 echo "=== damin _damin_k8s_compute tests ==="
 echo
@@ -722,6 +762,61 @@ got=$(run_dumb "
     true
 ")
 expect "palette: latte → text=4c4f69" "$got" "4c4f69"
+
+got=$(run_dumb "
+    set -g theme_damin_palette solarized
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: solarized → text=839496" "$got" "839496"
+
+got=$(run_dumb "
+    set -g theme_damin_palette solarized-light
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal
+    true
+")
+expect "palette: solarized-light → text=657b83" "$got" "657b83"
+
+got=$(run_dumb "
+    set -g theme_damin_palette solarized
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_accent_primary \$theme_damin_accent_secondary
+    true
+")
+expect "palette: solarized accents → 268bd2 / d33682" "$got" "268bd2 d33682"
+
+echo
+echo "=== damin lang_global tests ==="
+echo
+
+run_lang_global() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        ${1:-}
+        _damin_lang_global
+        true
+    " 2>/dev/null
+}
+
+got=$(run_lang_global "set -gx RBENV_VERSION 3.2.1")
+expect "lang_global: rbenv 3.2.1" "$got" "rb:3.2.1"
+
+got=$(run_lang_global "set -gx RBENV_VERSION system")
+expect "lang_global: rbenv system → empty" "$got" ""
+
+got=$(run_lang_global "set -gx PYENV_VERSION 3.11.5")
+expect "lang_global: pyenv 3.11.5" "$got" "py:3.11.5"
+
+got=$(run_lang_global "set -gx NVM_BIN /home/u/.nvm/versions/node/v20.10.0/bin")
+expect "lang_global: nvm v20.10.0 stripped" "$got" "node:20.10.0"
+
+got=$(run_lang_global "set -gx rvm_ruby_string ruby-3.2.0")
+expect "lang_global: rvm ruby-3.2.0 stripped" "$got" "rb:3.2.0"
+
+got=$(run_lang_global "")
+expect "lang_global: nothing set → empty" "$got" ""
 
 echo
 echo "=== damin custom segment hooks ==="

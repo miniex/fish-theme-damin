@@ -1,5 +1,5 @@
 function damin_set_palette --argument-names flavor
-    set -l valid mocha frappe macchiato latte gruvbox tokyonight rosepine nord dracula
+    set -l valid mocha frappe macchiato latte gruvbox tokyonight rosepine nord dracula solarized solarized-light
     if not contains -- $flavor $valid
         printf '%susage: damin_set_palette %s%s\n' \
             (set_color red) (string join '|' -- $valid) (set_color normal) >&2

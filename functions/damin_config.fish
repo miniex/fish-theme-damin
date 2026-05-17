@@ -28,7 +28,7 @@ function _damin_config_state --argument-names var
 end
 
 function _damin_config_pick_palette
-    set -l choices mocha frappe macchiato latte gruvbox tokyonight rosepine nord dracula
+    set -l choices mocha frappe macchiato latte gruvbox tokyonight rosepine nord dracula solarized solarized-light
     set -l current $theme_damin_palette
     set -l pink (set_color E890B0 -o)
     set -l blue (set_color 98ABCC)
@@ -84,6 +84,10 @@ function damin_config
         theme_damin_show_terraform 1 'Terraform workspace (tf:<workspace>)?' \
         theme_damin_show_pulumi 1 'Pulumi stack (pulumi:<stack>)?' \
         theme_damin_show_gh_pr 0 'GitHub PR badge (#42 next to branch, needs gh)?' \
+        theme_damin_show_hg 0 'Mercurial (hg) support — branch from .hg/branch?' \
+        theme_damin_hide_default_branch 0 'hide branch name when on main/master/trunk?' \
+        theme_damin_show_lang_global 0 'show shell-active version manager (rbenv/pyenv/NVM) when no project pin?' \
+        theme_damin_newline_prompt 0 'put the florette on its own line (multi-line prompt)?' \
         theme_damin_show_battery 0 'battery percent (laptops only)?' \
         theme_damin_show_vi_mode 1 'vi mode badge (only shown under vi keybindings)?' \
         theme_damin_notify_long_command 0 'desktop notification on long-running commands?' \

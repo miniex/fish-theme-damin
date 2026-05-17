@@ -65,15 +65,15 @@ omf update         # framework + all packages
 
 ## Highlights
 
-- **Fast** — ~0.5 ms/prompt. In-memory PWD memos on lang/git/cwd skip disk i/o after the first prompt. Async refresh forks a ~3 KB core. Cloud/devops/battery/jj autoload only when enabled. `-uno` opt-out for monorepos
-- **git / jj** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state, `wt:<name>`, unmerged-first, opt-in `#N` GitHub PR
-- **Context** — `ssh` / `root` / `dkr` / `ctr` / `k8s:<ctx>/<ns>`, opt-in `aws` / `gcp` / `az`. Pure-fish, no CLI forks
-- **Lang + env** — 10 langs via pin files first. `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`
+- **Fast** — ~0.5 ms/prompt. In-memory PWD memos on lang/git/cwd skip disk i/o after the first prompt. Async refresh forks a ~3 KB core. Cloud/devops/battery/jj autoload only when enabled. `-uno` opt-out for monorepos. `theme_damin_vcs_ignore_paths` glob-skips the walk-up on NFS/huge mounts
+- **git / jj / hg** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state, `wt:<name>`, unmerged-first, opt-in `#N` GitHub PR. Optional `hide_default_branch` to suppress `main`/`master`/`trunk`
+- **Context** — `ssh` / `root` / `dkr` / `ctr` / `k8s:<ctx>/<ns>`, opt-in `aws` / `gcp` / `az`. SSH-aware `user@host` (configurable). Pure-fish, no CLI forks
+- **Lang + env** — 10 langs via pin files first. `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv/pyenv/NVM/asdf)
 - **Terraform / Pulumi** — opt-in `tf:<workspace>` / `pulumi:<stack>`
-- **Terminal-native** — OSC 7 + OSC 133, opt-in OSC 9 + `notify-send` long-command alert
-- **9 palettes** — Catppuccin x4 + gruvbox / tokyonight / rosepine / nord / dracula. Live switch via `damin_set_palette`
-- **Transient prompt**, **vi-mode badge**, **ASCII fallback**, **TRAMP / dumb auto-minimal**
-- **Customizable** — 35+ `theme_damin_*` toggles, `damin_segment_<name>` hooks
+- **Terminal-native** — OSC 7 + OSC 133, opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title (`theme_damin_title_*`)
+- **11 palettes** — Catppuccin x4 + gruvbox / tokyonight / rosepine / nord / dracula / solarized / solarized-light. Live switch via `damin_set_palette`
+- **Transient prompt**, **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**
+- **Customizable** — 40+ `theme_damin_*` toggles, `damin_segment_<name>` hooks
 
 ## Commands
 

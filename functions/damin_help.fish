@@ -8,7 +8,9 @@ function damin_help
     echo "  toggles (1 = on, 0 = off)"
     _damin_help_row theme_damin_show_git 1
     _damin_help_row theme_damin_show_jj 1
+    _damin_help_row theme_damin_show_hg 0
     _damin_help_row theme_damin_show_git_op 1
+    _damin_help_row theme_damin_hide_default_branch 0
     _damin_help_row theme_damin_show_context 1
     _damin_help_row theme_damin_show_k8s_context 1
     _damin_help_row theme_damin_show_k8s_namespace 0
@@ -16,6 +18,7 @@ function damin_help
     _damin_help_row theme_damin_show_env 1
     _damin_help_row theme_damin_show_nix_name 1
     _damin_help_row theme_damin_show_lang 1
+    _damin_help_row theme_damin_show_lang_global 0
     _damin_help_row theme_damin_show_battery 0
     _damin_help_row theme_damin_show_duration 1
     _damin_help_row theme_damin_show_vi_mode 1
@@ -29,6 +32,7 @@ function damin_help
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_git_count_untracked 1
+    _damin_help_row theme_damin_newline_prompt 0
     _damin_help_row theme_damin_transient 1
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
@@ -40,6 +44,11 @@ function damin_help
     echo
     echo "  enums"
     _damin_help_row theme_damin_show_exit_code number
+    _damin_help_row theme_damin_show_user ssh
+    _damin_help_row theme_damin_show_host ssh
+    _damin_help_row theme_damin_title_show_user ssh
+    _damin_help_row theme_damin_title_show_path 1
+    _damin_help_row theme_damin_title_show_process 1
     _damin_help_row theme_damin_palette mocha
     echo
     echo "  palette accent overrides (hex without #; defaults shift per palette)"
@@ -87,12 +96,24 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (mocha|frappe|macchiato|latte|gruvbox|tokyonight|rosepine|nord|dracula)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (mocha|frappe|macchiato|latte|gruvbox|tokyonight|rosepine|nord|dracula|solarized|solarized-light)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo
+    echo "  lists (set -U <var> <items…>)"
+    set -l _db_default "main master trunk"
+    set -l _db_val (set -q theme_damin_default_branches; and string join ' ' -- $theme_damin_default_branches)
+    set -l _db_color (set_color E890B0)
+    test "$_db_val" = "$_db_default"; and set _db_color (set_color --dim)
+    printf '  %-38s %s%s%s %sdefault %s%s\n' theme_damin_default_branches $_db_color "[$_db_val]" $c_norm (set_color --dim) "[$_db_default]" $c_norm
+    set -l _ip_val ""
+    set -q theme_damin_vcs_ignore_paths; and set _ip_val (string join ' ' -- $theme_damin_vcs_ignore_paths)
+    printf '  %-38s %s%s%s %sdefault %s%s\n' theme_damin_vcs_ignore_paths (set_color E890B0) "[$_ip_val]" $c_norm (set_color --dim) "[]" $c_norm
+    echo
     echo "  set:        $c_dim""set -U theme_damin_show_jobs 0$c_norm"
     echo "  unset:      $c_dim""set -e theme_damin_show_jobs$c_norm"
+    echo "  list:       $c_dim""set -U theme_damin_default_branches main master develop$c_norm"
+    echo "  ignore:     $c_dim""set -U theme_damin_vcs_ignore_paths '/mnt/nfs/*' '/Volumes/*'$c_norm"
     echo "  hooks:      $c_dim""set -U theme_damin_extra_left  <fn1> <fn2>$c_norm  (defines damin_segment_<fn>)"
     echo "              $c_dim""set -U theme_damin_extra_right <fn>$c_norm"
     echo

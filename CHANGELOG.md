@@ -9,8 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`theme_damin_vcs_ignore_paths`** — glob list. Matching `$PWD` short-circuits `_damin_detect_vcs`. For NFS / huge external volumes
+- **`solarized` + `solarized-light` palettes** — accents map to `268bd2` / `d33682`
+- **`theme_damin_hide_default_branch`** + **`theme_damin_default_branches`** (`main master trunk`) — hide branch name when on a default branch. Counts / op / sparkle still render
+- **Mercurial (`hg`) support** — opt-in via `theme_damin_show_hg=1`. Branch from `.hg/branch`, no `hg` fork, no counts. Detected after `.jj/` / `.git/`
+- **SSH-aware `user@host`** — `theme_damin_show_user` / `_show_host` (`no`/`ssh`/`always`, default `ssh`). Replaces the bare `ssh` indicator
+- **Global version-manager fallback** — `theme_damin_show_lang_global=1`. Reads `$NVM_BIN`/`$FNM_VERSION_FILE_PATH` (node), `$RBENV_VERSION`/`$rvm_ruby_string`/`$RUBY_VERSION` (rb), `$PYENV_VERSION` (py), `$ASDF_<TOOL>_VERSION`. Zero forks
+- **`theme_damin_newline_prompt`** — florette on its own line below the status row
+- **Terminal title toggles** — `theme_damin_title_show_user` (`0`/`1`/`ssh`), `_show_path` (`0`/`1`/`short`), `_show_process` (`0`/`1`). Title was empty before
 - `theme_damin_async_signal` (default `SIGUSR1`). Override if `SIGUSR1` collides with another tool
 - `theme_damin_async_gh_pr` (default `1`). Background-fetch `gh pr view` via the same kickoff/signal path as git; `0` falls back to blocking sync
+- `damin_doctor` reports hg, ignore paths, SSH session state
 
 ### Changed
 
@@ -18,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Async-done IPC: universal var → POSIX signal.** Subshell signals the parent (`SIGUSR1` by default) on finish instead of writing `_damin_async_repaint_token` universally — drops a `~/.config/fish/fish_variables` write per refresh and stops broadcasting to every fish session. Legacy token is auto-erased on theme load
 - **`gh pr view` no longer blocks the prompt.** Same kickoff/signal path as git; result disk-cached per `(pwd, branch)` with `theme_damin_gh_pr_ttl`. First prompt on a new branch has no `#N` until the bg fetch returns
 - **Generic `_damin_async_kickoff <key> <fn> [<args>...]`.** Replaces the per-segment kickoff functions (git, gh) with one shared helper. New segments need only a `_damin_<seg>_prefill` in core + one render-side call. Per-segment cancel pid renames `_damin_<seg>_refresh_pid` → `$_damin_async_pid_<key>`
+- SSH detection in context segment now also reads `$SSH_CLIENT` / `$SSH_TTY`
+- `damin_set_palette` / `damin_config` / `damin_install_themes` accept the two solarized flavors
 - `damin_doctor` font width sanity check now exercises `·` (right-prompt separator) alongside the other glyphs — was the only common prompt glyph missing from the test
 
 ### Fixed

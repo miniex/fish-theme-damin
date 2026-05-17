@@ -2,10 +2,11 @@ function damin_install_themes
     set -l dest "$__fish_config_dir/themes"
     mkdir -p $dest
 
-    set -l flavors mocha macchiato frappe latte gruvbox tokyonight rosepine nord dracula
+    set -l flavors mocha macchiato frappe latte gruvbox tokyonight rosepine nord dracula solarized solarized-light
     set -l names "Damin Mocha" "Damin Macchiato" "Damin Frappe" "Damin Latte" \
-        "Damin Gruvbox" "Damin Tokyo Night" "Damin Rose Pine" "Damin Nord" "Damin Dracula"
-    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 1a1b26 191724 2e3440 282a36
+        "Damin Gruvbox" "Damin Tokyo Night" "Damin Rose Pine" "Damin Nord" "Damin Dracula" \
+        "Damin Solarized" "Damin Solarized Light"
+    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 1a1b26 191724 2e3440 282a36 002b36 fdf6e3
 
     set -l installed
     for i in (seq (count $flavors))
@@ -32,6 +33,10 @@ function damin_install_themes
                 set p eceff4 81a1c1 b48ead a3be8c b48ead d08770 bf616a d08770 4c566a 3b4252 bf616a 4c566a ebcb8b 88c0d0
             case dracula
                 set p f8f8f2 8be9fd bd93f9 50fa7b ff79c6 ffb86c ff5555 ffb86c 6272a4 44475a ff5555 6272a4 f1fa8c 8be9fd
+            case solarized
+                set p 839496 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 586e75 073642 dc322f 657b83 b58900 2aa198
+            case solarized-light
+                set p 657b83 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 93a1a1 eee8d5 dc322f 839496 b58900 2aa198
         end
         # p indexes: 1=text 2=blue 3=mauve 4=green 5=pink 6=peach 7=red 8=flamingo 9=overlay1 10=surface0 11=maroon 12=overlay0 13=yellow 14=teal
         set -l file "$dest/$name.theme"

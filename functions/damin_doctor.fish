@@ -64,6 +64,20 @@ function damin_doctor
         _damin_doctor_check "no stray fish_right_prompt.fish" ok
     end
 
+    if test "$theme_damin_show_hg" = 1
+        if test -d "$_damin_vcs_dir"; and test "$_damin_vcs_value" = hg
+            _damin_doctor_check "hg repo detected" ok "($_damin_vcs_dir)"
+        else
+            _damin_doctor_check "hg support" ok "enabled (theme_damin_show_hg=1)"
+        end
+    end
+
+    set -q theme_damin_vcs_ignore_paths; and test (count $theme_damin_vcs_ignore_paths) -gt 0; and _damin_doctor_check "vcs ignore paths" ok "($theme_damin_vcs_ignore_paths)"
+
+    set -l ssh_state inactive
+    test -n "$SSH_CONNECTION$SSH_CLIENT$SSH_TTY"; and set ssh_state "active ($USER@"(command hostname 2>/dev/null | string trim)")"
+    _damin_doctor_check "ssh session" ok $ssh_state
+
     set -l missing
     for cmd in damin_config damin_help damin_set_palette damin_install_themes damin_reset_cache damin_profile damin_bench
         type -q $cmd; or set missing $missing $cmd

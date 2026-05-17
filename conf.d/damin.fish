@@ -22,6 +22,9 @@ if test $_damin_dumb = 1
 end
 
 set -q theme_damin_show_context; or set -g theme_damin_show_context 1
+# host/user: no | ssh | always.
+set -q theme_damin_show_host; or set -g theme_damin_show_host ssh
+set -q theme_damin_show_user; or set -g theme_damin_show_user ssh
 set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
 set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
 set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
@@ -30,7 +33,10 @@ set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
 set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
 set -q theme_damin_show_git; or set -g theme_damin_show_git 1
 set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
+set -q theme_damin_show_hg; or set -g theme_damin_show_hg 0
 set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
+set -q theme_damin_hide_default_branch; or set -g theme_damin_hide_default_branch 0
+set -q theme_damin_default_branches; or set -g theme_damin_default_branches main master trunk
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 # show_exit_code: 0|off|hidden, 1|number (default), name, both.
@@ -38,6 +44,7 @@ set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code number
 set -q theme_damin_show_vi_mode; or set -g theme_damin_show_vi_mode 1
 
 set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
+set -q theme_damin_show_lang_global; or set -g theme_damin_show_lang_global 0
 set -q theme_damin_show_env; or set -g theme_damin_show_env 1
 set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
 set -q theme_damin_show_terraform; or set -g theme_damin_show_terraform 1
@@ -60,6 +67,11 @@ set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_comman
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
 set -q theme_damin_palette; or set -g theme_damin_palette mocha
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
+set -q theme_damin_newline_prompt; or set -g theme_damin_newline_prompt 0
+# title: user = 0|1|ssh, path = 0|1|short, process = 0|1.
+set -q theme_damin_title_show_user; or set -g theme_damin_title_show_user ssh
+set -q theme_damin_title_show_path; or set -g theme_damin_title_show_path 1
+set -q theme_damin_title_show_process; or set -g theme_damin_title_show_process 1
 
 set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
 set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
@@ -246,6 +258,36 @@ if test "$theme_damin_apply_colors" = 1
             set overlay0 6272a4
             set yellow f1fa8c
             set teal 8be9fd
+        case solarized
+            set text 839496
+            set blue 268bd2
+            set mauve 6c71c4
+            set green 859900
+            set pink d33682
+            set peach cb4b16
+            set red dc322f
+            set flamingo cb4b16
+            set overlay1 586e75
+            set surface0 073642
+            set maroon dc322f
+            set overlay0 657b83
+            set yellow b58900
+            set teal 2aa198
+        case solarized-light
+            set text 657b83
+            set blue 268bd2
+            set mauve 6c71c4
+            set green 859900
+            set pink d33682
+            set peach cb4b16
+            set red dc322f
+            set flamingo cb4b16
+            set overlay1 93a1a1
+            set surface0 eee8d5
+            set maroon dc322f
+            set overlay0 839496
+            set yellow b58900
+            set teal 2aa198
     end
     set -q fish_color_normal; or set -U fish_color_normal $text
     set -q fish_color_command; or set -U fish_color_command $blue
@@ -294,6 +336,9 @@ switch "$theme_damin_palette"
     case dracula
         set _damin_accent_primary 8be9fd
         set _damin_accent_secondary bd93f9
+    case solarized solarized-light
+        set _damin_accent_primary 268bd2
+        set _damin_accent_secondary d33682
 end
 set -q theme_damin_accent_primary; or set -g theme_damin_accent_primary $_damin_accent_primary
 set -q theme_damin_accent_secondary; or set -g theme_damin_accent_secondary $_damin_accent_secondary
@@ -422,14 +467,29 @@ function _damin_osc133_c --on-event fish_preexec
     _damin_osc_enabled; and printf '\e]133;C\a'
 end
 
+function _damin_vcs_ignored --argument-names dir
+    set -q theme_damin_vcs_ignore_paths; or return 1
+    test (count $theme_damin_vcs_ignore_paths) -eq 0; and return 1
+    for pat in $theme_damin_vcs_ignore_paths
+        string match -q -- $pat $dir; and return 0
+    end
+    return 1
+end
+
 function _damin_detect_vcs
     if test "$_damin_vcs_pwd" != "$PWD"
         set -g _damin_vcs_pwd "$PWD"
         set -g _damin_vcs_worktree ""
-        set -l dir $PWD
-        set -l levels 0
         set -l result ""
         set -l found ""
+        if _damin_vcs_ignored "$PWD"
+            set -g _damin_vcs_value ""
+            set -g _damin_vcs_dir ""
+            echo
+            return
+        end
+        set -l dir $PWD
+        set -l levels 0
         while test "$dir" != / -a $levels -lt 16
             if test -d "$dir/.jj"
                 set result jj
@@ -453,6 +513,11 @@ function _damin_detect_vcs
                 string match -q '*/worktrees/*' -- $found; and set -g _damin_vcs_worktree (path basename $found)
                 break
             end
+            if test "$theme_damin_show_hg" = 1 -a -d "$dir/.hg"
+                set result hg
+                set found "$dir/.hg"
+                break
+            end
             set dir (path dirname $dir)
             set levels (math $levels + 1)
         end
@@ -466,7 +531,42 @@ end
 # on first use; disabled segments cost zero parse time.
 function _damin_context_render
     test "$theme_damin_show_context" = 1; or return
-    test -n "$SSH_CONNECTION"; and echo -n -s $_damin_c_dim ssh $_damin_c_normal " "
+    set -l in_ssh 0
+    test -n "$SSH_CONNECTION"; and set in_ssh 1
+    test -n "$SSH_CLIENT" -o -n "$SSH_TTY"; and set in_ssh 1
+
+    set -l show_user 0
+    set -l show_host 0
+    switch "$theme_damin_show_user"
+        case always 1 yes
+            set show_user 1
+        case ssh
+            test $in_ssh = 1; and set show_user 1
+    end
+    switch "$theme_damin_show_host"
+        case always 1 yes
+            set show_host 1
+        case ssh
+            test $in_ssh = 1; and set show_host 1
+    end
+
+    if test $show_user = 1 -o $show_host = 1
+        set -l label
+        if test $show_user = 1
+            set -l u $USER
+            test -z "$u"; and set u (command id -un 2>/dev/null)
+            test -n "$u"; and set label $u
+        end
+        if test $show_host = 1
+            set -l h (_damin_osc_hostname)
+            test -n "$label" -a -n "$h"; and set label "$label@$h"
+            test -z "$label" -a -n "$h"; and set label $h
+        end
+        test -n "$label"; and echo -n -s $_damin_c_dim $label $_damin_c_normal " "
+    else if test $in_ssh = 1
+        echo -n -s $_damin_c_dim ssh $_damin_c_normal " "
+    end
+
     test "$_damin_is_root" = 1; and echo -n -s $_damin_c_err root $_damin_c_normal " "
     if test -f /.dockerenv
         echo -n -s $_damin_c_dim dkr $_damin_c_normal " "
@@ -521,8 +621,17 @@ function _damin_git_part
 end
 
 function _damin_git_render_data --argument-names branch u m s st a b c op
-    echo -n -s $_damin_c_branch $branch $_damin_c_normal
-    test -n "$op"; and echo -n -s " " $_damin_c_exit "($op)" $_damin_c_normal
+    set -l hide 0
+    if test "$theme_damin_hide_default_branch" = 1
+        contains -- $branch $theme_damin_default_branches; and set hide 1
+    end
+    if test $hide = 1
+        # branch hidden; counts/op/sparkle still render.
+        test -n "$op"; and echo -n -s $_damin_c_exit "($op)" $_damin_c_normal
+    else
+        echo -n -s $_damin_c_branch $branch $_damin_c_normal
+        test -n "$op"; and echo -n -s " " $_damin_c_exit "($op)" $_damin_c_normal
+    end
     test -n "$_damin_vcs_worktree"; and echo -n -s " " $_damin_c_dim "wt:$_damin_vcs_worktree" $_damin_c_normal
 
     set -l counts_on 0
@@ -708,6 +817,8 @@ function _damin_vcs_render
         case jj
             test "$theme_damin_show_jj" = 1; or return
             _damin_jj_render
+        case hg
+            _damin_hg_render
         case git
             _damin_git_render
     end
@@ -931,7 +1042,11 @@ function _damin_lang_compute
         set levels (math $levels + 1)
     end
 
-    test -z "$found_lang"; and return
+    if test -z "$found_lang"
+        test "$theme_damin_show_lang_global" = 1; or return
+        _damin_lang_global
+        return
+    end
 
     set -l v ""
     switch $found_lang
@@ -1208,6 +1323,8 @@ function fish_prompt
     _damin_jobs_render
     _damin_vi_mode_render
     _damin_extra_segments_render left
+
+    test "$theme_damin_newline_prompt" = 1; and echo
 
     if test $last_status -eq 0
         echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
