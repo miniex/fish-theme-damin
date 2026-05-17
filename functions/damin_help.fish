@@ -9,11 +9,15 @@ function damin_help
     _damin_help_row theme_damin_show_git 1
     _damin_help_row theme_damin_show_jj 1
     _damin_help_row theme_damin_show_hg 0
+    _damin_help_row theme_damin_show_fossil 0
     _damin_help_row theme_damin_show_git_op 1
     _damin_help_row theme_damin_hide_default_branch 0
     _damin_help_row theme_damin_show_context 1
     _damin_help_row theme_damin_show_k8s_context 1
     _damin_help_row theme_damin_show_k8s_namespace 0
+    _damin_help_row theme_damin_show_screen 0
+    _damin_help_row theme_damin_show_sudo_user 0
+    _damin_help_row theme_damin_show_docker_machine 0
     _damin_help_row theme_damin_show_jobs 1
     _damin_help_row theme_damin_show_env 1
     _damin_help_row theme_damin_show_nix_name 1
@@ -21,6 +25,7 @@ function damin_help
     _damin_help_row theme_damin_show_lang_global 0
     _damin_help_row theme_damin_show_battery 0
     _damin_help_row theme_damin_show_duration 1
+    _damin_help_row theme_damin_show_date 0
     _damin_help_row theme_damin_show_vi_mode 1
     _damin_help_row theme_damin_show_aws 0
     _damin_help_row theme_damin_show_aws_region 1
@@ -29,6 +34,7 @@ function damin_help
     _damin_help_row theme_damin_show_terraform 1
     _damin_help_row theme_damin_show_pulumi 1
     _damin_help_row theme_damin_show_gh_pr 0
+    _damin_help_row theme_damin_show_project_parent 1
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_git_count_untracked 1
@@ -42,13 +48,16 @@ function damin_help
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0
     echo
-    echo "  enums"
+    echo "  enums / strings"
     _damin_help_row theme_damin_show_exit_code number
     _damin_help_row theme_damin_show_user ssh
     _damin_help_row theme_damin_show_host ssh
+    _damin_help_row theme_damin_default_user '(unset)'
     _damin_help_row theme_damin_title_show_user ssh
     _damin_help_row theme_damin_title_show_path 1
     _damin_help_row theme_damin_title_show_process 1
+    _damin_help_row theme_damin_date_format '%H:%M'
+    _damin_help_row theme_damin_date_timezone '(unset)'
     _damin_help_row theme_damin_palette mocha
     echo
     echo "  palette accent overrides (hex without #; defaults shift per palette)"
@@ -58,6 +67,8 @@ function damin_help
     echo "  numeric"
     _damin_help_row theme_damin_cwd_keep 3
     _damin_help_row theme_damin_cwd_short 4
+    _damin_help_row theme_damin_project_dir_length 0
+    _damin_help_row theme_damin_branch_max_len 0
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
     _damin_help_row theme_damin_gh_pr_ttl 300
@@ -96,7 +107,7 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (mocha|frappe|macchiato|latte|gruvbox|tokyonight|rosepine|nord|dracula|solarized|solarized-light)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (17 flavors — run `damin_set_palette --help` or see docs)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo

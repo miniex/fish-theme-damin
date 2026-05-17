@@ -2,11 +2,12 @@ function damin_install_themes
     set -l dest "$__fish_config_dir/themes"
     mkdir -p $dest
 
-    set -l flavors mocha macchiato frappe latte gruvbox tokyonight rosepine nord dracula solarized solarized-light
+    set -l flavors mocha macchiato frappe latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn
     set -l names "Damin Mocha" "Damin Macchiato" "Damin Frappe" "Damin Latte" \
-        "Damin Gruvbox" "Damin Tokyo Night" "Damin Rose Pine" "Damin Nord" "Damin Dracula" \
-        "Damin Solarized" "Damin Solarized Light"
-    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 1a1b26 191724 2e3440 282a36 002b36 fdf6e3
+        "Damin Gruvbox" "Damin Gruvbox Light" "Damin Tokyo Night" "Damin Rose Pine" \
+        "Damin Nord" "Damin Dracula" "Damin Solarized" "Damin Solarized Light" \
+        "Damin Base16" "Damin Base16 Light" "Damin Zenburn"
+    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 fbf1c7 1a1b26 191724 2e3440 282a36 002b36 fdf6e3 181818 f8f8f8 3f3f3f
 
     set -l installed
     for i in (seq (count $flavors))
@@ -37,6 +38,14 @@ function damin_install_themes
                 set p 839496 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 586e75 073642 dc322f 657b83 b58900 2aa198
             case solarized-light
                 set p 657b83 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 93a1a1 eee8d5 dc322f 839496 b58900 2aa198
+            case base16
+                set p d8d8d8 7cafc2 ba8baf a1b56c ba8baf dc9656 ab4642 dc9656 585858 282828 ab4642 585858 f7ca88 86c1b9
+            case base16-light
+                set p 383838 7cafc2 ba8baf a1b56c ba8baf dc9656 ab4642 dc9656 b8b8b8 e8e8e8 ab4642 b8b8b8 f7ca88 86c1b9
+            case zenburn
+                set p dcdccc 8cd0d3 dc8cc3 7f9f7f dca3a3 dfaf8f cc9393 dca3a3 7f9f7f 4f4f4f cc9393 606060 f0dfaf 93e0e3
+            case gruvbox-light
+                set p 3c3836 458588 b16286 98971a cc241d d65d0e cc241d af3a03 7c6f64 ebdbb2 9d0006 928374 d79921 689d6a
         end
         # p indexes: 1=text 2=blue 3=mauve 4=green 5=pink 6=peach 7=red 8=flamingo 9=overlay1 10=surface0 11=maroon 12=overlay0 13=yellow 14=teal
         set -l file "$dest/$name.theme"

@@ -260,6 +260,41 @@ got=$(fish -c "
 expect "hg: ignored when show_hg=0" "$got" "[]"
 cleanup "$hgrepo"
 
+# fossil detection: opt-in via show_fossil, .fslckout found.
+fosrepo=$(mktemp -d -t damin-test-fos.XXXXXX)
+touch "$fosrepo/.fslckout"
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_fossil 1
+    cd '$fosrepo'
+    _damin_detect_vcs
+    true
+" 2>/dev/null)
+expect "fossil: detected when show_fossil=1 and .fslckout exists" "$got" "fossil"
+cleanup "$fosrepo"
+
+# branch_max_len: truncate to N chars with ellipsis (rendered via render_data).
+repo=$(mkrepo)
+git -C "$repo" checkout -q -b release/very-long-feature-branch-name-2026
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_branch_max_len 10
+    cd '$repo'
+    _damin_vcs_render
+    true
+" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g')
+case "$got" in
+    *"release/v…"*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "branch_max_len=10: truncates with …"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        printf '  FAIL %s\n       got: %s\n' "branch_max_len: truncates with …" "$got"
+        ;;
+esac
+cleanup "$repo"
+
 echo
 echo "=== damin _damin_k8s_compute tests ==="
 echo
@@ -786,6 +821,88 @@ got=$(run_dumb "
     true
 ")
 expect "palette: solarized accents → 268bd2 / d33682" "$got" "268bd2 d33682"
+
+got=$(run_dumb "
+    set -g theme_damin_palette base16
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal \$theme_damin_accent_primary
+    true
+")
+expect "palette: base16 → text=d8d8d8 accent=7cafc2" "$got" "d8d8d8 7cafc2"
+
+got=$(run_dumb "
+    set -g theme_damin_palette zenburn
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal \$theme_damin_accent_primary
+    true
+")
+expect "palette: zenburn → text=dcdccc accent=8cd0d3" "$got" "dcdccc 8cd0d3"
+
+got=$(run_dumb "
+    set -g theme_damin_palette gruvbox-light
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal \$theme_damin_accent_primary
+    true
+")
+expect "palette: gruvbox-light → text=3c3836 accent=458588" "$got" "3c3836 458588"
+
+got=$(run_dumb "
+    set -g theme_damin_palette terminal-dark
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal \$theme_damin_accent_primary
+    true
+")
+expect "palette: terminal-dark → named colors" "$got" "white blue"
+
+echo
+echo "=== damin default_user tests ==="
+echo
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_user always
+    set -g theme_damin_show_host no
+    set -gx USER alice
+    _damin_context_render
+    true
+" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
+expect "default_user unset: user always shown" "$got" "alice"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_user always
+    set -g theme_damin_show_host no
+    set -g theme_damin_default_user alice
+    set -gx USER alice
+    _damin_context_render
+    true
+" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
+expect "default_user match: user suppressed" "$got" ""
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_user always
+    set -g theme_damin_show_host no
+    set -g theme_damin_default_user alice
+    set -gx USER bob
+    _damin_context_render
+    true
+" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
+expect "default_user differs: user still shown" "$got" "bob"
+
+echo
+echo "=== damin damin_colors hook ==="
+echo
+
+got=$(fish -c "
+    function damin_colors
+        set -g _damin_c_branch BRANCH_OVERRIDE
+    end
+    source '$THEME/conf.d/damin.fish'
+    echo \$_damin_c_branch
+    true
+" 2>/dev/null)
+expect "damin_colors hook overrides _damin_c_branch" "$got" "BRANCH_OVERRIDE"
 
 echo
 echo "=== damin lang_global tests ==="

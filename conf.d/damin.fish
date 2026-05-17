@@ -22,9 +22,12 @@ if test $_damin_dumb = 1
 end
 
 set -q theme_damin_show_context; or set -g theme_damin_show_context 1
-# host/user: no | ssh | always.
+# host/user: no | ssh | always. default_user: matching $USER suppressed.
 set -q theme_damin_show_host; or set -g theme_damin_show_host ssh
 set -q theme_damin_show_user; or set -g theme_damin_show_user ssh
+set -q theme_damin_show_screen; or set -g theme_damin_show_screen 0
+set -q theme_damin_show_sudo_user; or set -g theme_damin_show_sudo_user 0
+set -q theme_damin_show_docker_machine; or set -g theme_damin_show_docker_machine 0
 set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
 set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
 set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
@@ -34,9 +37,12 @@ set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 
 set -q theme_damin_show_git; or set -g theme_damin_show_git 1
 set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
 set -q theme_damin_show_hg; or set -g theme_damin_show_hg 0
+set -q theme_damin_show_fossil; or set -g theme_damin_show_fossil 0
 set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
 set -q theme_damin_hide_default_branch; or set -g theme_damin_hide_default_branch 0
 set -q theme_damin_default_branches; or set -g theme_damin_default_branches main master trunk
+# 0 = no limit. >0 truncates long branch names with `…`.
+set -q theme_damin_branch_max_len; or set -g theme_damin_branch_max_len 0
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 # show_exit_code: 0|off|hidden, 1|number (default), name, both.
@@ -51,6 +57,9 @@ set -q theme_damin_show_terraform; or set -g theme_damin_show_terraform 1
 set -q theme_damin_show_pulumi; or set -g theme_damin_show_pulumi 1
 set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
 set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
+set -q theme_damin_show_date; or set -g theme_damin_show_date 0
+set -q theme_damin_date_format; or set -g theme_damin_date_format '%H:%M'
+# theme_damin_date_timezone — optional TZ override (e.g. UTC, America/Los_Angeles).
 
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
 set -q theme_damin_git_count_untracked; or set -g theme_damin_git_count_untracked 1
@@ -75,6 +84,9 @@ set -q theme_damin_title_show_process; or set -g theme_damin_title_show_process 
 
 set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
 set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
+# project-relative path: inside a repo show `<project>/<rel>` instead of full cwd.
+set -q theme_damin_show_project_parent; or set -g theme_damin_show_project_parent 1
+set -q theme_damin_project_dir_length; or set -g theme_damin_project_dir_length 0
 set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
 set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_gh_pr_ttl; or set -g theme_damin_gh_pr_ttl 300
@@ -288,6 +300,96 @@ if test "$theme_damin_apply_colors" = 1
             set overlay0 839496
             set yellow b58900
             set teal 2aa198
+        case base16
+            set text d8d8d8
+            set blue 7cafc2
+            set mauve ba8baf
+            set green a1b56c
+            set pink ba8baf
+            set peach dc9656
+            set red ab4642
+            set flamingo dc9656
+            set overlay1 585858
+            set surface0 282828
+            set maroon ab4642
+            set overlay0 585858
+            set yellow f7ca88
+            set teal 86c1b9
+        case base16-light
+            set text 383838
+            set blue 7cafc2
+            set mauve ba8baf
+            set green a1b56c
+            set pink ba8baf
+            set peach dc9656
+            set red ab4642
+            set flamingo dc9656
+            set overlay1 b8b8b8
+            set surface0 e8e8e8
+            set maroon ab4642
+            set overlay0 b8b8b8
+            set yellow f7ca88
+            set teal 86c1b9
+        case zenburn
+            set text dcdccc
+            set blue 8cd0d3
+            set mauve dc8cc3
+            set green 7f9f7f
+            set pink dca3a3
+            set peach dfaf8f
+            set red cc9393
+            set flamingo dca3a3
+            set overlay1 7f9f7f
+            set surface0 4f4f4f
+            set maroon cc9393
+            set overlay0 606060
+            set yellow f0dfaf
+            set teal 93e0e3
+        case gruvbox-light
+            set text 3c3836
+            set blue 458588
+            set mauve b16286
+            set green 98971a
+            set pink cc241d
+            set peach d65d0e
+            set red cc241d
+            set flamingo af3a03
+            set overlay1 7c6f64
+            set surface0 ebdbb2
+            set maroon 9d0006
+            set overlay0 928374
+            set yellow d79921
+            set teal 689d6a
+        case terminal-dark
+            set text white
+            set blue blue
+            set mauve brmagenta
+            set green green
+            set pink brred
+            set peach yellow
+            set red red
+            set flamingo yellow
+            set overlay1 brblack
+            set surface0 brblack
+            set maroon red
+            set overlay0 brblack
+            set yellow yellow
+            set teal cyan
+        case terminal-light
+            set text black
+            set blue blue
+            set mauve magenta
+            set green green
+            set pink red
+            set peach yellow
+            set red red
+            set flamingo yellow
+            set overlay1 brblack
+            set surface0 brwhite
+            set maroon red
+            set overlay0 brblack
+            set yellow yellow
+            set teal cyan
     end
     set -q fish_color_normal; or set -U fish_color_normal $text
     set -q fish_color_command; or set -U fish_color_command $blue
@@ -339,6 +441,18 @@ switch "$theme_damin_palette"
     case solarized solarized-light
         set _damin_accent_primary 268bd2
         set _damin_accent_secondary d33682
+    case base16 base16-light
+        set _damin_accent_primary 7cafc2
+        set _damin_accent_secondary ba8baf
+    case zenburn
+        set _damin_accent_primary 8cd0d3
+        set _damin_accent_secondary dca3a3
+    case gruvbox-light
+        set _damin_accent_primary 458588
+        set _damin_accent_secondary b16286
+    case terminal-dark terminal-light
+        set _damin_accent_primary blue
+        set _damin_accent_secondary magenta
 end
 set -q theme_damin_accent_primary; or set -g theme_damin_accent_primary $_damin_accent_primary
 set -q theme_damin_accent_secondary; or set -g theme_damin_accent_secondary $_damin_accent_secondary
@@ -356,6 +470,9 @@ set -g _damin_c_dim (set_color --dim)
 set -g _damin_c_deco (set_color $theme_damin_accent_secondary)
 set -g _damin_c_sep (set_color $theme_damin_accent_secondary --dim)
 set -g _damin_c_long (set_color $theme_damin_accent_secondary -o)
+
+# user hook: damin_colors() runs after defaults to override _damin_c_*.
+functions -q damin_colors; and damin_colors
 
 set -g _damin_vcs_pwd ""
 set -g _damin_vcs_value ""
@@ -518,6 +635,13 @@ function _damin_detect_vcs
                 set found "$dir/.hg"
                 break
             end
+            if test "$theme_damin_show_fossil" = 1
+                if test -f "$dir/.fslckout" -o -f "$dir/_FOSSIL_"
+                    set result fossil
+                    set found "$dir"
+                    break
+                end
+            end
             set dir (path dirname $dir)
             set levels (math $levels + 1)
         end
@@ -555,6 +679,10 @@ function _damin_context_render
         if test $show_user = 1
             set -l u $USER
             test -z "$u"; and set u (command id -un 2>/dev/null)
+            # default_user match → suppress username.
+            if set -q theme_damin_default_user; and test "$u" = "$theme_damin_default_user"
+                set u
+            end
             test -n "$u"; and set label $u
         end
         if test $show_host = 1
@@ -568,10 +696,22 @@ function _damin_context_render
     end
 
     test "$_damin_is_root" = 1; and echo -n -s $_damin_c_err root $_damin_c_normal " "
+    # sudo_user: $SUDO_USER inside a root shell (sudo -s / -i).
+    if test "$theme_damin_show_sudo_user" = 1; and set -q SUDO_USER; and test -n "$SUDO_USER"
+        echo -n -s $_damin_c_dim "sudo:$SUDO_USER" $_damin_c_normal " "
+    end
     if test -f /.dockerenv
         echo -n -s $_damin_c_dim dkr $_damin_c_normal " "
     else if test -f /run/.containerenv
         echo -n -s $_damin_c_dim ctr $_damin_c_normal " "
+    end
+    if test "$theme_damin_show_docker_machine" = 1; and set -q DOCKER_MACHINE_NAME; and test -n "$DOCKER_MACHINE_NAME"
+        echo -n -s $_damin_c_dim "dm:$DOCKER_MACHINE_NAME" $_damin_c_normal " "
+    end
+    # $STY = "<pid>.<session>" inside GNU screen.
+    if test "$theme_damin_show_screen" = 1; and set -q STY; and test -n "$STY"
+        set -l name (string replace -r '^\d+\.' '' -- $STY)
+        echo -n -s $_damin_c_dim "screen:$name" $_damin_c_normal " "
     end
     # gate at the caller — disabled cloud segments don't autoload at all.
     test "$theme_damin_show_aws" = 1; and _damin_aws_render
@@ -629,7 +769,11 @@ function _damin_git_render_data --argument-names branch u m s st a b c op
         # branch hidden; counts/op/sparkle still render.
         test -n "$op"; and echo -n -s $_damin_c_exit "($op)" $_damin_c_normal
     else
-        echo -n -s $_damin_c_branch $branch $_damin_c_normal
+        set -l shown $branch
+        if test $theme_damin_branch_max_len -gt 0 -a (string length -- $branch) -gt $theme_damin_branch_max_len
+            set shown (string sub -l (math $theme_damin_branch_max_len - 1) -- $branch)…
+        end
+        echo -n -s $_damin_c_branch $shown $_damin_c_normal
         test -n "$op"; and echo -n -s " " $_damin_c_exit "($op)" $_damin_c_normal
     end
     test -n "$_damin_vcs_worktree"; and echo -n -s " " $_damin_c_dim "wt:$_damin_vcs_worktree" $_damin_c_normal
@@ -819,6 +963,8 @@ function _damin_vcs_render
             _damin_jj_render
         case hg
             _damin_hg_render
+        case fossil
+            _damin_fossil_render
         case git
             _damin_git_render
     end
@@ -928,8 +1074,26 @@ function _damin_cwd_pretty
     # PWD-memo: prompt_pwd's string work only runs on cd.
     if test "$_damin_cwd_pwd" != "$PWD"
         set -g _damin_cwd_pwd "$PWD"
-        set -g _damin_cwd_value (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
-        test -z "$_damin_cwd_value"; and set -g _damin_cwd_value (prompt_pwd)
+        set -l value ""
+        # project-relative: skip in worktrees (vcs_dir points to a different tree).
+        if test "$theme_damin_show_project_parent" = 0 -a -z "$_damin_vcs_worktree"
+            _damin_detect_vcs >/dev/null
+            if test -n "$_damin_vcs_dir"
+                set -l root (path dirname -- $_damin_vcs_dir)
+                if test "$PWD" = "$root"
+                    set value (path basename -- $root)
+                else if string match -q -- "$root/*" $PWD
+                    set -l rel (string replace -- "$root/" '' $PWD)
+                    test $theme_damin_project_dir_length -gt 0; and set rel (prompt_pwd --dir-length=$theme_damin_project_dir_length --full-length-dirs=99 -- $rel 2>/dev/null)
+                    set value (path basename -- $root)/$rel
+                end
+            end
+        end
+        if test -z "$value"
+            set value (prompt_pwd --dir-length=$theme_damin_cwd_short --full-length-dirs=$theme_damin_cwd_keep 2>/dev/null)
+            test -z "$value"; and set value (prompt_pwd)
+        end
+        set -g _damin_cwd_value $value
     end
     echo $_damin_cwd_value
 end
@@ -1353,6 +1517,7 @@ function fish_right_prompt
     _damin_env_render
     test "$theme_damin_show_battery" = 1; and _damin_battery_render
     _damin_duration_render
+    test "$theme_damin_show_date" = 1; and _damin_date_render
     _damin_extra_segments_render right
 end
 

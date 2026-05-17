@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **6 new palettes** — `base16`(+`-light`), `zenburn`, `gruvbox-light`, `terminal-dark`/`-light`. Terminal variants use fish's 16-color names (inherit terminal palette); the other four ship hex. 11 → 17 flavors. `.theme` files generated for the hex flavors
+- **`theme_damin_show_date`** + `_date_format` (default `%H:%M`) + `_date_timezone` — right-prompt clock. 1 `date` fork/prompt
+- **`theme_damin_default_user`** — when `$USER` matches, suppressed in context + title. Lets `show_user=always` hide your own name while still surfacing other users
+- **`theme_damin_branch_max_len`** — truncate long branch names to N chars with `…` (0 = no limit)
+- **Project-relative path** — `theme_damin_show_project_parent=0` renders `<project>/<rel>` instead of full PWD inside a repo. `_project_dir_length > 0` abbreviates the rel part. Skipped in git worktrees
+- **AWS Vault** — `$AWS_VAULT` surfaces as `aws-vault:<profile>` (distinct from plain `aws:`). Also used as the profile when `$AWS_PROFILE` is unset
+- **Fossil VCS** — `theme_damin_show_fossil=1`. Branch via `fossil branch current` (1 fork/prompt). Detected after `.hg/`
+- **Context indicators** — `show_screen` (`$STY`), `show_sudo_user` (`$SUDO_USER`), `show_docker_machine` (`$DOCKER_MACHINE_NAME`). All opt-in
+- **`damin_colors` hook** — user function called once at theme load; overrides any `_damin_c_*` for per-segment colors beyond the two-accent model
 - **`theme_damin_vcs_ignore_paths`** — glob list. Matching `$PWD` short-circuits `_damin_detect_vcs`. For NFS / huge external volumes
 - **`solarized` + `solarized-light` palettes** — accents map to `268bd2` / `d33682`
 - **`theme_damin_hide_default_branch`** + **`theme_damin_default_branches`** (`main master trunk`) — hide branch name when on a default branch. Counts / op / sparkle still render

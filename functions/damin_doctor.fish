@@ -72,6 +72,24 @@ function damin_doctor
         end
     end
 
+    if test "$theme_damin_show_fossil" = 1
+        if type -q fossil
+            _damin_doctor_check "fossil cli" ok (command -v fossil)
+        else
+            _damin_doctor_check "fossil cli" fail "(theme_damin_show_fossil=1 but `fossil` not on PATH)"
+        end
+    end
+
+    if set -q AWS_VAULT; and test -n "$AWS_VAULT"
+        _damin_doctor_check "aws-vault session" ok "($AWS_VAULT)"
+    end
+
+    if set -q theme_damin_default_user; and test -n "$theme_damin_default_user"
+        set -l ufx 'matches — user suppressed'
+        test "$USER" = "$theme_damin_default_user"; or set ufx "($USER differs from default_user=$theme_damin_default_user)"
+        _damin_doctor_check default_user ok "$ufx"
+    end
+
     set -q theme_damin_vcs_ignore_paths; and test (count $theme_damin_vcs_ignore_paths) -gt 0; and _damin_doctor_check "vcs ignore paths" ok "($theme_damin_vcs_ignore_paths)"
 
     set -l ssh_state inactive

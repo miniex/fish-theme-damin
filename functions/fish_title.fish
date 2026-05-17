@@ -14,6 +14,9 @@ function fish_title
     if test $want_user = 1
         set -l u $USER
         test -z "$u"; and set u (command id -un 2>/dev/null)
+        if set -q theme_damin_default_user; and test "$u" = "$theme_damin_default_user"
+            set u
+        end
         set -l h (command hostname 2>/dev/null | string trim)
         test -z "$h"; and set h localhost
         if test -n "$u"

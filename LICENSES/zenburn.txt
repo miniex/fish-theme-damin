@@ -1,0 +1,8 @@
+Zenburn — © Jani Nurminen. Originally a Vim colorscheme.
+
+Project: https://kippura.org/zenburnpage/
+Vim plugin: https://github.com/jnurmine/Zenburn
+
+Distributed under the same terms as Vim itself (Vim license, free for any use
+with attribution). Color hex values are facts and not subject to copyright in
+most jurisdictions, but attribution to Jani Nurminen is preserved here.

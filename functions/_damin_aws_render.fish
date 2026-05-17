@@ -5,6 +5,9 @@ function _damin_aws_render
         set profile $AWS_PROFILE
     else if set -q AWS_DEFAULT_PROFILE; and test -n "$AWS_DEFAULT_PROFILE"
         set profile $AWS_DEFAULT_PROFILE
+    else if set -q AWS_VAULT; and test -n "$AWS_VAULT"
+        # aws-vault exec may not export AWS_PROFILE.
+        set profile $AWS_VAULT
     end
     test -n "$profile"; or return
 
@@ -29,7 +32,10 @@ function _damin_aws_render
         end
     end
 
-    set -l label "aws:$profile"
+    # aws-vault session → distinct `aws-vault:` prefix.
+    set -l prefix aws
+    set -q AWS_VAULT; and test -n "$AWS_VAULT"; and set prefix aws-vault
+    set -l label "$prefix:$profile"
     test "$theme_damin_show_aws_region" = 1 -a -n "$region"; and set label "$label@$region"
     echo -n -s $_damin_c_dim "$label " $_damin_c_normal
 end

@@ -44,7 +44,7 @@ omf theme damin; exec fish
   - `conf.d/damin.fish` — defaults, color cache, hot-path renderers, postexec, `fish_prompt` / `fish_right_prompt`
   - `conf.d/_damin_async_core.fish` — minimal helpers the async-refresh subshell sources. Keep self-contained; new deps grow the fork cost
   - `functions/damin_*.fish` — user-callable (`damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, …)
-  - `functions/_damin_*.fish` — lazy-loaded segment renderers (aws/gcp/azure/k8s/pulumi/terraform/battery/jj/hg/lang_global). New opt-in segments go here
+  - `functions/_damin_*.fish` — lazy-loaded segment renderers (aws/gcp/azure/k8s/pulumi/terraform/battery/jj/hg/fossil/date/lang_global). New opt-in segments go here
   - `functions/fish_title.fish` — terminal title. Mirror any change into root `fish_title.fish` to keep OMF/Fisher autoload paths consistent
   - Root `fish_prompt.fish` / `fish_right_prompt.fish` / `fish_title.fish` / `key_bindings.fish` — OMF shims, no logic
   - `hooks/*.fish` — OMF install lifecycle. Idempotent and side-effect-free outside the orphan cleanup
