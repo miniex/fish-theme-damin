@@ -2,6 +2,14 @@
 # usage: `damin_bench [N=1000] [--json]`.
 # each sample = mean of BATCH runs so the 1ms timer doesn't swallow sub-ms segments.
 function damin_bench
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_bench 'per-segment P50/P95/P99 timing distribution' \
+            'damin_bench [N] [--json]' \
+            -- \
+            'N      iterations (default 1000, batched in groups of 50)' \
+            '--json emit single-line JSON for CI comparison'
+        return
+    end
     set -l runs 1000
     set -l batch 50
     set -l json 0

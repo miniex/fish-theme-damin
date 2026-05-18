@@ -1,4 +1,8 @@
 function damin_doctor
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_doctor 'environment + install diagnostic' damin_doctor
+        return
+    end
     set -l parts (string split . -- $FISH_VERSION)
     set -l major $parts[1]
     set -l minor $parts[2]

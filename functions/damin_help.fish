@@ -1,4 +1,11 @@
 function damin_help
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_help 'list every theme_damin_* toggle, current value, default' \
+            damin_help \
+            -- \
+            'for read/write of universals see: damin_config --help.'
+        return
+    end
     set -l c_dim (set_color --dim)
     set -l c_norm (set_color normal)
 
@@ -69,6 +76,11 @@ function damin_help
     _damin_help_row theme_damin_cwd_short 4
     _damin_help_row theme_damin_project_dir_length 0
     _damin_help_row theme_damin_branch_max_len 0
+    _damin_help_row theme_damin_cloud_max_len 0
+    _damin_help_row theme_damin_k8s_max_len 0
+    _damin_help_row theme_damin_aws_max_len 0
+    _damin_help_row theme_damin_gcp_max_len 0
+    _damin_help_row theme_damin_azure_max_len 0
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
     _damin_help_row theme_damin_gh_pr_ttl 300
@@ -101,13 +113,13 @@ function damin_help
         _damin_help_row theme_damin_glyph_sep ·
     end
     echo
-    echo "  commands"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "interactive setup wizard (toggles + palette)"
+    echo "  commands (every command takes --help / -h)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "wizard / get / set / reset / export — see damin_config --help"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (17 flavors — run `damin_set_palette --help` or see docs)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (17 flavors — tab-completes)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo

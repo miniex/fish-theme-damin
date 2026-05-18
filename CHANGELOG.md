@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Tab completions** — new `completions/` directory with one file per `damin_*` command. Flavor names, subcommands, and currently-set toggle names complete on `<Tab>`. Fisher auto-installs; for OMF, `conf.d/damin.fish` pushes the dir onto `$fish_complete_path`
+- **`--help` / `-h` on every `damin_*` command.** Shared formatter in `functions/_damin_help_block.fish`
+- **`damin_config` subcommands** — wizard is no longer the only entrypoint:
+  - `damin_config` / `damin_config wizard` → interactive wizard (unchanged)
+  - `damin_config get [PATTERN]` → print matching `theme_damin_*` (substring filter)
+  - `damin_config set VAR VALUE...` → `set -U` after `theme_damin_*` prefix validation; multi-arg → list-typed value
+  - `damin_config reset [PATTERN]` → list + erase matching universals after `y/N` confirm
+  - `damin_config export` → dump every `theme_damin_*` universal as a runnable fish script. Scope-aware via `set --show` so a `set -g` shadow from conf.d can't leak into the dump
+- **Cloud label truncation** — long ARN-style k8s contexts / AWS profiles / GCP projects / Azure subscriptions clip with `…`:
+  - `theme_damin_cloud_max_len` — umbrella (default `0` = no limit)
+  - `theme_damin_k8s_max_len` / `_aws_max_len` / `_gcp_max_len` / `_azure_max_len` — per-segment; `>0` wins over the umbrella
+  - clips the long part only — namespace / region untouched
 - **6 new palettes** — `base16`(+`-light`), `zenburn`, `gruvbox-light`, `terminal-dark`/`-light`. Terminal variants use fish's 16-color names (inherit terminal palette); the other four ship hex. 11 → 17 flavors. `.theme` files generated for the hex flavors
 - **`theme_damin_show_date`** + `_date_format` (default `%H:%M`) + `_date_timezone` — right-prompt clock. 1 `date` fork/prompt
 - **`theme_damin_default_user`** — when `$USER` matches, suppressed in context + title. Lets `show_user=always` hide your own name while still surfacing other users

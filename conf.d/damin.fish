@@ -9,6 +9,10 @@ source $_damin_async_core_file 2>/dev/null
 set -l _damin_functions (path dirname $_damin_theme_file)/../functions
 test -d $_damin_functions; and not contains -- $_damin_functions $fish_function_path; and set -p fish_function_path $_damin_functions
 
+# completions/ — OMF doesn't register this dir; push it onto $fish_complete_path.
+set -l _damin_completions (path dirname $_damin_theme_file)/../completions
+test -d $_damin_completions; and not contains -- $_damin_completions $fish_complete_path; and set -p fish_complete_path $_damin_completions
+
 # tramp / dumb terminals — adjust defaults before the `set -q; or set` block below
 # so user-explicit values still win.
 set -l _damin_dumb 0
@@ -43,6 +47,12 @@ set -q theme_damin_hide_default_branch; or set -g theme_damin_hide_default_branc
 set -q theme_damin_default_branches; or set -g theme_damin_default_branches main master trunk
 # 0 = no limit. >0 truncates long branch names with `…`.
 set -q theme_damin_branch_max_len; or set -g theme_damin_branch_max_len 0
+# cloud label truncation. per-segment max_len (>0) wins; else cloud_max_len applies.
+set -q theme_damin_cloud_max_len; or set -g theme_damin_cloud_max_len 0
+set -q theme_damin_k8s_max_len; or set -g theme_damin_k8s_max_len 0
+set -q theme_damin_aws_max_len; or set -g theme_damin_aws_max_len 0
+set -q theme_damin_gcp_max_len; or set -g theme_damin_gcp_max_len 0
+set -q theme_damin_azure_max_len; or set -g theme_damin_azure_max_len 0
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 # show_exit_code: 0|off|hidden, 1|number (default), name, both.
@@ -519,6 +529,33 @@ function _damin_read_lines --argument-names file
     while read -l line
         printf '%s\n' "$line"
     end <$file
+end
+
+# truncate to n chars with `…`. n ≤ 0 or non-numeric → passthrough.
+function _damin_truncate --argument-names s n
+    if not string match -rq '^[0-9]+$' -- "$n"
+        echo $s
+        return
+    end
+    if test $n -le 0 -o (string length -- $s) -le $n
+        echo $s
+        return
+    end
+    echo (string sub -l (math $n - 1) -- $s)…
+end
+
+# resolve per-segment max_len, else cloud_max_len umbrella. 0 = no limit.
+function _damin_effective_max_len --argument-names seg
+    set -l per theme_damin_{$seg}_max_len
+    if set -q $per; and string match -rq '^[1-9][0-9]*$' -- $$per
+        echo $$per
+        return
+    end
+    if set -q theme_damin_cloud_max_len; and string match -rq '^[1-9][0-9]*$' -- $theme_damin_cloud_max_len
+        echo $theme_damin_cloud_max_len
+        return
+    end
+    echo 0
 end
 
 function _damin_cache_prune

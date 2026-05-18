@@ -39,8 +39,9 @@ function _damin_k8s_render
 
     test -n "$ctx" -o $in_pod = 1; or return
 
+    set -l shown_ctx (_damin_truncate "$ctx" (_damin_effective_max_len k8s))
     set -l label k8s
-    test "$theme_damin_show_k8s_context" = 1 -a -n "$ctx"; and set label "$label:$ctx"
+    test "$theme_damin_show_k8s_context" = 1 -a -n "$ctx"; and set label "$label:$shown_ctx"
     test "$theme_damin_show_k8s_namespace" = 1 -a -n "$ns"; and set label "$label/$ns"
     echo -n -s $_damin_c_dim "$label " $_damin_c_normal
 end

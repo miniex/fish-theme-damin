@@ -1,4 +1,8 @@
 function damin_reset_cache
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_reset_cache 'wipe ~/.cache/damin/ + in-memory PWD memos' damin_reset_cache
+        return
+    end
     command rm -rf $_damin_cache_dir 2>/dev/null
     set -e _damin_lang_pwd
     set -e _damin_lang_value

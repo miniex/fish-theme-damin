@@ -19,7 +19,8 @@ fi
 
 for f in fish_prompt.fish fish_right_prompt.fish fish_title.fish key_bindings.fish \
     conf.d/damin.fish conf.d/_damin_async_core.fish \
-    functions/damin_*.fish functions/_damin_*.fish; do
+    functions/damin_*.fish functions/_damin_*.fish \
+    completions/damin_*.fish; do
     fish_indent --check "$f"
     fish -n "$f"
 done

@@ -13,6 +13,7 @@ conf.d/
 functions/
   damin_{config,help,doctor,profile,bench,set_palette,install_themes,reset_cache}.fish
                             — user-callable commands.
+  _damin_help_block         — shared `--help` formatter for every damin_* command.
   _damin_{aws,gcp,azure}_*  — lazy-loaded cloud renderers (autoloaded when enabled).
   _damin_k8s_*              — kubernetes render + compute + prefill.
   _damin_{devops,pulumi}_*  — terraform / pulumi.
@@ -23,6 +24,9 @@ functions/
   _damin_fossil_render      — fossil (opt-in; one `fossil` fork per prompt).
   _damin_lang_global        — env-var-only version-manager fallback.
   fish_title.fish           — terminal title.
+completions/
+  damin_*.fish              — tab completions for every user-facing command.
+                              palette names, subcommands, --help / --json flags.
 
 fish_{prompt,right_prompt,title}.fish, key_bindings.fish
                             — root-level OMF shims. fish_title is duplicated
@@ -36,9 +40,9 @@ tools/format.sh / lint.sh / bench.sh / test.sh
 
 ### Dual-manager strategy
 
-**Fisher** copies `conf.d/*.fish` to `~/.config/fish/conf.d/` (sourced at startup) and `functions/*.fish` to `~/.config/fish/functions/` (autoloaded on first call). Root-level files are ignored.
+**Fisher** copies `conf.d/*.fish` to `~/.config/fish/conf.d/` (sourced at startup), `functions/*.fish` to `~/.config/fish/functions/` (autoloaded on first call), and `completions/*.fish` to `~/.config/fish/completions/` (lazy-loaded on first tab). Root-level files are ignored.
 
-**Oh My Fish** clones to `~/.local/share/omf/themes/damin/` (the package name registered in `oh-my-fish/packages-main`) and adds it to `$fish_function_path`. Root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that source `conf.d/damin.fish`.
+**Oh My Fish** clones to `~/.local/share/omf/themes/damin/` (the package name registered in `oh-my-fish/packages-main`) and adds it to `$fish_function_path`. OMF doesn't autoload `completions/`, so `conf.d/damin.fish` pushes the theme's `completions/` dir onto `$fish_complete_path` at theme load. Root-level `fish_prompt.fish` / `fish_right_prompt.fish` / `key_bindings.fish` are shims that source `conf.d/damin.fish`.
 
 `fish_prompt` / `fish_right_prompt` live in `conf.d/`, **not** `functions/` — Fisher would otherwise copy them to `~/.config/fish/functions/`, which OMF flags as "Conflicting prompt setting".
 
@@ -162,79 +166,108 @@ User-explicit values win via the same `set -q; or set` idiom. `damin_doctor` rep
 
 Every toggle is a universal var (`set -U`). Defaults apply only when unset. `damin_help` shows current values.
 
+### `damin_config` subcommands
+
+The bare `damin_config` (no args) is still the interactive wizard. The dispatcher also accepts:
+
+| Subcommand                      | Purpose                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| `damin_config wizard`           | Same as bare `damin_config`                                                        |
+| `damin_config get [PATTERN]`    | Print matching `theme_damin_*`. Pattern is a substring match against the full name |
+| `damin_config set VAR VALUE...` | `set -U` after `theme_damin_*` prefix validation. Multi-arg → list-typed value     |
+| `damin_config reset [PATTERN]`  | List matching universals, erase after `y/N` confirm                                |
+| `damin_config export`           | Dump every `theme_damin_*` universal as a runnable fish script                     |
+| `damin_config --help` / `-h`    | Show usage                                                                         |
+
+`export` parses `set --show` and pulls **only the universal-scope value** — a `set -g` shadow (from conf.d defaults) can't leak into the dump. The output is round-trippable: `damin_config export > my-damin.fish; source my-damin.fish` reconstructs the same universals.
+
+### `--help` and tab completion
+
+Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Completions in `completions/`:
+
+- `damin_set_palette <Tab>` — 17 flavor names with descriptions
+- `damin_config <Tab>` — subcommands (`wizard` / `get` / `set` / `reset` / `export` / `help`)
+- `damin_config set <Tab>` / `damin_config reset <Tab>` — currently-set `theme_damin_*` universals
+- `damin_bench --<Tab>` — `--help` / `--json`
+
 ### Toggles
 
-| Variable                               | Default    | Effect                                                                            |
-|----------------------------------------|------------|-----------------------------------------------------------------------------------|
-| `theme_damin_show_git`                 | `1`        | Branch + meta (gates jj / hg too)                                                 |
-| `theme_damin_show_jj`                  | `1`        | Use jj when `.jj/` found before `.git/`                                           |
-| `theme_damin_show_hg`                  | `0`        | Mercurial — branch from `.hg/branch`. No counts                                   |
-| `theme_damin_show_fossil`              | `0`        | Fossil — branch via one `fossil` fork per prompt                                  |
-| `theme_damin_show_git_op`              | `1`        | `(rebase|merge|pick|revert|bisect)` state                                         |
-| `theme_damin_hide_default_branch`      | `0`        | Hide branch when in `theme_damin_default_branches`                                |
-| `theme_damin_branch_max_len`           | `0`        | Truncate branch name to N chars with `…` (0 = no limit)                           |
-| `theme_damin_show_context`             | `1`        | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                                 |
-| `theme_damin_show_user`                | `ssh`      | `no` / `ssh` / `always` — `$USER` in context segment                              |
-| `theme_damin_show_host`                | `ssh`      | `no` / `ssh` / `always` — hostname in context segment                             |
-| `theme_damin_default_user`             | *(unset)*  | If set and `$USER` matches, suppress username in context + title                  |
-| `theme_damin_show_screen`              | `0`        | `screen:<session>` indicator (from `$STY`)                                        |
-| `theme_damin_show_sudo_user`           | `0`        | `sudo:<user>` indicator inside a root shell launched via `sudo`                   |
-| `theme_damin_show_docker_machine`      | `0`        | `dm:<name>` indicator from `$DOCKER_MACHINE_NAME`                                 |
-| `theme_damin_show_k8s_context`         | `1`        | Append `:<context>` to `k8s`                                                      |
-| `theme_damin_show_k8s_namespace`       | `0`        | Append `/<namespace>` to `k8s:<context>`                                          |
-| `theme_damin_show_jobs`                | `1`        | `&N` background-job count                                                         |
-| `theme_damin_show_env`                 | `1`        | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)`                         |
-| `theme_damin_show_nix_name`            | `1`        | Show nix devshell name inside `IN_NIX_SHELL`                                      |
-| `theme_damin_show_lang`                | `1`        | Project language + version                                                        |
-| `theme_damin_show_lang_global`         | `0`        | Fallback to active shell version manager when no project pin                      |
-| `theme_damin_show_battery`             | `0`        | Battery % when ≤ threshold (laptops)                                              |
-| `theme_damin_show_duration`            | `1`        | Last command duration                                                             |
-| `theme_damin_show_date`                | `0`        | Right-prompt clock — `theme_damin_date_format` + `_date_timezone`                 |
-| `theme_damin_show_vi_mode`             | `1`        | `[N]`/`[I]`/`[V]`/`[R]` badge (skipped under emacs binds)                         |
-| `theme_damin_show_exit_code`           | `number`   | `number` / `name` / `both` / `off`                                                |
-| `theme_damin_show_aws`                 | `0`        | `aws:<profile>` indicator                                                         |
-| `theme_damin_show_aws_region`          | `1`        | Append `@<region>` to AWS                                                         |
-| `theme_damin_show_gcp`                 | `0`        | `gcp:<project>` indicator                                                         |
-| `theme_damin_show_azure`               | `0`        | `az:<subscription>` indicator                                                     |
-| `theme_damin_show_terraform`           | `1`        | `tf:<workspace>` from `.terraform/environment`                                    |
-| `theme_damin_show_pulumi`              | `1`        | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                               |
-| `theme_damin_show_gh_pr`               | `0`        | `#<num>` for current branch's open PR (via `gh`)                                  |
-| `theme_damin_notify_long_command`      | `0`        | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                             |
-| `theme_damin_palette`                  | `mocha`    | 1 of 17 built-in flavors (see "Palette flavors" below)                            |
-| `theme_damin_accent_primary`           | palette    | Brand accent hex (cwd, branch)                                                    |
-| `theme_damin_accent_secondary`         | palette    | Brand accent hex (florette, meta)                                                 |
-| `theme_damin_git_counts`               | `1`        | Show counts next to git indicators (`?3` vs `?`)                                  |
-| `theme_damin_git_count_untracked`      | `1`        | `0` → `-uno` (30-100× faster in big repos, hides `?N`)                            |
-| `theme_damin_newline_prompt`           | `0`        | Move the florette to its own line (multi-line prompt)                             |
-| `theme_damin_transient`                | `1`        | Collapse past prompts to `✿` after Enter                                          |
-| `theme_damin_async_git`                | `1`        | Cache git + postexec invalidation. `0` = sync                                     |
-| `theme_damin_async_lang`               | `1`        | Cache lang + postexec invalidation. `0` = sync                                    |
-| `theme_damin_async_warmup`             | `1`        | Background-prefill caches at theme load                                           |
-| `theme_damin_async_repaint`            | `0`        | Stale-while-revalidate git via `fish -c` subshell                                 |
-| `theme_damin_async_gh_pr`              | `1`        | Background-refresh `gh pr view`; `0` = blocking sync                              |
-| `theme_damin_async_signal`             | `SIGUSR1`  | Signal the async-refresh subshell sends to repaint the parent                     |
-| `theme_damin_osc_integration`          | `1`        | Emit OSC 7 + OSC 133                                                              |
-| `theme_damin_cwd_keep`                 | `3`        | Trailing path segments kept full                                                  |
-| `theme_damin_cwd_short`                | `4`        | Chars to truncate earlier segments to                                             |
-| `theme_damin_long_command_threshold`   | `3000`     | Duration (ms) above which time renders bold                                       |
-| `theme_damin_battery_threshold`        | `30`       | Show battery when `%` ≤ this                                                      |
-| `theme_damin_gh_pr_ttl`                | `300`      | Seconds the GitHub PR result is cached                                            |
-| `theme_damin_notify_threshold`         | `30000`    | Duration (ms) for long-command notification                                       |
-| `theme_damin_ascii`                    | `0`        | Swap all glyph defaults to ASCII                                                  |
-| `theme_damin_title_show_user`          | `ssh`      | Terminal title user/host: `0` / `1` / `ssh`                                       |
-| `theme_damin_title_show_path`          | `1`        | Terminal title path: `0` / `1` (full) / `short`                                   |
-| `theme_damin_title_show_process`       | `1`        | Append running process name to terminal title                                     |
-| `theme_damin_date_format`              | `%H:%M`    | `strftime` format string passed to `date +"…"`                                    |
-| `theme_damin_date_timezone`            | *(unset)*  | Optional `TZ` override (e.g. `UTC`, `America/Los_Angeles`)                        |
-| `theme_damin_show_project_parent`      | `1`        | `0` = render `<project>/<rel>` instead of full PWD inside a VCS repo              |
-| `theme_damin_project_dir_length`       | `0`        | Abbreviate each segment of the project-relative part to N chars (0 = full)        |
+| Variable                             | Default   | Effect                                                                     |
+| ------------------------------------ | --------- | -------------------------------------------------------------------------- |
+| `theme_damin_show_git`               | `1`       | Branch + meta (gates jj / hg too)                                          |
+| `theme_damin_show_jj`                | `1`       | Use jj when `.jj/` found before `.git/`                                    |
+| `theme_damin_show_hg`                | `0`       | Mercurial — branch from `.hg/branch`. No counts                            |
+| `theme_damin_show_fossil`            | `0`       | Fossil — branch via one `fossil` fork per prompt                           |
+| `theme_damin_show_git_op`            | `1`       | `(rebase\|merge\|pick\|revert\|bisect)` state                              |
+| `theme_damin_hide_default_branch`    | `0`       | Hide branch when in `theme_damin_default_branches`                         |
+| `theme_damin_branch_max_len`         | `0`       | Truncate branch name to N chars with `…` (0 = no limit)                    |
+| `theme_damin_cloud_max_len`          | `0`       | Umbrella `…`-clip for k8s ctx / aws profile / gcp project / azure sub      |
+| `theme_damin_k8s_max_len`            | `0`       | Per-segment override for k8s context (`>0` wins over `_cloud_max_len`)     |
+| `theme_damin_aws_max_len`            | `0`       | Per-segment override for AWS profile                                       |
+| `theme_damin_gcp_max_len`            | `0`       | Per-segment override for GCP project                                       |
+| `theme_damin_azure_max_len`          | `0`       | Per-segment override for Azure subscription                                |
+| `theme_damin_show_context`           | `1`       | `ssh` / `root` / `dkr` / `ctr` / `k8s` indicators                          |
+| `theme_damin_show_user`              | `ssh`     | `no` / `ssh` / `always` — `$USER` in context segment                       |
+| `theme_damin_show_host`              | `ssh`     | `no` / `ssh` / `always` — hostname in context segment                      |
+| `theme_damin_default_user`           | _(unset)_ | If set and `$USER` matches, suppress username in context + title           |
+| `theme_damin_show_screen`            | `0`       | `screen:<session>` indicator (from `$STY`)                                 |
+| `theme_damin_show_sudo_user`         | `0`       | `sudo:<user>` indicator inside a root shell launched via `sudo`            |
+| `theme_damin_show_docker_machine`    | `0`       | `dm:<name>` indicator from `$DOCKER_MACHINE_NAME`                          |
+| `theme_damin_show_k8s_context`       | `1`       | Append `:<context>` to `k8s`                                               |
+| `theme_damin_show_k8s_namespace`     | `0`       | Append `/<namespace>` to `k8s:<context>`                                   |
+| `theme_damin_show_jobs`              | `1`       | `&N` background-job count                                                  |
+| `theme_damin_show_env`               | `1`       | `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<name>)`                  |
+| `theme_damin_show_nix_name`          | `1`       | Show nix devshell name inside `IN_NIX_SHELL`                               |
+| `theme_damin_show_lang`              | `1`       | Project language + version                                                 |
+| `theme_damin_show_lang_global`       | `0`       | Fallback to active shell version manager when no project pin               |
+| `theme_damin_show_battery`           | `0`       | Battery % when ≤ threshold (laptops)                                       |
+| `theme_damin_show_duration`          | `1`       | Last command duration                                                      |
+| `theme_damin_show_date`              | `0`       | Right-prompt clock — `theme_damin_date_format` + `_date_timezone`          |
+| `theme_damin_show_vi_mode`           | `1`       | `[N]`/`[I]`/`[V]`/`[R]` badge (skipped under emacs binds)                  |
+| `theme_damin_show_exit_code`         | `number`  | `number` / `name` / `both` / `off`                                         |
+| `theme_damin_show_aws`               | `0`       | `aws:<profile>` indicator                                                  |
+| `theme_damin_show_aws_region`        | `1`       | Append `@<region>` to AWS                                                  |
+| `theme_damin_show_gcp`               | `0`       | `gcp:<project>` indicator                                                  |
+| `theme_damin_show_azure`             | `0`       | `az:<subscription>` indicator                                              |
+| `theme_damin_show_terraform`         | `1`       | `tf:<workspace>` from `.terraform/environment`                             |
+| `theme_damin_show_pulumi`            | `1`       | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                        |
+| `theme_damin_show_gh_pr`             | `0`       | `#<num>` for current branch's open PR (via `gh`)                           |
+| `theme_damin_notify_long_command`    | `0`       | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                      |
+| `theme_damin_palette`                | `mocha`   | 1 of 17 built-in flavors (see "Palette flavors" below)                     |
+| `theme_damin_accent_primary`         | palette   | Brand accent hex (cwd, branch)                                             |
+| `theme_damin_accent_secondary`       | palette   | Brand accent hex (florette, meta)                                          |
+| `theme_damin_git_counts`             | `1`       | Show counts next to git indicators (`?3` vs `?`)                           |
+| `theme_damin_git_count_untracked`    | `1`       | `0` → `-uno` (30-100× faster in big repos, hides `?N`)                     |
+| `theme_damin_newline_prompt`         | `0`       | Move the florette to its own line (multi-line prompt)                      |
+| `theme_damin_transient`              | `1`       | Collapse past prompts to `✿` after Enter                                   |
+| `theme_damin_async_git`              | `1`       | Cache git + postexec invalidation. `0` = sync                              |
+| `theme_damin_async_lang`             | `1`       | Cache lang + postexec invalidation. `0` = sync                             |
+| `theme_damin_async_warmup`           | `1`       | Background-prefill caches at theme load                                    |
+| `theme_damin_async_repaint`          | `0`       | Stale-while-revalidate git via `fish -c` subshell                          |
+| `theme_damin_async_gh_pr`            | `1`       | Background-refresh `gh pr view`; `0` = blocking sync                       |
+| `theme_damin_async_signal`           | `SIGUSR1` | Signal the async-refresh subshell sends to repaint the parent              |
+| `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 133                                                       |
+| `theme_damin_cwd_keep`               | `3`       | Trailing path segments kept full                                           |
+| `theme_damin_cwd_short`              | `4`       | Chars to truncate earlier segments to                                      |
+| `theme_damin_long_command_threshold` | `3000`    | Duration (ms) above which time renders bold                                |
+| `theme_damin_battery_threshold`      | `30`      | Show battery when `%` ≤ this                                               |
+| `theme_damin_gh_pr_ttl`              | `300`     | Seconds the GitHub PR result is cached                                     |
+| `theme_damin_notify_threshold`       | `30000`   | Duration (ms) for long-command notification                                |
+| `theme_damin_ascii`                  | `0`       | Swap all glyph defaults to ASCII                                           |
+| `theme_damin_title_show_user`        | `ssh`     | Terminal title user/host: `0` / `1` / `ssh`                                |
+| `theme_damin_title_show_path`        | `1`       | Terminal title path: `0` / `1` (full) / `short`                            |
+| `theme_damin_title_show_process`     | `1`       | Append running process name to terminal title                              |
+| `theme_damin_date_format`            | `%H:%M`   | `strftime` format string passed to `date +"…"`                             |
+| `theme_damin_date_timezone`          | _(unset)_ | Optional `TZ` override (e.g. `UTC`, `America/Los_Angeles`)                 |
+| `theme_damin_show_project_parent`    | `1`       | `0` = render `<project>/<rel>` instead of full PWD inside a VCS repo       |
+| `theme_damin_project_dir_length`     | `0`       | Abbreviate each segment of the project-relative part to N chars (0 = full) |
 
 ### Glyph overrides
 
 Each symbol comes from `theme_damin_glyph_*` — override one without flipping the whole theme to ASCII. User override wins; otherwise the default below switches on `theme_damin_ascii`.
 
 | Variable                      | Default (fancy) | Default (`ascii=1`) | Where it renders                                |
-|-------------------------------|-----------------|---------------------|-------------------------------------------------|
+| ----------------------------- | --------------- | ------------------- | ----------------------------------------------- |
 | `theme_damin_glyph_prompt`    | `✿`             | `*`                 | Florette at end of left prompt + transient stub |
 | `theme_damin_glyph_cwd`       | `❥`             | `>`                 | Right-prompt cwd marker                         |
 | `theme_damin_glyph_clean`     | `✧`             | `~`                 | Sparkle when working tree is fully clean        |
@@ -259,7 +292,7 @@ set -U theme_damin_glyph_behind v
 Two brand accents (`primary`, `secondary`) are palette-driven. Catppuccin keeps `#98ABCC` / `#E890B0`; others map to palette-native (Gruvbox blue/purple, Dracula cyan/purple, …). Override via `theme_damin_accent_primary` / `_secondary`.
 
 | Element                        | Color                     |
-|--------------------------------|---------------------------|
+| ------------------------------ | ------------------------- |
 | Branch name / cwd              | `accent_primary`          |
 | Meta symbols (`?$✗✓⇣⇡`) / `✧`  | `accent_secondary`        |
 | Meta counts / right-prompt `·` | `accent_secondary` (dim)  |
@@ -280,7 +313,7 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 `fish_color_*` (separate from brand accents) is picked via `theme_damin_palette`. Hex values from upstream sources; see `LICENSES/`.
 
 | Flavor            | text     | base accent feel                                       |
-|-------------------|----------|--------------------------------------------------------|
+| ----------------- | -------- | ------------------------------------------------------ |
 | `mocha`           | dark bg  | catppuccin default, warm violet/peach pop              |
 | `macchiato`       | dark bg  | catppuccin, slightly muted vs mocha                    |
 | `frappe`          | dark bg  | catppuccin, softest dark, cooler accents               |
@@ -299,7 +332,7 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 | `terminal-dark`   | dark bg  | uses your terminal's 16-color palette (named colors)   |
 | `terminal-light`  | light bg | terminal palette, light foreground                     |
 
-`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 15 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-* skipped — named colors, no fixed preview).
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 15 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview).
 
 ### Color override hook
 
@@ -316,10 +349,10 @@ end
 
 `set -U <var> <items…>` to populate; `set -e <var>` to clear.
 
-| Variable                          | Default                | Effect                                                                |
-|-----------------------------------|------------------------|-----------------------------------------------------------------------|
-| `theme_damin_default_branches`    | `main master trunk`    | Hidden branch names when `hide_default_branch=1`                      |
-| `theme_damin_vcs_ignore_paths`    | *(unset)*              | Glob patterns; matching `$PWD` skips `_damin_detect_vcs` walk         |
+| Variable                       | Default             | Effect                                                        |
+| ------------------------------ | ------------------- | ------------------------------------------------------------- |
+| `theme_damin_default_branches` | `main master trunk` | Hidden branch names when `hide_default_branch=1`              |
+| `theme_damin_vcs_ignore_paths` | _(unset)_           | Glob patterns; matching `$PWD` skips `_damin_detect_vcs` walk |
 
 `vcs_ignore_paths` uses fish glob (`*` / `?` / `**`). Matched once per `cd` and cached in `_damin_vcs_value=""`.
 
@@ -374,7 +407,7 @@ On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to
 
 The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 145 lines), not the full theme (1263 lines).
 
-`&` on a *fish function* doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
+`&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
 
 Used today by `git _damin_git_prefill` (under `theme_damin_async_repaint`) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
 

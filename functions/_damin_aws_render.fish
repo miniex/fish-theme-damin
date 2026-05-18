@@ -35,7 +35,8 @@ function _damin_aws_render
     # aws-vault session → distinct `aws-vault:` prefix.
     set -l prefix aws
     set -q AWS_VAULT; and test -n "$AWS_VAULT"; and set prefix aws-vault
-    set -l label "$prefix:$profile"
+    set -l shown_profile (_damin_truncate "$profile" (_damin_effective_max_len aws))
+    set -l label "$prefix:$shown_profile"
     test "$theme_damin_show_aws_region" = 1 -a -n "$region"; and set label "$label@$region"
     echo -n -s $_damin_c_dim "$label " $_damin_c_normal
 end

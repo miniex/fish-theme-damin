@@ -19,5 +19,6 @@ function _damin_azure_render
         end
     end
     test -n "$sub"; or return
-    echo -n -s $_damin_c_dim "az:$sub " $_damin_c_normal
+    set -l shown (_damin_truncate "$sub" (_damin_effective_max_len azure))
+    echo -n -s $_damin_c_dim "az:$shown " $_damin_c_normal
 end

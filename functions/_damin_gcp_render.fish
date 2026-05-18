@@ -44,5 +44,6 @@ function _damin_gcp_render
     end
 
     test -n "$project"; or return
-    echo -n -s $_damin_c_dim "gcp:$project " $_damin_c_normal
+    set -l shown (_damin_truncate "$project" (_damin_effective_max_len gcp))
+    echo -n -s $_damin_c_dim "gcp:$shown " $_damin_c_normal
 end

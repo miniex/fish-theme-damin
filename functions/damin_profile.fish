@@ -24,6 +24,14 @@ function _damin_profile_now_ms
 end
 
 function damin_profile
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_profile 'per-segment mean render time (means only)' \
+            'damin_profile [N]' \
+            -- \
+            'N      iterations per segment (default 20)' \
+            'for P50/P95/P99 distribution see: damin_bench --help.'
+        return
+    end
     set -l runs 20
     if test (count $argv) -ge 1
         if string match -rq '^[0-9]+$' -- $argv[1]

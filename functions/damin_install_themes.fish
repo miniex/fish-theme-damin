@@ -1,4 +1,11 @@
 function damin_install_themes
+    if contains -- "$argv[1]" --help -h
+        _damin_help_block damin_install_themes 'write .theme files into ~/.config/fish/themes/' \
+            damin_install_themes \
+            -- \
+            'preview / apply with `fish_config theme show`.'
+        return
+    end
     set -l dest "$__fish_config_dir/themes"
     mkdir -p $dest
 
