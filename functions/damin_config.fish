@@ -43,7 +43,9 @@ function _damin_config_pick_palette
             set marker "*"
             set c_color $pink
         end
-        printf '    %s%d.%s %s %s%s%s\n' $blue $i $norm $marker $c_color $c $norm
+        set -l accents (string split ' ' -- (_damin_palette_accents $c))
+        set -l swatch (set_color $accents[1] -o)"✿"(set_color normal)" "(set_color $accents[2])"❥"$norm
+        printf '    %s%2d.%s %s %s  %s%s%s\n' $blue $i $norm $marker $swatch $c_color $c $norm
         set i (math $i + 1)
     end
     while true

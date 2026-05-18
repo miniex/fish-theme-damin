@@ -453,45 +453,10 @@ if test "$theme_damin_apply_colors" = 1
     set -q fish_pager_color_progress; or set -U fish_pager_color_progress $overlay0
 end
 
-# brand accents per palette — catppuccin keeps cherry-blossom; user override wins.
-set -l _damin_accent_primary 98ABCC
-set -l _damin_accent_secondary E890B0
-switch "$theme_damin_palette"
-    case gruvbox
-        set _damin_accent_primary 83a598
-        set _damin_accent_secondary d3869b
-    case tokyonight
-        set _damin_accent_primary 7aa2f7
-        set _damin_accent_secondary bb9af7
-    case rosepine
-        set _damin_accent_primary 9ccfd8
-        set _damin_accent_secondary ebbcba
-    case nord
-        set _damin_accent_primary 88c0d0
-        set _damin_accent_secondary b48ead
-    case dracula
-        set _damin_accent_primary 8be9fd
-        set _damin_accent_secondary bd93f9
-    case solarized solarized-light
-        set _damin_accent_primary 268bd2
-        set _damin_accent_secondary d33682
-    case base16 base16-light
-        set _damin_accent_primary 7cafc2
-        set _damin_accent_secondary ba8baf
-    case zenburn
-        set _damin_accent_primary 8cd0d3
-        set _damin_accent_secondary dca3a3
-    case gruvbox-light
-        set _damin_accent_primary 458588
-        set _damin_accent_secondary b16286
-    case colorblind
-        # Okabe-Ito sky blue + orange — textbook colorblind-safe pair.
-        set _damin_accent_primary 56b4e9
-        set _damin_accent_secondary e69f00
-    case terminal-dark terminal-light
-        set _damin_accent_primary blue
-        set _damin_accent_secondary magenta
-end
+# brand accents via _damin_palette_accents (autoloaded from functions/).
+set -l _damin_accent_parts (string split ' ' -- (_damin_palette_accents "$theme_damin_palette"))
+set -l _damin_accent_primary $_damin_accent_parts[1]
+set -l _damin_accent_secondary $_damin_accent_parts[2]
 set -q theme_damin_accent_primary; or set -g theme_damin_accent_primary $_damin_accent_primary
 set -q theme_damin_accent_secondary; or set -g theme_damin_accent_secondary $_damin_accent_secondary
 
@@ -1447,6 +1412,10 @@ function _damin_duration_render
 end
 
 function _damin_help_row --argument-names name default
+    if set -q _damin_help_filter; and test -n "$_damin_help_filter"
+        string match -q "*$_damin_help_filter*" -- $name; or return
+        set -g _damin_help_matched 1
+    end
     set -l val
     set -q $name; and set val $$name
     set -l val_color (set_color E890B0)

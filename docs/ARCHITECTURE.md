@@ -14,6 +14,8 @@ functions/
   damin_{config,help,doctor,profile,bench,set_palette,install_themes,reset_cache}.fish
                             — user-callable commands.
   _damin_help_block         — shared `--help` formatter for every damin_* command.
+  _damin_palette_accents    — flavor → "primary_hex secondary_hex". used by
+                              conf.d and the damin_config palette picker.
   _damin_{aws,gcp,azure}_*  — lazy-loaded cloud renderers (autoloaded when enabled).
   _damin_k8s_*              — kubernetes render + compute + prefill.
   _damin_{devops,pulumi}_*  — terraform / pulumi.
@@ -186,10 +188,13 @@ The bare `damin_config` (no args) is still the interactive wizard. The dispatche
 
 Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Completions in `completions/`:
 
-- `damin_set_palette <Tab>` — 17 flavor names with descriptions
+- `damin_set_palette <Tab>` — 18 flavor names with descriptions
 - `damin_config <Tab>` — subcommands (`wizard` / `get` / `set` / `reset` / `export` / `help`)
 - `damin_config set <Tab>` / `damin_config reset <Tab>` — currently-set `theme_damin_*` universals
-- `damin_bench --<Tab>` — `--help` / `--json`
+- `damin_help <Tab>` — substring of any currently-known `theme_damin_*` name (filter argument)
+- `damin_bench --<Tab>` / `damin_profile --<Tab>` — `--help` / `--json`
+
+`damin_help <pattern>` substring-filters the toggle listing (e.g. `damin_help git` shows every `theme_damin_*git*`). Bare invocation dumps everything as before.
 
 ### Toggles
 
@@ -337,7 +342,7 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 | `terminal-dark`   | dark bg  | uses your terminal's 16-color palette (named colors)                  |
 | `terminal-light`  | light bg | terminal palette, light foreground                                    |
 
-`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 16 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview).
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 16 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview). `damin_uninstall_themes` is the paired inverse — confirms before removing.
 
 ### Color override hook
 
@@ -475,7 +480,7 @@ git dirty + node project                 0.70 ms / prompt
 - First `cd` into a new dir — sync `git status --porcelain=v2 --branch` + (if no pin file resolved) one binary fork for `<lang> --version`. Pin-file detection (`.tool-versions`/`.mise.toml`/`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) runs in the same walk-up, so most projects skip the fork. ~30 ms on small repos.
 - After a write-side git command — same cost (cache invalidated).
 
-`damin_profile [N]` — per-renderer mean over N runs (default 20). GNU `date %N` for ns precision, falls back to gdate/python3/perl.
+`damin_profile [N] [--json]` — per-renderer mean over N runs (default 20). GNU `date %N` for ns precision, falls back to gdate/python3/perl. `--json` for CI comparison.
 
 `damin_bench [N] [--json]` — per-segment **min / P50 / P95 / P99** via batched sampling. Default `N=1000` (20 batches × 50). `--json` for CI comparison.
 

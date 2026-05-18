@@ -156,6 +156,23 @@ function damin_doctor
         _damin_doctor_check "transient prompt" ok "(disabled via theme_damin_transient=0)"
     end
 
+    set -l sig $theme_damin_async_signal
+    set -l non_damin
+    for line in (functions --handlers-type signal 2>/dev/null)
+        set -l parts (string split ' ' -- $line)
+        test (count $parts) -ge 2 -a "$parts[1]" = "$sig"; or continue
+        string match -q '_damin_*' -- $parts[2]; or set -a non_damin $parts[2]
+    end
+    if test (count $non_damin) -gt 0
+        _damin_doctor_check "$sig handlers" fail "(non-damin: $non_damin — set theme_damin_async_signal differently then exec fish)"
+    else
+        _damin_doctor_check "$sig handlers" ok "(no non-damin collisions)"
+    end
+
+    if set -q TERM_PROGRAM; and test "$TERM_PROGRAM" = vscode
+        _damin_doctor_check "VSCode terminal" fail "(VSCode injects its own OSC 633/133 — double-emission likely. set theme_damin_osc_integration=0 to silence damin's half)"
+    end
+
     echo
     echo "  font width sanity — each glyph should sit immediately before the |:"
     for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ · ?

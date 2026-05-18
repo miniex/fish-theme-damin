@@ -82,20 +82,21 @@ omf update         # framework + all packages
 
 Every `damin_*` command answers `--help` / `-h` with a usage block. Tab completions for subcommands, palette names, and flags are auto-installed.
 
-| Command                | Purpose                                                         |
-| ---------------------- | --------------------------------------------------------------- |
-| `damin_config`         | Interactive setup wizard                                        |
-| `damin_config get` …   | Print matching `theme_damin_*` (`damin_config get git`)         |
-| `damin_config set` …   | `set -U` a `theme_damin_*` var (`damin_config set show_jobs 0`) |
-| `damin_config reset` … | Unset matching universals after `y/N` confirm                   |
-| `damin_config export`  | Dump universals as a runnable fish script (dotfile-friendly)    |
-| `damin_help`           | List every toggle, current value, default                       |
-| `damin_doctor`         | Environment + install diagnostic                                |
-| `damin_profile`        | Per-segment ms/render timer (means)                             |
-| `damin_bench`          | Per-segment P50/P95/P99 distribution                            |
-| `damin_set_palette`    | Switch palette                                                  |
-| `damin_install_themes` | Write `.theme` files into `~/.config/fish/themes/`              |
-| `damin_reset_cache`    | Wipe on-disk cache                                              |
+| Command                  | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
+| `damin_config`           | Interactive setup wizard                                        |
+| `damin_config get` …     | Print matching `theme_damin_*` (`damin_config get git`)         |
+| `damin_config set` …     | `set -U` a `theme_damin_*` var (`damin_config set show_jobs 0`) |
+| `damin_config reset` …   | Unset matching universals after `y/N` confirm                   |
+| `damin_config export`    | Dump universals as a runnable fish script (dotfile-friendly)    |
+| `damin_help`             | List every toggle, current value, default                       |
+| `damin_doctor`           | Environment + install diagnostic                                |
+| `damin_profile`          | Per-segment ms/render timer (means)                             |
+| `damin_bench`            | Per-segment P50/P95/P99 distribution                            |
+| `damin_set_palette`      | Switch palette                                                  |
+| `damin_install_themes`   | Write `.theme` files into `~/.config/fish/themes/`              |
+| `damin_uninstall_themes` | Remove the Damin `.theme` files (confirms)                      |
+| `damin_reset_cache`      | Wipe on-disk cache                                              |
 
 ## Configuration
 

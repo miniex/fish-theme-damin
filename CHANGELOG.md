@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`damin_uninstall_themes`** — inverse of `damin_install_themes`. Globs `Damin *.theme`, removes after `y/N` confirm
+- **`damin_profile --json`** — mirrors `damin_bench --json` for CI comparison
+- **`damin_help <PATTERN>`** — substring-filters `theme_damin_*` rows (`damin_help git`). Bare invocation unchanged
+- **Palette swatch in `damin_config` picker** — each flavor shows `✿ ❥` in its brand primary/secondary. Extracted to `_damin_palette_accents` helper
+- **`damin_doctor` signal collision + VSCode checks** —
+  - lists non-damin handlers on `$theme_damin_async_signal` (fzf/atuin/tmux plugins binding SIGUSR1 collide invisibly otherwise)
+  - flags `$TERM_PROGRAM=vscode` since VSCode injects its own OSC 633/133
 - **OSC 8 clickable hyperlinks** — PR badge `#N` links to its GitHub PR; right-prompt cwd links to `file://<host><path>`. Gated by `theme_damin_osc_integration`
 - **Light/dark palette auto-swap** — `theme_damin_palette_light` (unset by default). On theme load, if `$COLORFGBG`'s bg slot ≥ 7, the light palette wins. Terminals that don't set `COLORFGBG` (Alacritty/Kitty/most modern) won't trigger
 - **Colorblind-safe palette** — `colorblind` flavor based on the Okabe-Ito 8-color set. Brand accents: sky blue `#56B4E9` + orange `#E69F00`. `.theme` file ships. 17 → 18 flavors
