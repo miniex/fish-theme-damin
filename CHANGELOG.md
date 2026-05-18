@@ -66,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `_damin_osc8` — switch OSC terminator from `ESC \` to BEL. fish's `printf` reads `\%` as escape, so the second `%s` leaked literal into the right-prompt cwd
 - `tools/test.sh` — strip SO/SI so `set_color normal`'s trailing `\017` doesn't break `default_user` string-equality checks
 - `_damin_git_compute` — restore `case '\?'` (third recurrence of the same regression). Fish `case` arms are glob patterns: bare `'?'` is the wildcard "any single char" and swallows every porcelain v2 line's first byte before `case '#'` (branch parsing) can run, so `branch` falls through to the literal `?` fallback and untracked counts every line. The escape must reach the glob layer — `case '\?'` (single-quoted `\?` survives as a 2-char literal, then the glob parses `\?` as literal `?`) or unquoted `case \?` both work; bare quoted `case '?'` does not. Verified fish 3.7.0 (Linux): `switch '#'; case '?'` matches, `case '\?'` does not. Do **not** "simplify" this again
 

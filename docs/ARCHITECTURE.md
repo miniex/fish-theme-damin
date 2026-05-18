@@ -123,7 +123,7 @@ Three layers, fastest first:
 Modern terminals (Ghostty, iTerm2, Kitty, WezTerm, VS Code, Win Terminal, Warp) consume these:
 
 - **OSC 7** `\e]7;file://<host><path>\a` — advertises CWD so new tabs/splits/SSH inherit it. Emitted only on `$PWD` change; path is percent-encoded.
-- **OSC 8** `\e]8;;<url>\e\\<text>\e]8;;\e\\` — clickable hyperlinks. Right-prompt cwd → `file://<host>/<path>`; GitHub PR badge `#N` → `https://github.com/<owner>/<repo>/pull/<N>`.
+- **OSC 8** `\e]8;;<url>\a<text>\e]8;;\a` — clickable hyperlinks. Right-prompt cwd → `file://<host>/<path>`; GitHub PR badge `#N` → `https://github.com/<owner>/<repo>/pull/<N>`. BEL terminator (not `ESC \`) — fish's printf reads `\%` as escape.
 - **OSC 133** `\e]133;A/B/C/D;<exit>\a` — semantic prompt markers. `A` = prompt start, `B` = command input start, `C` = preexec, `D` = postexec with exit. Powers "jump to prompt", "select command output", per-command status.
 
 Unsupported terminals silently drop unrecognized sequences (per spec). Toggle: `theme_damin_osc_integration` (default `1`).

@@ -604,9 +604,10 @@ function _damin_osc7_emit
 end
 
 # OSC 8 hyperlink wrapper. passthrough if osc disabled or url empty.
+# uses BEL (\a) as the OSC terminator — ESC \ would clash with `%s` as `\%` in printf.
 function _damin_osc8 --argument-names url text
     if _damin_osc_enabled; and test -n "$url"
-        printf '\e]8;;%s\e\\%s\e]8;;\e\\' $url $text
+        printf '\e]8;;%s\a%s\e]8;;\a' $url $text
     else
         printf '%s' $text
     end
