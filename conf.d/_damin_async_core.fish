@@ -126,13 +126,16 @@ function _damin_gh_branch_key --argument-names branch
 end
 
 # silent skip when gh is missing, remote isn't github, or no PR is open.
+# output: "<num> <isDraft> <pr-url>"
 function _damin_gh_compute --argument-names branch
     type -q gh 2>/dev/null; or return
     set -l remote (command git remote get-url origin 2>/dev/null)
     string match -q '*github.com*' -- $remote; or return
     set -l out (command gh pr view "$branch" --json number,isDraft --jq '"\(.number) \(.isDraft)"' 2>/dev/null)
     test -z "$out"; and return
-    echo $out
+    set -l owner_repo (string replace -r '^.*github\.com[:/]' '' -- $remote | string replace -r '\.git$' '')
+    set -l num (string split ' ' -- $out)[1]
+    echo "$out https://github.com/$owner_repo/pull/$num"
 end
 
 # "-" = negative cache (no PR); lets TTL gate refetches instead of every prompt.

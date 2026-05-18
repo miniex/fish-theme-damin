@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **OSC 8 clickable hyperlinks** — PR badge `#N` links to its GitHub PR; right-prompt cwd links to `file://<host><path>`. Gated by `theme_damin_osc_integration`
+- **Light/dark palette auto-swap** — `theme_damin_palette_light` (unset by default). On theme load, if `$COLORFGBG`'s bg slot ≥ 7, the light palette wins. Terminals that don't set `COLORFGBG` (Alacritty/Kitty/most modern) won't trigger
+- **Colorblind-safe palette** — `colorblind` flavor based on the Okabe-Ito 8-color set. Brand accents: sky blue `#56B4E9` + orange `#E69F00`. `.theme` file ships. 17 → 18 flavors
+- **Transient stub distinction** — collapsed prompts render dim instead of bold; `theme_damin_glyph_transient` (defaults to `theme_damin_glyph_prompt`) overrides the stub glyph
+- **Async watchdog** — `theme_damin_async_timeout` (default `5`s, `0` disables). Every `_damin_async_kickoff` spawns a `sleep N; kill $bg_pid` so a hung `gh pr view` or k8s YAML walk can't linger
 - **Tab completions** — new `completions/` directory with one file per `damin_*` command. Flavor names, subcommands, and currently-set toggle names complete on `<Tab>`. Fisher auto-installs; for OMF, `conf.d/damin.fish` pushes the dir onto `$fish_complete_path`
 - **`--help` / `-h` on every `damin_*` command.** Shared formatter in `functions/_damin_help_block.fish`
 - **`damin_config` subcommands** — wizard is no longer the only entrypoint:

@@ -1,5 +1,5 @@
 function damin_set_palette --argument-names flavor
-    set -l valid mocha frappe macchiato latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn terminal-dark terminal-light
+    set -l valid mocha frappe macchiato latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn colorblind terminal-dark terminal-light
     if contains -- "$flavor" --help -h
         _damin_help_block damin_set_palette 'switch theme_damin_palette + rewrite fish_color_* universals' \
             'damin_set_palette <flavor>' \

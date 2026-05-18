@@ -66,6 +66,7 @@ function damin_help
     _damin_help_row theme_damin_date_format '%H:%M'
     _damin_help_row theme_damin_date_timezone '(unset)'
     _damin_help_row theme_damin_palette mocha
+    _damin_help_row theme_damin_palette_light '(unset)'
     echo
     echo "  palette accent overrides (hex without #; defaults shift per palette)"
     _damin_help_row theme_damin_accent_primary 98ABCC
@@ -85,10 +86,12 @@ function damin_help
     _damin_help_row theme_damin_battery_threshold 30
     _damin_help_row theme_damin_gh_pr_ttl 300
     _damin_help_row theme_damin_notify_threshold 30000
+    _damin_help_row theme_damin_async_timeout 5
     echo
     echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
     if test "$theme_damin_ascii" = 1
         _damin_help_row theme_damin_glyph_prompt '*'
+        _damin_help_row theme_damin_glyph_transient '*'
         _damin_help_row theme_damin_glyph_cwd '>'
         _damin_help_row theme_damin_glyph_clean '~'
         _damin_help_row theme_damin_glyph_modified '!'
@@ -101,6 +104,7 @@ function damin_help
         _damin_help_row theme_damin_glyph_sep '|'
     else
         _damin_help_row theme_damin_glyph_prompt ✿
+        _damin_help_row theme_damin_glyph_transient ✿
         _damin_help_row theme_damin_glyph_cwd ❥
         _damin_help_row theme_damin_glyph_clean ✧
         _damin_help_row theme_damin_glyph_modified ✗
@@ -119,7 +123,7 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (17 flavors — tab-completes)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (18 flavors — tab-completes)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
     echo

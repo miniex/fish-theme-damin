@@ -71,9 +71,11 @@ omf update         # framework + all packages
 - **Lang + env** — 10 langs via pin files first. `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv/pyenv/NVM/asdf)
 - **Terraform / Pulumi** — opt-in `tf:<workspace>` / `pulumi:<stack>`
 - **Path** — abbreviated cwd, optional project-relative (`<project>/<rel>`) mode
-- **Terminal-native** — OSC 7 + OSC 133, opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock
-- **17 palettes** — Catppuccin x4 + gruvbox(+light) / tokyonight / rosepine / nord / dracula / solarized(+light) / base16(+light) / zenburn / terminal-dark/-light. Live switch via `damin_set_palette`. `damin_colors` hook for per-segment overrides
-- **Transient prompt**, **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**
+- **Terminal-native** — OSC 7 + OSC 8 clickable hyperlinks (PR badge, cwd) + OSC 133 semantic markers, opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock
+- **18 palettes** — Catppuccin x4 + gruvbox(+light) / tokyonight / rosepine / nord / dracula / solarized(+light) / base16(+light) / zenburn / colorblind (Okabe-Ito) / terminal-dark/-light. `theme_damin_palette_light` auto-swaps when `$COLORFGBG` reports a light terminal. Live switch via `damin_set_palette`; `damin_colors` hook for per-segment overrides
+- **Transient prompt** — collapsed stub renders dim; `theme_damin_glyph_transient` overrides the glyph
+- **Async timeout** — `theme_damin_async_timeout` (default `5`s) kills runaway bg subshells
+- **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**
 - **Customizable** — 60+ `theme_damin_*` toggles, `damin_segment_<name>` + `damin_colors` hooks
 
 ## Commands

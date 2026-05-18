@@ -28,7 +28,7 @@ function _damin_config_state --argument-names var
 end
 
 function _damin_config_pick_palette
-    set -l choices mocha frappe macchiato latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn terminal-dark terminal-light
+    set -l choices mocha frappe macchiato latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn colorblind terminal-dark terminal-light
     set -l current $theme_damin_palette
     set -l pink (set_color E890B0 -o)
     set -l blue (set_color 98ABCC)

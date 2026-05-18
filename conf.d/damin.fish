@@ -81,10 +81,17 @@ set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 0
 set -q theme_damin_async_gh_pr; or set -g theme_damin_async_gh_pr 1
 # IPC signal — override only if SIGUSR1 collides.
 set -q theme_damin_async_signal; or set -g theme_damin_async_signal SIGUSR1
+# kill bg subshell after N seconds; 0 = disabled. catches hung gh/k8s/aws.
+set -q theme_damin_async_timeout; or set -g theme_damin_async_timeout 5
 set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
 set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
 set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
 set -q theme_damin_palette; or set -g theme_damin_palette mocha
+# light/dark auto-swap — palette_light wins when $COLORFGBG bg slot ≥ 7.
+if set -q theme_damin_palette_light; and test -n "$theme_damin_palette_light"; and set -q COLORFGBG
+    set -l _damin_bg (string split ';' -- $COLORFGBG)[-1]
+    string match -rq '^[0-9]+$' -- "$_damin_bg"; and test "$_damin_bg" -ge 7; and set -g theme_damin_palette $theme_damin_palette_light
+end
 set -q theme_damin_ascii; or set -g theme_damin_ascii 0
 set -q theme_damin_newline_prompt; or set -g theme_damin_newline_prompt 0
 # title: user = 0|1|ssh, path = 0|1|short, process = 0|1.
@@ -132,6 +139,7 @@ if test "$theme_damin_ascii" = 1
 end
 
 set -q theme_damin_glyph_prompt; or set -g theme_damin_glyph_prompt $_ds_prompt
+set -q theme_damin_glyph_transient; or set -g theme_damin_glyph_transient $theme_damin_glyph_prompt
 set -q theme_damin_glyph_cwd; or set -g theme_damin_glyph_cwd $_ds_cwd
 set -q theme_damin_glyph_clean; or set -g theme_damin_glyph_clean $_ds_clean
 set -q theme_damin_glyph_modified; or set -g theme_damin_glyph_modified $_ds_modified
@@ -370,6 +378,22 @@ if test "$theme_damin_apply_colors" = 1
             set overlay0 928374
             set yellow d79921
             set teal 689d6a
+        case colorblind
+            # Okabe-Ito 8-color palette — distinguishable for deuteranopia / protanopia.
+            set text eeeeee
+            set blue 0072b2
+            set mauve cc79a7
+            set green 009e73
+            set pink e69f00
+            set peach e69f00
+            set red d55e00
+            set flamingo e69f00
+            set overlay1 888888
+            set surface0 3a3a3a
+            set maroon d55e00
+            set overlay0 666666
+            set yellow f0e442
+            set teal 56b4e9
         case terminal-dark
             set text white
             set blue blue
@@ -460,6 +484,10 @@ switch "$theme_damin_palette"
     case gruvbox-light
         set _damin_accent_primary 458588
         set _damin_accent_secondary b16286
+    case colorblind
+        # Okabe-Ito sky blue + orange — textbook colorblind-safe pair.
+        set _damin_accent_primary 56b4e9
+        set _damin_accent_secondary e69f00
     case terminal-dark terminal-light
         set _damin_accent_primary blue
         set _damin_accent_secondary magenta
@@ -473,6 +501,7 @@ set -g _damin_c_branch (set_color $theme_damin_accent_primary)
 set -g _damin_c_meta (set_color $theme_damin_accent_secondary)
 set -g _damin_c_count (set_color $theme_damin_accent_secondary --dim)
 set -g _damin_c_ok (set_color $theme_damin_accent_secondary -o)
+set -g _damin_c_transient (set_color $theme_damin_accent_secondary --dim)
 set -g _damin_c_err (set_color red -o)
 set -g _damin_c_exit (set_color red --dim)
 set -g _damin_c_cwd (set_color $theme_damin_accent_primary)
@@ -607,6 +636,15 @@ function _damin_osc7_emit
     set -l host (_damin_osc_hostname)
     set -l enc (_damin_osc_encode_path "$PWD")
     printf '\e]7;file://%s%s\a' "$host" "$enc"
+end
+
+# OSC 8 hyperlink wrapper. passthrough if osc disabled or url empty.
+function _damin_osc8 --argument-names url text
+    if _damin_osc_enabled; and test -n "$url"
+        printf '\e]8;;%s\e\\%s\e]8;;\e\\' $url $text
+    else
+        printf '%s' $text
+    end
 end
 
 function _damin_osc133_a
@@ -863,8 +901,15 @@ function _damin_async_kickoff --argument-names key fn
         $call
         kill -s $signal $parent 2>/dev/null
     " >/dev/null 2>&1 &
-    set -g $pid_var $last_pid
+    set -l bg_pid $last_pid
+    set -g $pid_var $bg_pid
     disown 2>/dev/null
+
+    set -l t $theme_damin_async_timeout
+    if string match -rq '^[1-9][0-9]*$' -- "$t"
+        fish -c "sleep $t; kill $bg_pid 2>/dev/null" >/dev/null 2>&1 &
+        disown 2>/dev/null
+    end
 end
 
 # signal captured at define time (var change needs shell restart). pid cleanup
@@ -986,9 +1031,11 @@ function _damin_gh_render_value --argument-names value
     set -l parts (string split ' ' -- $value)
     set -l num $parts[1]
     set -l draft $parts[2]
+    set -l url $parts[3]
     set -l color $_damin_c_meta
     test "$draft" = true; and set color $_damin_c_dim
-    echo -n -s " " $color "#$num" $_damin_c_normal
+    set -l label (_damin_osc8 "$url" "#$num")
+    echo -n -s " " $color $label $_damin_c_normal
 end
 
 function _damin_vcs_render
@@ -1511,7 +1558,7 @@ function fish_prompt
     # owned in fish_prompt so an overridden fish_right_prompt can't strand the flag.
     switch "$_damin_in_transient"
         case 1
-            echo -n -s " " $_damin_c_ok "$theme_damin_glyph_prompt " $_damin_c_normal
+            echo -n -s " " $_damin_c_transient "$theme_damin_glyph_transient " $_damin_c_normal
             set -g _damin_in_transient 2
             _damin_osc133_b
             return
@@ -1544,7 +1591,9 @@ function fish_right_prompt
         return
     end
 
-    echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_cwd_pretty) $_damin_c_normal
+    set -l cwd_url
+    _damin_osc_enabled; and set cwd_url "file://"(_damin_osc_hostname)(_damin_osc_encode_path "$PWD")
+    echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_osc8 "$cwd_url" (_damin_cwd_pretty)) $_damin_c_normal
 
     _damin_lang_render
     # gate at caller — disabled segments don't autoload.

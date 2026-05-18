@@ -116,11 +116,12 @@ Three layers, fastest first:
 
 `damin_reset_cache` clears both.
 
-### Shell integration (OSC 7 + OSC 133)
+### Shell integration (OSC 7 + OSC 8 + OSC 133)
 
 Modern terminals (Ghostty, iTerm2, Kitty, WezTerm, VS Code, Win Terminal, Warp) consume these:
 
 - **OSC 7** `\e]7;file://<host><path>\a` — advertises CWD so new tabs/splits/SSH inherit it. Emitted only on `$PWD` change; path is percent-encoded.
+- **OSC 8** `\e]8;;<url>\e\\<text>\e]8;;\e\\` — clickable hyperlinks. Right-prompt cwd → `file://<host>/<path>`; GitHub PR badge `#N` → `https://github.com/<owner>/<repo>/pull/<N>`.
 - **OSC 133** `\e]133;A/B/C/D;<exit>\a` — semantic prompt markers. `A` = prompt start, `B` = command input start, `C` = preexec, `D` = postexec with exit. Powers "jump to prompt", "select command output", per-command status.
 
 Unsupported terminals silently drop unrecognized sequences (per spec). Toggle: `theme_damin_osc_integration` (default `1`).
@@ -233,7 +234,8 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_show_pulumi`            | `1`       | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                        |
 | `theme_damin_show_gh_pr`             | `0`       | `#<num>` for current branch's open PR (via `gh`)                           |
 | `theme_damin_notify_long_command`    | `0`       | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                      |
-| `theme_damin_palette`                | `mocha`   | 1 of 17 built-in flavors (see "Palette flavors" below)                     |
+| `theme_damin_palette`                | `mocha`   | 1 of 18 built-in flavors (see "Palette flavors" below)                     |
+| `theme_damin_palette_light`          | _(unset)_ | If set + `$COLORFGBG` bg slot ≥ 7, this palette wins (light-terminal swap) |
 | `theme_damin_accent_primary`         | palette   | Brand accent hex (cwd, branch)                                             |
 | `theme_damin_accent_secondary`       | palette   | Brand accent hex (florette, meta)                                          |
 | `theme_damin_git_counts`             | `1`       | Show counts next to git indicators (`?3` vs `?`)                           |
@@ -246,7 +248,8 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_async_repaint`          | `0`       | Stale-while-revalidate git via `fish -c` subshell                          |
 | `theme_damin_async_gh_pr`            | `1`       | Background-refresh `gh pr view`; `0` = blocking sync                       |
 | `theme_damin_async_signal`           | `SIGUSR1` | Signal the async-refresh subshell sends to repaint the parent              |
-| `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 133                                                       |
+| `theme_damin_async_timeout`          | `5`       | Seconds before a hung bg subshell is killed by the watchdog. `0` disables  |
+| `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 8 + OSC 133                                               |
 | `theme_damin_cwd_keep`               | `3`       | Trailing path segments kept full                                           |
 | `theme_damin_cwd_short`              | `4`       | Chars to truncate earlier segments to                                      |
 | `theme_damin_long_command_threshold` | `3000`    | Duration (ms) above which time renders bold                                |
@@ -268,7 +271,8 @@ Each symbol comes from `theme_damin_glyph_*` — override one without flipping t
 
 | Variable                      | Default (fancy) | Default (`ascii=1`) | Where it renders                                |
 | ----------------------------- | --------------- | ------------------- | ----------------------------------------------- |
-| `theme_damin_glyph_prompt`    | `✿`             | `*`                 | Florette at end of left prompt + transient stub |
+| `theme_damin_glyph_prompt`    | `✿`             | `*`                 | Live florette at end of left prompt             |
+| `theme_damin_glyph_transient` | `✿`             | `*`                 | Collapsed stub after Enter (defaults to prompt) |
 | `theme_damin_glyph_cwd`       | `❥`             | `>`                 | Right-prompt cwd marker                         |
 | `theme_damin_glyph_clean`     | `✧`             | `~`                 | Sparkle when working tree is fully clean        |
 | `theme_damin_glyph_modified`  | `✗`             | `!`                 | Modified-file count                             |
@@ -312,27 +316,28 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 
 `fish_color_*` (separate from brand accents) is picked via `theme_damin_palette`. Hex values from upstream sources; see `LICENSES/`.
 
-| Flavor            | text     | base accent feel                                       |
-| ----------------- | -------- | ------------------------------------------------------ |
-| `mocha`           | dark bg  | catppuccin default, warm violet/peach pop              |
-| `macchiato`       | dark bg  | catppuccin, slightly muted vs mocha                    |
-| `frappe`          | dark bg  | catppuccin, softest dark, cooler accents               |
-| `latte`           | light bg | catppuccin light — high-contrast deep colors           |
-| `gruvbox`         | dark bg  | retro groove, warm earth tones                         |
-| `gruvbox-light`   | light bg | gruvbox light hard — same palette, light bg            |
-| `tokyonight`      | dark bg  | downtown-tokyo neon, blue/purple accents               |
-| `rosepine`        | dark bg  | soho-vibe muted rose/pine                              |
-| `nord`            | dark bg  | arctic north-bluish pastels                            |
-| `dracula`         | dark bg  | classic vampire — cyan/purple/pink pop                 |
-| `solarized`       | dark bg  | schoonover classic — calibrated neutrals + sat accents |
-| `solarized-light` | light bg | solarized light — paper-pale base                      |
-| `base16`          | dark bg  | chris kempson default-dark — neutral framework         |
-| `base16-light`    | light bg | base16 default-light                                   |
-| `zenburn`         | dark bg  | jani nurminen classic — low-contrast muted greens      |
-| `terminal-dark`   | dark bg  | uses your terminal's 16-color palette (named colors)   |
-| `terminal-light`  | light bg | terminal palette, light foreground                     |
+| Flavor            | text     | base accent feel                                                      |
+| ----------------- | -------- | --------------------------------------------------------------------- |
+| `mocha`           | dark bg  | catppuccin default, warm violet/peach pop                             |
+| `macchiato`       | dark bg  | catppuccin, slightly muted vs mocha                                   |
+| `frappe`          | dark bg  | catppuccin, softest dark, cooler accents                              |
+| `latte`           | light bg | catppuccin light — high-contrast deep colors                          |
+| `gruvbox`         | dark bg  | retro groove, warm earth tones                                        |
+| `gruvbox-light`   | light bg | gruvbox light hard — same palette, light bg                           |
+| `tokyonight`      | dark bg  | downtown-tokyo neon, blue/purple accents                              |
+| `rosepine`        | dark bg  | soho-vibe muted rose/pine                                             |
+| `nord`            | dark bg  | arctic north-bluish pastels                                           |
+| `dracula`         | dark bg  | classic vampire — cyan/purple/pink pop                                |
+| `solarized`       | dark bg  | schoonover classic — calibrated neutrals + sat accents                |
+| `solarized-light` | light bg | solarized light — paper-pale base                                     |
+| `base16`          | dark bg  | chris kempson default-dark — neutral framework                        |
+| `base16-light`    | light bg | base16 default-light                                                  |
+| `zenburn`         | dark bg  | jani nurminen classic — low-contrast muted greens                     |
+| `colorblind`      | dark bg  | Okabe-Ito 8-color set — distinguishable for deuteranopia / protanopia |
+| `terminal-dark`   | dark bg  | uses your terminal's 16-color palette (named colors)                  |
+| `terminal-light`  | light bg | terminal palette, light foreground                                    |
 
-`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 15 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview).
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 16 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview).
 
 ### Color override hook
 
@@ -408,6 +413,8 @@ On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to
 The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 145 lines), not the full theme (1263 lines).
 
 `&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
+
+Each kickoff also spawns a watchdog (`sleep $theme_damin_async_timeout; kill $bg_pid`) so a hung `gh pr view` or k8s YAML walk can't linger forever. Default timeout `5` seconds; set to `0` to disable.
 
 Used today by `git _damin_git_prefill` (under `theme_damin_async_repaint`) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
 
