@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `_damin_git_compute` — `case '?'` instead of `case '\?'`. Inside single quotes fish keeps `\?` as a literal 2-char sequence, so the case arm never matched the 1-char `?` returned by `string sub -l 1`; untracked counts read as `0`. Quoted bare `'?'` matches the literal `?` (glob `?` would also work but is less explicit). Verified on macOS + Alpine Linux, fish 4.6.0
+- `_damin_git_compute` — restore `case '\?'` (third recurrence of the same regression). Fish `case` arms are glob patterns: bare `'?'` is the wildcard "any single char" and swallows every porcelain v2 line's first byte before `case '#'` (branch parsing) can run, so `branch` falls through to the literal `?` fallback and untracked counts every line. The escape must reach the glob layer — `case '\?'` (single-quoted `\?` survives as a 2-char literal, then the glob parses `\?` as literal `?`) or unquoted `case \?` both work; bare quoted `case '?'` does not. Verified fish 3.7.0 (Linux): `switch '#'; case '?'` matches, `case '\?'` does not. Do **not** "simplify" this again
 
 ## [1.2.0] - 20260513222728 KST
 
@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `_damin_git_compute` `case '\?'` matched the literal 2-char string, never the `?` untracked marker. Unquoted `case \?` now counts `?N` correctly (regression from 1.1.0's prior fix attempt)
+- `_damin_git_compute` — switched quoting from `case '\?'` to unquoted `case \?`. Both forms reach the glob layer as literal `?` and behave identically; this entry was originally framed as a bug fix on the false premise that `'\?'` matched a 2-char literal — it does not. No behavior change in 1.2.0; the real regression is the bare `'?'` form (see Unreleased)
 
 ### Reviewed
 
