@@ -1,4 +1,4 @@
-# palette → "primary_hex secondary_hex". used by conf.d and the picker swatch.
+# palette -> "primary_hex secondary_hex". used by conf.d and the picker swatch.
 function _damin_palette_accents --argument-names flavor
     switch $flavor
         case gruvbox

@@ -64,7 +64,7 @@ set -q theme_damin_gcp_max_len; or set -g theme_damin_gcp_max_len 0
 set -q theme_damin_azure_max_len; or set -g theme_damin_azure_max_len 0
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
 # theme_damin_issue_url_template — e.g. 'https://jira.example.com/{key}'.
-# when set, branches matching [A-Z]+-[0-9]+ render as OSC 8 hyperlinks. unset → no-op.
+# when set, branches matching [A-Z]+-[0-9]+ render as OSC 8 hyperlinks. unset -> no-op.
 # opt-in dim relative age of newest stash next to `$N` count.
 set -q theme_damin_stash_age; or set -g theme_damin_stash_age 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
@@ -268,6 +268,8 @@ set -g _damin_osc_pwd ""
 set -g _damin_osc_host ""
 set -g _damin_tmux_key ""
 set -g _damin_tmux_value ""
+set -g _damin_now_at ""
+set -g _damin_now_value ""
 set -g _damin_gh_branch ""
 set -g _damin_gh_value ""
 set -g _damin_gh_at 0
@@ -287,10 +289,15 @@ function _damin_read_lines --argument-names file
     end <$file
 end
 
-# unix-ts → short relative age (`2h`, `3d`, `now`). empty input → empty.
+# unix-ts -> short relative age (`2h`, `3d`, `now`). empty input -> empty.
+# `now` cached by $CMD_DURATION so repaints / multi-segment calls share one fork.
 function _damin_relative_time --argument-names ts
     string match -rq '^[1-9][0-9]*$' -- "$ts"; or return
-    set -l now (date +%s)
+    if test "$_damin_now_at" != "$CMD_DURATION"
+        set -g _damin_now_at "$CMD_DURATION"
+        set -g _damin_now_value (date +%s)
+    end
+    set -l now $_damin_now_value
     set -l diff (math $now - $ts)
     test $diff -lt 0; and set diff 0
     if test $diff -lt 60
@@ -306,7 +313,7 @@ function _damin_relative_time --argument-names ts
     end
 end
 
-# truncate to n chars with `…`. n ≤ 0 or non-numeric → passthrough.
+# truncate to n chars with `…`. n ≤ 0 or non-numeric -> passthrough.
 function _damin_truncate --argument-names s n
     if not string match -rq '^[0-9]+$' -- "$n"
         echo $s
@@ -501,7 +508,7 @@ function _damin_context_render
         if test $show_user = 1
             set -l u $USER
             test -z "$u"; and set u (command id -un 2>/dev/null)
-            # default_user match → suppress username.
+            # default_user match -> suppress username.
             if set -q theme_damin_default_user; and test "$u" = "$theme_damin_default_user"
                 set u
             end
@@ -575,7 +582,7 @@ end
 
 # _damin_git_compute lives in conf.d/_damin_async_core.fish.
 
-# single batched mtime call → [cache, index, HEAD, logs/HEAD] (missing paths dropped).
+# single batched mtime call -> [cache, index, HEAD, logs/HEAD] (missing paths dropped).
 # output drives BOTH the cache-freshness key AND the stale check — one builtin invocation.
 function _damin_git_path_mtimes --argument-names cache_file
     test -n "$_damin_vcs_dir"; or return 1
@@ -707,6 +714,9 @@ end
 function _damin_async_signal_handler --on-signal $theme_damin_async_signal
     commandline -f repaint 2>/dev/null
 end
+# captured at handler-define time; damin_doctor uses it to detect drift after
+# `set -U theme_damin_async_signal …` (needs exec fish). reset_cache excludes
+# this on purpose — the handler is still bound, so the flag must keep matching.
 set -g _damin_async_signal_loaded $theme_damin_async_signal
 
 function _damin_git_render
@@ -735,8 +745,8 @@ function _damin_git_render
 
     set -l data
 
-    # in-memory shortcut: same pwd + same cache mtime + fresh → reuse parsed data.
-    # postexec deletes the cache file on git-mutating commands → cache_mt empty → forced re-read.
+    # in-memory shortcut: same pwd + same cache mtime + fresh -> reuse parsed data.
+    # postexec deletes the cache file on git-mutating commands -> cache_mt empty -> forced re-read.
     if test -n "$cache_mt" -a "$_damin_git_cached_pwd" = "$PWD" -a "$_damin_git_cached_mt" = "$cache_mt" -a $stale = 0
         set data $_damin_git_cached_data
     else if test -n "$cache_mt"
@@ -812,7 +822,7 @@ function _damin_gh_render --argument-names branch
         end
     end
 
-    # missing or expired → kick off bg refresh; render stale value if any.
+    # missing or expired -> kick off bg refresh; render stale value if any.
     test $fresh = 0; and _damin_async_kickoff gh _damin_gh_prefill "$branch"
 
     _damin_gh_render_value "$value"
@@ -854,7 +864,7 @@ function _damin_jobs_render
     echo -n -s " " $_damin_c_sep $theme_damin_glyph_sep " " $_damin_c_dim "&$n" $_damin_c_normal
 end
 
-# set -U theme_damin_extra_left foo bar → calls damin_segment_foo + damin_segment_bar.
+# set -U theme_damin_extra_left foo bar -> calls damin_segment_foo + damin_segment_bar.
 function _damin_extra_segments_render --argument-names side
     set -l var theme_damin_extra_$side
     set -q $var; or return
@@ -975,7 +985,7 @@ function _damin_cwd_pretty
     echo $_damin_cwd_value
 end
 
-# first non-empty/non-# line, strips leading `v` (.nvmrc `v18.18` → `18.18`).
+# first non-empty/non-# line, strips leading `v` (.nvmrc `v18.18` -> `18.18`).
 function _damin_lang_read_pin --argument-names file
     test -n "$file"; or return
     test -f $file; or return
@@ -1016,7 +1026,7 @@ function _damin_lang_read_mise --argument-names file key
     end
 end
 
-# single walk-up. version resolution: tool-versions → mise → lang pin → binary fork.
+# single walk-up. version resolution: tool-versions -> mise -> lang pin -> binary fork.
 function _damin_lang_compute
     set -l dir $PWD
     set -l levels 0
@@ -1259,10 +1269,29 @@ function _damin_help_row --argument-names name default
     if test "$_damin_help_mode" = json
         set -l set_flag false
         set -q $name; and set set_flag true
-        set -l v_esc (string replace -a '\\' '\\\\' -- $val | string replace -a '"' '\\"')
-        set -l d_esc (string replace -a '\\' '\\\\' -- $default | string replace -a '"' '\\"')
         test "$_damin_help_first" != 1; and printf ,
         set -g _damin_help_first 0
+        # list-typed toggles (>1 element OR known list names) emit JSON arrays.
+        set -l items
+        set -q $name; and set items $$name
+        set -l is_list 0
+        switch $name
+            case theme_damin_default_branches theme_damin_vcs_ignore_paths theme_damin_right_segments theme_damin_extra_left theme_damin_extra_right
+                set is_list 1
+            case '*'
+                test (count $items) -gt 1; and set is_list 1
+        end
+        if test $is_list = 1
+            set -l arr
+            for it in $items
+                set -a arr '"'(string replace -a '\\' '\\\\' -- $it | string replace -a '"' '\\"')'"'
+            end
+            set -l d_esc (string replace -a '\\' '\\\\' -- $default | string replace -a '"' '\\"')
+            printf '{"name":"%s","value":[%s],"default":"%s","set":%s}' "$name" (string join , -- $arr) "$d_esc" "$set_flag"
+            return
+        end
+        set -l v_esc (string replace -a '\\' '\\\\' -- $val | string replace -a '"' '\\"')
+        set -l d_esc (string replace -a '\\' '\\\\' -- $default | string replace -a '"' '\\"')
         # quote each arg — empty $v_esc shifts the format slots otherwise.
         printf '{"name":"%s","value":"%s","default":"%s","set":%s}' "$name" "$v_esc" "$d_esc" "$set_flag"
         return
@@ -1313,7 +1342,7 @@ function _damin_postexec --on-event fish_postexec
         if not string match -qr '\bgit\s+(status|log|diff|show|blame|ls-(files|tree)|cat-file|rev-(list|parse)|describe|name-rev|shortlog|whatchanged|reflog|grep|ls-remote|help|version)\b' -- $cmd
             command rm -f (_damin_cache_path git) 2>/dev/null
         end
-        # state-changing gh pr → drop every per-branch cache for this pwd.
+        # state-changing gh pr -> drop every per-branch cache for this pwd.
         if string match -qr '\bgh\s+pr\s+(create|close|reopen|merge|edit)\b' -- $cmd
             set -g _damin_gh_branch ""
             set -g _damin_gh_at 0
@@ -1419,6 +1448,7 @@ function fish_right_prompt
         return
     end
 
+    # builtin tokens dispatch via `switch`; custom hooks fall through to `*`.
     for seg in $theme_damin_right_segments
         switch $seg
             case cwd

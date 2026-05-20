@@ -32,7 +32,7 @@ function _damin_aws_render
         end
     end
 
-    # aws-vault session → distinct `aws-vault:` prefix.
+    # aws-vault session -> distinct `aws-vault:` prefix.
     set -l prefix aws
     set -q AWS_VAULT; and test -n "$AWS_VAULT"; and set prefix aws-vault
     set -l shown_profile (_damin_truncate "$profile" (_damin_effective_max_len aws))

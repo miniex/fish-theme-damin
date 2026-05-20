@@ -42,5 +42,7 @@ function damin_reset_cache
     set -e _damin_osc_host
     set -e _damin_tmux_key
     set -e _damin_tmux_value
+    set -e _damin_now_at
+    set -e _damin_now_value
     echo "cleared $_damin_cache_dir"
 end

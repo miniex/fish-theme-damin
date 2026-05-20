@@ -4,9 +4,9 @@ Commands, configuration, and feature reference. For internals (cache layout, asy
 
 ## Features at a glance
 
-- **git / jj / hg / fossil** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state (`rebase` / `merge` / `pick` / …), worktree (`wt:<name>`), unmerged-first, opt-in `#N` GitHub PR. `theme_damin_jj_counts` for jj diff counts, `theme_damin_hg_dirty` for hg dirty bit, `theme_damin_stash_age` for newest-stash relative time, `theme_damin_issue_url_template` for `[A-Z]+-[0-9]+` → OSC 8 ticket links. `hide_default_branch`, `branch_max_len` for long names.
+- **git / jj / hg / fossil** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state (`rebase` / `merge` / `pick` / …), worktree (`wt:<name>`), unmerged-first, opt-in `#N` GitHub PR. `theme_damin_jj_counts` for jj diff counts, `theme_damin_hg_dirty` for hg dirty bit, `theme_damin_stash_age` for newest-stash relative time, `theme_damin_issue_url_template` for `[A-Z]+-[0-9]+` -> OSC 8 ticket links. `hide_default_branch`, `branch_max_len` for long names.
 - **Context** — `ssh` / `root` / `sudo:<user>` / `dkr` / `ctr` / `dm:<machine>` / `screen:<session>` / `tmux:<window>` / `zj:<session>` / `wsl:<distro>` / `cs` (Codespaces) / `devc` (Devcontainer) / `k8s:<ctx>/<ns>`, opt-in `aws[-vault]:<profile>` / `gcp:<project>` / `az:<subscription>`. SSH-aware `user@host` + `default_user` to hide your own. Pure-fish, no CLI forks (tmux window cached by `$TMUX_PANE`). `theme_damin_cloud_max_len` (+ per-segment overrides) clips long ARN-style labels with `…`.
-- **Lang + env** — 11 langs (`rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig`) via pin files first (`.tool-versions` → `.mise.toml` → lang-specific pin → binary fork). `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv / pyenv / NVM / asdf).
+- **Lang + env** — 11 langs (`rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig`) via pin files first (`.tool-versions` -> `.mise.toml` -> lang-specific pin -> binary fork). `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv / pyenv / NVM / asdf).
 - **Terraform / Pulumi** — opt-in `tf:<workspace>` / `pulumi:<stack>`.
 - **Path** — abbreviated cwd, optional project-relative (`<project>/<rel>`) mode.
 - **Terminal-native** — OSC 7 (cwd advertise) + OSC 8 (clickable PR badge, cwd, branch issue keys) + OSC 133 (semantic prompt markers). Opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock.
@@ -24,7 +24,7 @@ Every `damin_*` command answers `--help` / `-h`. Tab completions for subcommands
 | -------------------------------- | ------------------------------------------------------------------ |
 | `damin_config`                   | Interactive setup wizard                                           |
 | `damin_config get [PATTERN]`     | Print matching `theme_damin_*` (substring filter)                  |
-| `damin_config set VAR VALUE...`  | `set -U` a `theme_damin_*` var; multi-arg → list-typed             |
+| `damin_config set VAR VALUE...`  | `set -U` a `theme_damin_*` var; multi-arg -> list-typed            |
 | `damin_config reset [PATTERN]`   | Unset matching universals after `y/N` confirm                      |
 | `damin_config export`            | Dump universals as a runnable fish script (dotfile-friendly)       |
 | `damin_config edit`              | Open export in `$EDITOR`; validate + re-source on save             |
@@ -61,6 +61,8 @@ set -U theme_damin_extra_left kube_age
 # or splice into the right-prompt order:
 set -U theme_damin_right_segments cwd lang kube_age env duration
 ```
+
+`theme_damin_right_segments` reserves these tokens for built-in renderers (custom segments with the same name are shadowed): `cwd`, `lang`, `devops`, `env`, `battery`, `duration`, `date`, `extra`. The `extra` slot fires every `theme_damin_extra_right` function. Pick a different `damin_segment_<name>` if you collide.
 
 Three ready-made examples live under [`examples/segments/`](../examples/segments/) — copy or symlink into `~/.config/fish/conf.d/`.
 

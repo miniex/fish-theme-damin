@@ -34,7 +34,7 @@ function damin_doctor
         _damin_doctor_check "plugin manager" fail "(neither omf nor fisher detected)"
     end
 
-    # accept any installed name (omf install → fish-theme-damin, local symlink → anything).
+    # accept any installed name (omf install -> fish-theme-damin, local symlink -> anything).
     set -l omf_root $OMF_PATH
     test -z "$omf_root"; and set omf_root $HOME/.local/share/omf
     if functions -q omf
@@ -59,7 +59,7 @@ function damin_doctor
         _damin_doctor_check "fish_prompt loaded" ok "($prompt_src)"
     end
 
-    # only OMF should leave this here (symlink → themes/<active>/). anything
+    # only OMF should leave this here (symlink -> themes/<active>/). anything
     # else trips OMF's "Conflicting prompt setting" check.
     set -l user_fp ~/.config/fish/functions/fish_prompt.fish
     if not test -e $user_fp -o -L $user_fp
@@ -68,7 +68,7 @@ function damin_doctor
         set -l theme (command cat ~/.config/omf/theme 2>/dev/null)
         set -l want $omf_root/themes/$theme/fish_prompt.fish
         if test -L $user_fp; and contains -- (readlink $user_fp) $want
-            _damin_doctor_check "fish_prompt symlink" ok "(omf → themes/$theme)"
+            _damin_doctor_check "fish_prompt symlink" ok "(omf -> themes/$theme)"
         else
             _damin_doctor_check "fish_prompt symlink" fail "(target ≠ themes/$theme — fix: rm $user_fp; then omf theme $theme)"
         end
@@ -80,8 +80,14 @@ function damin_doctor
             _damin_doctor_check "fish_prompt symlink" fail "($user_fp exists without omf — delete it: rm $user_fp, or rerun with --fix)"
         end
     end
-    if test -e ~/.config/fish/functions/fish_right_prompt.fish
-        _damin_doctor_check "no stray fish_right_prompt.fish" fail "(damin doesn't ship this — delete to avoid override)"
+    set -l stray_rp ~/.config/fish/functions/fish_right_prompt.fish
+    if test -e $stray_rp
+        if test "$_damin_doctor_fix" = 1
+            command rm -f $stray_rp
+            _damin_doctor_check "no stray fish_right_prompt.fish" ok "(removed: $stray_rp)"
+        else
+            _damin_doctor_check "no stray fish_right_prompt.fish" fail "(damin doesn't ship this — delete to avoid override, or rerun with --fix)"
+        end
     else
         _damin_doctor_check "no stray fish_right_prompt.fish" ok
     end

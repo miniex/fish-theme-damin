@@ -173,8 +173,8 @@ function _damin_read_universal --argument-names var
     end
 end
 
-# validate via `fish -n` before re-source; broken syntax keeps tmp and aborts.
-# wipe theme_damin_* first so deleted lines act as unsets.
+# snapshot -> editor -> fish -n -> wipe theme_damin_* -> re-source. snapshot
+# rollback if source fails past validation.
 function _damin_config_edit
     set -l editor
     if set -q EDITOR; and test -n "$EDITOR"
@@ -187,17 +187,26 @@ function _damin_config_edit
     end
     set -l tmp (command mktemp -t damin-config.XXXXXX.fish 2>/dev/null)
     test -z "$tmp"; and printf 'damin_config edit: mktemp failed\n' >&2; and return 1
+    set -l backup (command mktemp -t damin-config-backup.XXXXXX.fish 2>/dev/null)
+    test -z "$backup"; and printf 'damin_config edit: mktemp (backup) failed\n' >&2; and return 1
     _damin_config_export >$tmp
+    _damin_config_export >$backup
+    printf '  %s✿%s running: %s %s\n' (set_color E890B0 -o) (set_color normal) "$editor" $tmp
     eval $editor $tmp
     if not fish -n $tmp 2>/dev/null
-        printf 'damin_config edit: syntax error — not applied (left at %s)\n' $tmp >&2
+        printf 'damin_config edit: syntax error — not applied (left at %s; backup %s)\n' $tmp $backup >&2
         return 1
     end
     for v in (set --names -U | string match -r '^theme_damin_.*')
         set -e $v
     end
-    source $tmp
-    command rm -f $tmp
+    if not source $tmp 2>/dev/null
+        source $backup 2>/dev/null
+        printf 'damin_config edit: source failed — restored from backup. tmp left at %s\n' $tmp >&2
+        command rm -f $backup
+        return 1
+    end
+    command rm -f $tmp $backup
     printf '  %s✿%s applied. run `exec fish` to refresh this shell.\n' \
         (set_color E890B0 -o) (set_color normal)
 end

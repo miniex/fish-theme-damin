@@ -18,10 +18,9 @@ function _damin_hg_render
         echo -n -s $_damin_c_branch $branch $_damin_c_normal
     end
 
-    # opt-in dirty bit — 1 hg fork. no count, just the modified glyph or sparkle.
+    # 1 hg fork; `read -l` matches "first line non-empty" without a head fork.
     if test "$theme_damin_hg_dirty" = 1; and type -q hg
-        set -l first_line (command hg status -q 2>/dev/null | head -1)
-        if test -n "$first_line"
+        if command hg status -q 2>/dev/null | read -l _line
             echo -n -s " " $_damin_c_meta $theme_damin_glyph_modified $_damin_c_normal
             return
         end

@@ -245,7 +245,7 @@ got=$(fish -c "
     echo \"[\$v]\"
     true
 " 2>/dev/null)
-expect "vcs_ignore_paths: glob match → no detection" "$got" "[]"
+expect "vcs_ignore_paths: glob match -> no detection" "$got" "[]"
 cleanup "$repo"
 
 # hg detection: opt-in via show_hg, .hg/ found.
@@ -719,31 +719,31 @@ run_exit_label() {
 }
 
 got=$(run_exit_label off 130)
-expect "exit label: off → empty" "$got" ""
+expect "exit label: off -> empty" "$got" ""
 
 got=$(run_exit_label 0 127)
-expect "exit label: 0 → empty (legacy)" "$got" ""
+expect "exit label: 0 -> empty (legacy)" "$got" ""
 
 got=$(run_exit_label hidden 130)
-expect "exit label: hidden → empty" "$got" ""
+expect "exit label: hidden -> empty" "$got" ""
 
 got=$(run_exit_label 1 127)
-expect "exit label: 1 → 127 (legacy)" "$got" "127"
+expect "exit label: 1 -> 127 (legacy)" "$got" "127"
 
 got=$(run_exit_label number 130)
-expect "exit label: number → 130" "$got" "130"
+expect "exit label: number -> 130" "$got" "130"
 
 got=$(run_exit_label name 130)
-expect "exit label: name → SIGINT" "$got" "SIGINT"
+expect "exit label: name -> SIGINT" "$got" "SIGINT"
 
 got=$(run_exit_label name 127)
-expect "exit label: name → not-found" "$got" "not-found"
+expect "exit label: name -> not-found" "$got" "not-found"
 
 got=$(run_exit_label both 130)
-expect "exit label: both → 130 SIGINT" "$got" "130 SIGINT"
+expect "exit label: both -> 130 SIGINT" "$got" "130 SIGINT"
 
 got=$(run_exit_label both 42)
-expect "exit label: both → 42 (unmapped stays raw)" "$got" "42"
+expect "exit label: both -> 42 (unmapped stays raw)" "$got" "42"
 
 # temp HOME isolates the test fish from user-set universals (omf-installed damin etc.).
 run_dumb() {
@@ -787,7 +787,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: mocha → text=cdd6f4" "$got" "cdd6f4"
+expect "palette: mocha -> text=cdd6f4" "$got" "cdd6f4"
 
 got=$(run_dumb "
     set -g theme_damin_palette frappe
@@ -795,7 +795,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: frappe → text=c6d0f5" "$got" "c6d0f5"
+expect "palette: frappe -> text=c6d0f5" "$got" "c6d0f5"
 
 got=$(run_dumb "
     set -g theme_damin_palette macchiato
@@ -803,7 +803,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: macchiato → text=cad3f5" "$got" "cad3f5"
+expect "palette: macchiato -> text=cad3f5" "$got" "cad3f5"
 
 got=$(run_dumb "
     set -g theme_damin_palette latte
@@ -811,7 +811,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: latte → text=4c4f69" "$got" "4c4f69"
+expect "palette: latte -> text=4c4f69" "$got" "4c4f69"
 
 got=$(run_dumb "
     set -g theme_damin_palette solarized
@@ -819,7 +819,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: solarized → text=839496" "$got" "839496"
+expect "palette: solarized -> text=839496" "$got" "839496"
 
 got=$(run_dumb "
     set -g theme_damin_palette solarized-light
@@ -827,7 +827,7 @@ got=$(run_dumb "
     echo \$fish_color_normal
     true
 ")
-expect "palette: solarized-light → text=657b83" "$got" "657b83"
+expect "palette: solarized-light -> text=657b83" "$got" "657b83"
 
 got=$(run_dumb "
     set -g theme_damin_palette solarized
@@ -835,7 +835,7 @@ got=$(run_dumb "
     echo \$theme_damin_accent_primary \$theme_damin_accent_secondary
     true
 ")
-expect "palette: solarized accents → 268bd2 / d33682" "$got" "268bd2 d33682"
+expect "palette: solarized accents -> 268bd2 / d33682" "$got" "268bd2 d33682"
 
 got=$(run_dumb "
     set -g theme_damin_palette base16
@@ -843,7 +843,7 @@ got=$(run_dumb "
     echo \$fish_color_normal \$theme_damin_accent_primary
     true
 ")
-expect "palette: base16 → text=d8d8d8 accent=7cafc2" "$got" "d8d8d8 7cafc2"
+expect "palette: base16 -> text=d8d8d8 accent=7cafc2" "$got" "d8d8d8 7cafc2"
 
 got=$(run_dumb "
     set -g theme_damin_palette zenburn
@@ -851,7 +851,7 @@ got=$(run_dumb "
     echo \$fish_color_normal \$theme_damin_accent_primary
     true
 ")
-expect "palette: zenburn → text=dcdccc accent=8cd0d3" "$got" "dcdccc 8cd0d3"
+expect "palette: zenburn -> text=dcdccc accent=8cd0d3" "$got" "dcdccc 8cd0d3"
 
 got=$(run_dumb "
     set -g theme_damin_palette gruvbox-light
@@ -859,7 +859,7 @@ got=$(run_dumb "
     echo \$fish_color_normal \$theme_damin_accent_primary
     true
 ")
-expect "palette: gruvbox-light → text=3c3836 accent=458588" "$got" "3c3836 458588"
+expect "palette: gruvbox-light -> text=3c3836 accent=458588" "$got" "3c3836 458588"
 
 got=$(run_dumb "
     set -g theme_damin_palette terminal-dark
@@ -867,7 +867,7 @@ got=$(run_dumb "
     echo \$fish_color_normal \$theme_damin_accent_primary
     true
 ")
-expect "palette: terminal-dark → named colors" "$got" "white blue"
+expect "palette: terminal-dark -> named colors" "$got" "white blue"
 
 got=$(run_dumb "
     set -g theme_damin_palette high-contrast
@@ -875,7 +875,7 @@ got=$(run_dumb "
     echo \$fish_color_normal \$theme_damin_accent_primary
     true
 ")
-expect "palette: high-contrast → text=ffffff accent=87ceeb" "$got" "ffffff 87ceeb"
+expect "palette: high-contrast -> text=ffffff accent=87ceeb" "$got" "ffffff 87ceeb"
 
 echo
 echo "=== damin _damin_relative_time tests ==="
@@ -891,22 +891,22 @@ run_rel() {
 
 now=$(date +%s)
 got=$(run_rel "$((now - 30))")
-expect "rel: 30s → now" "$got" "now"
+expect "rel: 30s -> now" "$got" "now"
 
 got=$(run_rel "$((now - 600))")
-expect "rel: 10min → 10m" "$got" "10m"
+expect "rel: 10min -> 10m" "$got" "10m"
 
 got=$(run_rel "$((now - 7200))")
-expect "rel: 2h → 2h" "$got" "2h"
+expect "rel: 2h -> 2h" "$got" "2h"
 
 got=$(run_rel "$((now - 172800))")
-expect "rel: 2d → 2d" "$got" "2d"
+expect "rel: 2d -> 2d" "$got" "2d"
 
 got=$(run_rel "")
-expect "rel: empty → empty" "$got" ""
+expect "rel: empty -> empty" "$got" ""
 
 got=$(run_rel "abc")
-expect "rel: non-numeric → empty" "$got" ""
+expect "rel: non-numeric -> empty" "$got" ""
 
 echo
 echo "=== damin issue auto-link tests ==="
@@ -1019,7 +1019,7 @@ got=$(run_lang_global "set -gx RBENV_VERSION 3.2.1")
 expect "lang_global: rbenv 3.2.1" "$got" "rb:3.2.1"
 
 got=$(run_lang_global "set -gx RBENV_VERSION system")
-expect "lang_global: rbenv system → empty" "$got" ""
+expect "lang_global: rbenv system -> empty" "$got" ""
 
 got=$(run_lang_global "set -gx PYENV_VERSION 3.11.5")
 expect "lang_global: pyenv 3.11.5" "$got" "py:3.11.5"
@@ -1031,7 +1031,7 @@ got=$(run_lang_global "set -gx rvm_ruby_string ruby-3.2.0")
 expect "lang_global: rvm ruby-3.2.0 stripped" "$got" "rb:3.2.0"
 
 got=$(run_lang_global "")
-expect "lang_global: nothing set → empty" "$got" ""
+expect "lang_global: nothing set -> empty" "$got" ""
 
 echo
 echo "=== damin custom segment hooks ==="
@@ -1064,7 +1064,7 @@ got=$(fish -c "
     _damin_extra_segments_render left
     true
 " 2>/dev/null)
-expect "hooks: unset extra_left → no output" "$got" ""
+expect "hooks: unset extra_left -> no output" "$got" ""
 
 echo
 echo "=== damin async repaint kickoff ==="

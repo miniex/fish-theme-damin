@@ -1,5 +1,5 @@
 function _damin_lang_global
-    # node: $NVM_BIN = .../versions/node/v<X>/bin → basename of dirname.
+    # node: $NVM_BIN = .../versions/node/v<X>/bin -> basename of dirname.
     if set -q NVM_BIN; and test -n "$NVM_BIN"
         set -l v (path basename (path dirname $NVM_BIN) 2>/dev/null | string replace -r '^v' '')
         if test -n "$v"

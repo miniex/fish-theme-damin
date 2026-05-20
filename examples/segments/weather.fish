@@ -1,5 +1,6 @@
-# damin_segment_weather — single-line wttr.in snippet. 30 min in-process TTL.
-# async: spawns a bg `curl` so the prompt never blocks.
+# damin_segment_weather — wttr.in snippet, 30 min TTL, async bg curl.
+# the bg subshell uses `set -U` so every fish session shares the value.
+# swap `set -U` -> `set -g` for per-session only.
 function damin_segment_weather
     test -z "$WEATHER_CITY"; and set -l WEATHER_CITY ''
     set -q _damin_segment_weather_at; or set -g _damin_segment_weather_at 0

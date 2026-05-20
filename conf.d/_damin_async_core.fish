@@ -77,7 +77,7 @@ function _damin_git_compute
         end
     end
 
-    # no upstream → porcelain v2 omits branch.ab; rev-list against remotes to keep ⇡N alive.
+    # no upstream -> porcelain v2 omits branch.ab; rev-list against remotes to keep ⇡N alive.
     if test $has_upstream = 0 -a "$ahead" = 0
         if test -n "$(command git --no-optional-locks remote 2>/dev/null)"
             set -l unpushed (command git --no-optional-locks rev-list --count HEAD --not --remotes 2>/dev/null)

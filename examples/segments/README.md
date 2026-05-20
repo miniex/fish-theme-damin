@@ -19,4 +19,4 @@ Every `damin_segment_<name>` function owns its leading separator / glyph / color
 
 - `uptime.fish` — system uptime, dim, refreshed every 60 s.
 - `todo.fish` — count of `TODO` / `FIXME` markers in the current git repo. Cached per-PWD; invalidated on `cd` only.
-- `weather.fish` — single-line `wttr.in` snippet. Async (does not block the prompt). Requires `curl`.
+- `weather.fish` — single-line `wttr.in` snippet. Async (does not block the prompt). Requires `curl`. **Note**: the bg subshell stores the result in a universal var so every fish session shares it. Swap `set -U` -> `set -g` if you want per-session weather.

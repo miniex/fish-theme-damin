@@ -29,6 +29,6 @@ function damin_set_palette --argument-names flavor
     source $__fish_config_dir/conf.d/damin.fish 2>/dev/null
     or source (status dirname)/../conf.d/damin.fish 2>/dev/null
 
-    printf '  %s✿%s palette → %s%s%s. run `exec fish` to apply everywhere.\n' \
+    printf '  %s✿%s palette -> %s%s%s. run `exec fish` to apply everywhere.\n' \
         (set_color E890B0 -o) (set_color normal) (set_color 98ABCC) $flavor (set_color normal)
 end

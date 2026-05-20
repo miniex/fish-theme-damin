@@ -1,5 +1,5 @@
-# flavor → display name / description / theme (dark|light).
-# field: name | desc | theme. without field → 3 lines in that order.
+# flavor -> display name / description / theme (dark|light).
+# field: name | desc | theme. without field -> 3 lines in that order.
 # empty name signals "no .theme file" (terminal-*).
 function _damin_palette_meta --argument-names flavor field
     set -l name

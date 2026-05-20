@@ -24,11 +24,21 @@ function _damin_bench_compare
         return 1
     end
     # python script as a single -c arg (fish has no heredoc syntax).
+    # tolerant of non-damin-bench JSON: missing keys -> 0.0, never raises.
     set -l py 'import json,sys
-b=json.load(open(sys.argv[1]))["segments"]
-h=json.load(open(sys.argv[2]))["segments"]
-bm={s["name"]:float(s["p50"]) for s in b}
-hm={s["name"]:float(s["p50"]) for s in h}
+def load(path):
+    try:
+        with open(path) as f: doc = json.load(f)
+    except Exception as e:
+        sys.stderr.write(f"damin_bench --compare: cannot parse {path}: {e}\n")
+        sys.exit(1)
+    segs = doc.get("segments") if isinstance(doc, dict) else None
+    if not isinstance(segs, list):
+        sys.stderr.write(f"damin_bench --compare: {path} has no \\"segments\\" array (not a damin_bench --json output?)\n")
+        sys.exit(1)
+    return {s.get("name", ""): float(s.get("p50", 0) or 0) for s in segs if isinstance(s, dict)}
+bm = load(sys.argv[1])
+hm = load(sys.argv[2])
 names=list(dict.fromkeys(list(bm)+list(hm)))
 print(f"  {\'segment\':<12}  {\'base p50\':>10}  {\'head p50\':>10}  {\'Δ ms\':>10}  {\'Δ %\':>8}")
 print("  "+"-"*60)
@@ -81,6 +91,16 @@ function damin_bench
     if test $cold = 1
         set runs 1
         set batch 1
+        # --cold wipes the on-disk cache between samples; confirm if interactive.
+        if isatty stdin; and test $json = 0
+            read -P '  --cold will wipe ~/.cache/damin between samples. proceed? [y/N] ' -l ans
+            switch (string lower -- $ans)
+                case y yes
+                case '*'
+                    printf '  canceled.\n'
+                    return 1
+            end
+        end
     end
     test $runs -lt $batch; and set batch $runs
     set -l num_batches (math --scale=0 "$runs / $batch")
