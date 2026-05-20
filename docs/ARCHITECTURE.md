@@ -1,6 +1,6 @@
 # Architecture
 
-Full reference: features, toggles, cache layers, performance budget.
+Internals reference: file layout, cache layers, async IPC, every toggle, palette plumbing, performance budget. For user-facing commands and a feature tour see [USAGE.md](USAGE.md).
 
 ## Layout
 

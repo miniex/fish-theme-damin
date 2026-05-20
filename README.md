@@ -33,20 +33,15 @@ omf install damin
 omf theme damin
 ```
 
-**Local hacking — Fisher**
+## What you get
 
-```fish
-git clone https://github.com/miniex/fish-theme-damin.git
-fisher install (pwd)/fish-theme-damin
-```
+- **Fast** — ~0.5 ms/prompt. In-memory PWD memos, async refresh in a ~3 KB subshell, opt-out `-uno` for monorepos
+- **git / jj / hg / fossil** — counts, op state, worktree, opt-in `#N` GitHub PR badge, branch issue-key auto-link
+- **Context** — `ssh` / `root` / `dkr` / `tmux` / `wsl` / `k8s` / opt-in `aws` / `gcp` / `az`. Pure-fish, no CLI forks
+- **19 palettes**, live switch + preview without applying. OSC 7 / 8 / 133 shell integration. Custom segment hooks
+- **70+ toggles**, configurable right-prompt order, ASCII fallback, dumb-terminal auto-minimal
 
-**Local hacking — Oh My Fish**
-
-```fish
-git clone https://github.com/miniex/fish-theme-damin.git
-ln -sfn (pwd)/fish-theme-damin ~/.local/share/omf/themes/damin
-omf theme damin
-```
+Full feature reference + every command + every toggle: **[docs/USAGE.md](docs/USAGE.md)**. Internals (cache layers, async IPC, palette plumbing): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 ## Update
 
@@ -59,58 +54,8 @@ fisher update miniex/fish-theme-damin
 **Oh My Fish**
 
 ```fish
-omf update damin   # just this theme
-omf update         # framework + all packages
+omf update damin
 ```
-
-## Highlights
-
-- **Fast** — ~0.5 ms/prompt. In-memory PWD memos on lang/git/cwd skip disk i/o after the first prompt. Async refresh forks a ~3 KB core. Cloud/devops/battery/jj/hg/fossil autoload only when enabled. `-uno` opt-out for monorepos. `theme_damin_vcs_ignore_paths` glob-skips the walk-up on NFS/huge mounts
-- **git / jj / hg / fossil** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state, `wt:<name>`, unmerged-first, opt-in `#N` GitHub PR. `theme_damin_jj_counts` for jj diff counts, `_hg_dirty` for hg dirty bit, `_stash_age` for newest-stash relative time, `_issue_url_template` for `[A-Z]+-[0-9]+` → OSC 8 ticket links. `hide_default_branch`, `branch_max_len` for long names
-- **Context** — `ssh` / `root` / `sudo:<user>` / `dkr` / `ctr` / `dm:<machine>` / `screen:<session>` / `tmux:<window>` / `zj:<session>` / `wsl:<distro>` / `cs` (Codespaces) / `devc` (Devcontainer) / `k8s:<ctx>/<ns>`, opt-in `aws` / `aws-vault` / `gcp` / `az`. SSH-aware `user@host` + `default_user` to hide your own. Pure-fish, no CLI forks (tmux window cached by `$TMUX_PANE`). `theme_damin_cloud_max_len` (+ per-segment `_k8s_max_len` / `_aws_max_len` / `_gcp_max_len` / `_azure_max_len`) clips long ARN-style labels with `…`
-- **Lang + env** — 10 langs via pin files first. `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv/pyenv/NVM/asdf)
-- **Terraform / Pulumi** — opt-in `tf:<workspace>` / `pulumi:<stack>`
-- **Path** — abbreviated cwd, optional project-relative (`<project>/<rel>`) mode
-- **Terminal-native** — OSC 7 + OSC 8 clickable hyperlinks (PR badge, cwd) + OSC 133 semantic markers, opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock
-- **19 palettes** — Catppuccin x4 + gruvbox(+light) / tokyonight / rosepine / nord / dracula / solarized(+light) / base16(+light) / zenburn / colorblind (Okabe-Ito) / high-contrast / terminal-dark/-light. `theme_damin_palette_light` auto-swaps when `$COLORFGBG` reports a light terminal. Live switch via `damin_set_palette`; preview without applying via `damin_palette_preview`; `damin_colors` hook for per-segment overrides
-- **Transient prompt** — collapsed stub renders dim; `theme_damin_glyph_transient` overrides the glyph
-- **Async timeout** — `theme_damin_async_timeout` (default `5`s) kills runaway bg subshells
-- **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**
-- **Customizable** — 70+ `theme_damin_*` toggles, `damin_segment_<name>` + `damin_colors` hooks, `theme_damin_right_segments` for right-prompt ordering. Example hooks (`uptime`, `todo`, `weather`) under [`examples/segments/`](examples/segments/)
-
-## Commands
-
-Every `damin_*` command answers `--help` / `-h` with a usage block. Tab completions for subcommands, palette names, and flags are auto-installed.
-
-| Command                  | Purpose                                                            |
-| ------------------------ | ------------------------------------------------------------------ |
-| `damin_config`           | Interactive setup wizard                                           |
-| `damin_config get` …     | Print matching `theme_damin_*` (`damin_config get git`)            |
-| `damin_config set` …     | `set -U` a `theme_damin_*` var (`damin_config set show_jobs 0`)    |
-| `damin_config reset` …   | Unset matching universals after `y/N` confirm                      |
-| `damin_config export`    | Dump universals as a runnable fish script (dotfile-friendly)       |
-| `damin_config edit`      | Open export in `$EDITOR`, re-source on save                        |
-| `damin_help`             | List every toggle, current value, default (`--json` for tooling)   |
-| `damin_doctor`           | Environment + install diagnostic (`--json`, `--fix`)               |
-| `damin_profile`          | Per-segment ms/render timer (means)                                |
-| `damin_bench`            | Per-segment P50/P95/P99 (`--cold`, `--compare BASE HEAD`)          |
-| `damin_set_palette`      | Switch palette                                                     |
-| `damin_palette_preview`  | Render a sample prompt in `<flavor>` (or `--all`) without applying |
-| `damin_install_themes`   | Write `.theme` files into `~/.config/fish/themes/`                 |
-| `damin_uninstall_themes` | Remove the Damin `.theme` files (confirms)                         |
-| `damin_reset_cache`      | Wipe on-disk cache                                                 |
-
-## Configuration
-
-Every option is a `theme_damin_*` universal variable. `damin_help` lists them all; full reference + palette + cache details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-```fish
-# either way works:
-set -U theme_damin_show_jobs 0
-damin_config set theme_damin_show_jobs 0
-```
-
-Dotfile users can capture every override with `damin_config export > ~/dotfiles/damin.fish` and replay via `source`.
 
 ## Troubleshooting
 
@@ -134,7 +79,7 @@ omf install damin; and omf theme damin
 exec fish
 ```
 
-Run `damin_doctor` if anything looks off. `Conflicting prompt setting` after reinstall = stale symlink (`hooks/install.fish` handles this; on older installs, `rm ~/.config/fish/functions/fish_prompt.fish; omf theme damin`).
+Run `damin_doctor` (or `damin_doctor --fix` to auto-resolve safe items) if anything looks off.
 
 ## Companion repos
 
