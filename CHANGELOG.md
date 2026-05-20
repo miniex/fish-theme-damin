@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`_damin_palette_data` / `_damin_palette_list`** — single source for the 14+1 palette hex values and canonical flavor name list. Conf.d apply-colors / `damin_install_themes` / `damin_set_palette` / `damin_config` picker all read from these. New palette = one data arm + one accents arm + one name entry instead of five parallel switches. `conf.d/damin.fish`: 1599 → 1349 lines (-16%)
 - **`damin_uninstall_themes`** — inverse of `damin_install_themes`. Globs `Damin *.theme`, removes after `y/N` confirm
 - **`damin_profile --json`** — mirrors `damin_bench --json` for CI comparison
 - **`damin_help <PATTERN>`** — substring-filters `theme_damin_*` rows (`damin_help git`). Bare invocation unchanged
@@ -66,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`damin_reset_cache` now clears every in-memory PWD memo.** Previously git / cwd / duration / AWS / GCP / Azure / GH / OSC memos survived a reset; cloud and gh segments could still serve stale data
+- **`damin_set_palette` no longer re-runs cache-prune / transient-bindings / async-warmup on its conf.d re-source.** `_damin_loaded` sentinel gates the one-time bootstrap; re-sources now only refresh palette + `_damin_c_*` escapes
 - `_damin_osc8` — switch OSC terminator from `ESC \` to BEL. fish's `printf` reads `\%` as escape, so the second `%s` leaked literal into the right-prompt cwd
 - `tools/test.sh` — strip SO/SI so `set_color normal`'s trailing `\017` doesn't break `default_user` string-equality checks
 - `_damin_git_compute` — restore `case '\?'` (third recurrence of the same regression). Fish `case` arms are glob patterns: bare `'?'` is the wildcard "any single char" and swallows every porcelain v2 line's first byte before `case '#'` (branch parsing) can run, so `branch` falls through to the literal `?` fallback and untracked counts every line. The escape must reach the glob layer — `case '\?'` (single-quoted `\?` survives as a 2-char literal, then the glob parses `\?` as literal `?`) or unquoted `case \?` both work; bare quoted `case '?'` does not. Verified fish 3.7.0 (Linux): `switch '#'; case '?'` matches, `case '\?'` does not. Do **not** "simplify" this again

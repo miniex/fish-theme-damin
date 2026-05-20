@@ -14,6 +14,10 @@ functions/
   damin_{config,help,doctor,profile,bench,set_palette,install_themes,reset_cache}.fish
                             — user-callable commands.
   _damin_help_block         — shared `--help` formatter for every damin_* command.
+  _damin_palette_list       — canonical 18-flavor name list. completion file
+                              keeps a static copy for per-flavor descriptions.
+  _damin_palette_data       — flavor → 14 fish_color_* hex + 1 bg hint. shared
+                              by conf.d's apply-colors block and install_themes.
   _damin_palette_accents    — flavor → "primary_hex secondary_hex". used by
                               conf.d and the damin_config palette picker.
   _damin_{aws,gcp,azure}_*  — lazy-loaded cloud renderers (autoloaded when enabled).
@@ -415,7 +419,7 @@ Pure-sync mode (`async_git=0` / `async_lang=0`) skips the disk cache, but the in
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler clears the guard and runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
 
-The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 145 lines), not the full theme (1263 lines).
+The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 148 lines), not the full theme (1349 lines).
 
 `&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
 
@@ -468,7 +472,7 @@ git dirty + node project                 0.70 ms / prompt
 - **`_damin_git_path_mtimes`** batches cache + index + HEAD + logs/HEAD into one `path mtime` call serving both the memo key and the staleness signal
 - Cache reads via fish `read` builtin in a loop (no `cat` fork)
 - Cloud / DevOps / battery / jj renderers autoload from `functions/` — disabled = zero parse cost
-- Async refresh subshell parses ~3 KB core, not the full 1245-line theme
+- Async refresh subshell parses ~3 KB core, not the full 1349-line theme
 - Stash count via fish `count` builtin (no `wc -l` fork)
 - `git --no-optional-locks` everywhere — prompt never blocks on `.git/index.lock`
 - Opt-out `-uno` (`theme_damin_git_count_untracked=0`) skips the workdir walk (30-100× faster in monorepos)
@@ -517,7 +521,7 @@ One conditional extra call: no upstream → porcelain omits `branch.ab`. With at
   - Hot-path memos: `_damin_vcs_*` (vcs detect), `_damin_lang_pwd/_value`, `_damin_git_cached_pwd/_mt/_data`, `_damin_cwd_pwd/_value`, `_damin_duration_ms/_value`, `_damin_devops_*`
   - Async core (lives in `_damin_async_core.fish`): `_damin_pwd_key_*`, `_damin_cache_dir`
   - Caches: `_damin_c_*` (colors), `_damin_is_root`, `_damin_uname`, `_damin_battery_at/_value`, `_damin_k8s_*`, `_damin_aws_*` / `_gcp_*` / `_azure_*`, `_damin_osc_pwd/_host`, `_damin_gh_branch/_value/_at`
-  - Flags: `_damin_async_pid_<key>` (per-segment cancel pid; created on first kickoff), `_damin_in_transient`
-- **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_install_themes`, `damin_reset_cache` — autoloaded from `functions/`.
+  - Flags: `_damin_async_pid_<key>` (per-segment cancel pid; created on first kickoff), `_damin_in_transient`, `_damin_loaded` (one-time-bootstrap gate; `damin_set_palette` re-source skips it)
+- **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_install_themes`, `damin_uninstall_themes`, `damin_reset_cache` — autoloaded from `functions/`.
 - **Warmup** (`_damin_warmup`): one bg fork at theme load runs `_damin_git_prefill` (in git repos) + `_damin_k8s_prefill` (if `show_k8s_context=1`). `&` forks the current shell, so all helpers are inherited.
 - **No `funcsave`** — nothing persists to `~/.config/fish/functions/`. Uninstall: `omf theme <other> && rm -rf ~/.local/share/omf/themes/damin`.

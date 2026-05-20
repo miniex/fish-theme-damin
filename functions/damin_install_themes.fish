@@ -9,54 +9,53 @@ function damin_install_themes
     set -l dest "$__fish_config_dir/themes"
     mkdir -p $dest
 
-    set -l flavors mocha macchiato frappe latte gruvbox gruvbox-light tokyonight rosepine nord dracula solarized solarized-light base16 base16-light zenburn colorblind
-    set -l names "Damin Mocha" "Damin Macchiato" "Damin Frappe" "Damin Latte" \
-        "Damin Gruvbox" "Damin Gruvbox Light" "Damin Tokyo Night" "Damin Rose Pine" \
-        "Damin Nord" "Damin Dracula" "Damin Solarized" "Damin Solarized Light" \
-        "Damin Base16" "Damin Base16 Light" "Damin Zenburn" "Damin Colorblind"
-    set -l bgs 1e1e2e 24273a 303446 eff1f5 282828 fbf1c7 1a1b26 191724 2e3440 282a36 002b36 fdf6e3 181818 f8f8f8 3f3f3f 1a1a1a
-
     set -l installed
-    for i in (seq (count $flavors))
-        set -l flavor $flavors[$i]
-        set -l name $names[$i]
-        set -l bg $bgs[$i]
-        set -l p
+    for flavor in (_damin_palette_list)
+        set -l data (_damin_palette_data $flavor)
+        # terminal-* have no fixed-hex preview; skip.
+        set -l bg $data[15]
+        test -z "$bg"; and continue
+
+        set -l name
         switch $flavor
             case mocha
-                set p cdd6f4 89b4fa cba6f7 a6e3a1 f5c2e7 fab387 f38ba8 f2cdcd 7f849c 313244 eba0ac 6c7086 f9e2af 94e2d5
+                set name "Damin Mocha"
             case macchiato
-                set p cad3f5 8aadf4 c6a0f6 a6da95 f5bde6 f5a97f ed8796 f0c6c6 8087a2 363a4f ee99a0 6e738d eed49f 8bd5ca
+                set name "Damin Macchiato"
             case frappe
-                set p c6d0f5 8caaee ca9ee6 a6d189 f4b8e4 ef9f76 e78284 eebebe 838ba7 414559 ea999c 737994 e5c890 81c8be
+                set name "Damin Frappe"
             case latte
-                set p 4c4f69 1e66f5 8839ef 40a02b ea76cb fe640b d20f39 dd7878 8c8fa1 ccd0da e64553 9ca0b0 df8e1d 179299
+                set name "Damin Latte"
             case gruvbox
-                set p ebdbb2 83a598 d3869b b8bb26 fb4934 fe8019 fb4934 e78a4e 928374 504945 ea6962 7c6f64 fabd2f 8ec07c
-            case tokyonight
-                set p c0caf5 7aa2f7 bb9af7 9ece6a f7768e ff9e64 f7768e e0af68 565f89 414868 ff757f 414868 e0af68 73daca
-            case rosepine
-                set p e0def4 9ccfd8 c4a7e7 31748f ebbcba f6c177 eb6f92 ebbcba 6e6a86 26233a eb6f92 524f67 f6c177 9ccfd8
-            case nord
-                set p eceff4 81a1c1 b48ead a3be8c b48ead d08770 bf616a d08770 4c566a 3b4252 bf616a 4c566a ebcb8b 88c0d0
-            case dracula
-                set p f8f8f2 8be9fd bd93f9 50fa7b ff79c6 ffb86c ff5555 ffb86c 6272a4 44475a ff5555 6272a4 f1fa8c 8be9fd
-            case solarized
-                set p 839496 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 586e75 073642 dc322f 657b83 b58900 2aa198
-            case solarized-light
-                set p 657b83 268bd2 6c71c4 859900 d33682 cb4b16 dc322f cb4b16 93a1a1 eee8d5 dc322f 839496 b58900 2aa198
-            case base16
-                set p d8d8d8 7cafc2 ba8baf a1b56c ba8baf dc9656 ab4642 dc9656 585858 282828 ab4642 585858 f7ca88 86c1b9
-            case base16-light
-                set p 383838 7cafc2 ba8baf a1b56c ba8baf dc9656 ab4642 dc9656 b8b8b8 e8e8e8 ab4642 b8b8b8 f7ca88 86c1b9
-            case zenburn
-                set p dcdccc 8cd0d3 dc8cc3 7f9f7f dca3a3 dfaf8f cc9393 dca3a3 7f9f7f 4f4f4f cc9393 606060 f0dfaf 93e0e3
+                set name "Damin Gruvbox"
             case gruvbox-light
-                set p 3c3836 458588 b16286 98971a cc241d d65d0e cc241d af3a03 7c6f64 ebdbb2 9d0006 928374 d79921 689d6a
+                set name "Damin Gruvbox Light"
+            case tokyonight
+                set name "Damin Tokyo Night"
+            case rosepine
+                set name "Damin Rose Pine"
+            case nord
+                set name "Damin Nord"
+            case dracula
+                set name "Damin Dracula"
+            case solarized
+                set name "Damin Solarized"
+            case solarized-light
+                set name "Damin Solarized Light"
+            case base16
+                set name "Damin Base16"
+            case base16-light
+                set name "Damin Base16 Light"
+            case zenburn
+                set name "Damin Zenburn"
             case colorblind
-                set p eeeeee 0072b2 cc79a7 009e73 e69f00 e69f00 d55e00 e69f00 888888 3a3a3a d55e00 666666 f0e442 56b4e9
+                set name "Damin Colorblind"
+            case '*'
+                continue
         end
-        # p indexes: 1=text 2=blue 3=mauve 4=green 5=pink 6=peach 7=red 8=flamingo 9=overlay1 10=surface0 11=maroon 12=overlay0 13=yellow 14=teal
+
+        # p[1..14]: text blue mauve green pink peach red flamingo overlay1 surface0 maroon overlay0 yellow teal
+        set -l p $data[1..14]
         set -l file "$dest/$name.theme"
         begin
             printf '# name: %s\n' $name

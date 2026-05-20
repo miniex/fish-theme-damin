@@ -9,6 +9,7 @@ function damin_reset_cache
     set -e _damin_vcs_pwd
     set -e _damin_vcs_value
     set -e _damin_vcs_dir
+    set -e _damin_vcs_worktree
     set -e _damin_pwd_key_pwd
     set -e _damin_pwd_key_value
     set -e _damin_battery_value
@@ -19,5 +20,25 @@ function damin_reset_cache
     set -e _damin_k8s_mt
     set -e _damin_k8s_ctx
     set -e _damin_k8s_ns
+    set -e _damin_git_cached_pwd
+    set -e _damin_git_cached_mt
+    set -e _damin_git_cached_data
+    set -e _damin_cwd_pwd
+    set -e _damin_cwd_value
+    set -e _damin_duration_ms
+    set -e _damin_duration_value
+    set -e _damin_aws_cfg_mt
+    set -e _damin_aws_cfg_value
+    set -e _damin_gcp_active_mt
+    set -e _damin_gcp_active_name
+    set -e _damin_gcp_cfg_mt
+    set -e _damin_gcp_cfg_value
+    set -e _damin_azure_mt
+    set -e _damin_azure_value
+    set -e _damin_gh_branch
+    set -e _damin_gh_value
+    set -e _damin_gh_at
+    set -e _damin_osc_pwd
+    set -e _damin_osc_host
     echo "cleared $_damin_cache_dir"
 end

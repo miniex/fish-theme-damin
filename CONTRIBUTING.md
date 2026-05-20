@@ -49,7 +49,7 @@ omf theme damin; exec fish
   - `completions/damin_*.fish` — tab completion. One file per user-facing command. Fisher auto-installs; OMF picks them up via `$fish_complete_path` pushed in `conf.d/damin.fish`
   - Root `fish_prompt.fish` / `fish_right_prompt.fish` / `fish_title.fish` / `key_bindings.fish` — OMF shims, no logic
   - `hooks/*.fish` — OMF install lifecycle. Idempotent and side-effect-free outside the orphan cleanup
-- Brand accents (`theme_damin_accent_primary` / `_secondary`) drive every `_damin_c_*`. New palette: extend the `fish_color_*` switch in `conf.d/damin.fish`, add an arm to `functions/_damin_palette_accents.fish` (single source of truth for the brand pair), the valid list in `damin_set_palette`, `damin_config`'s `_damin_config_pick_palette`, the completion file `completions/damin_set_palette.fish`, the table in `damin_install_themes` + `LICENSES/` + `README.md` highlights count.
+- Brand accents (`theme_damin_accent_primary` / `_secondary`) drive every `_damin_c_*`. Adding a palette: arm in `_damin_palette_data.fish` (14 `fish_color_*` hex + 1 bg hint), arm in `_damin_palette_accents.fish` (brand pair), name in `_damin_palette_list.fish`, display-name arm in `damin_install_themes`, completion entry in `completions/damin_set_palette.fish`, plus `LICENSES/` + `README.md` highlights count. `damin_set_palette` and the config picker pick up from `_damin_palette_list` automatically.
 - New lang: marker + label in `_damin_lang_compute`, resolution chain (`.tool-versions` → `.mise.toml` → lang pin → binary fork), fixture test in `tools/test.sh`.
 - Hot-path changes: include before/after `./tools/bench.sh` numbers. `damin_profile` for means, `damin_bench` for P50/P95/P99. Per-PWD or per-input memo → document its invalidation path.
 

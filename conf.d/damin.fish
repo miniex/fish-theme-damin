@@ -151,280 +151,24 @@ set -q theme_damin_glyph_behind; or set -g theme_damin_glyph_behind $_ds_behind
 set -q theme_damin_glyph_sep; or set -g theme_damin_glyph_sep $_ds_sep
 set -q theme_damin_glyph_conflict; or set -g theme_damin_glyph_conflict $_ds_conflict
 
-# catppuccin palette — `damin_set_palette <flavor>` erases universals first to switch.
+# colors via _damin_palette_data. damin_set_palette wipes fish_color_* + accents
+# first because this block only fills unset universals.
 if test "$theme_damin_apply_colors" = 1
-    set -l text cdd6f4
-    set -l blue 89b4fa
-    set -l mauve cba6f7
-    set -l green a6e3a1
-    set -l pink f5c2e7
-    set -l peach fab387
-    set -l red f38ba8
-    set -l flamingo f2cdcd
-    set -l overlay1 7f849c
-    set -l surface0 313244
-    set -l maroon eba0ac
-    set -l overlay0 6c7086
-    set -l yellow f9e2af
-    set -l teal 94e2d5
-    switch "$theme_damin_palette"
-        case latte
-            set text 4c4f69
-            set blue 1e66f5
-            set mauve 8839ef
-            set green 40a02b
-            set pink ea76cb
-            set peach fe640b
-            set red d20f39
-            set flamingo dd7878
-            set overlay1 8c8fa1
-            set surface0 ccd0da
-            set maroon e64553
-            set overlay0 9ca0b0
-            set yellow df8e1d
-            set teal 179299
-        case frappe
-            set text c6d0f5
-            set blue 8caaee
-            set mauve ca9ee6
-            set green a6d189
-            set pink f4b8e4
-            set peach ef9f76
-            set red e78284
-            set flamingo eebebe
-            set overlay1 838ba7
-            set surface0 414559
-            set maroon ea999c
-            set overlay0 737994
-            set yellow e5c890
-            set teal 81c8be
-        case macchiato
-            set text cad3f5
-            set blue 8aadf4
-            set mauve c6a0f6
-            set green a6da95
-            set pink f5bde6
-            set peach f5a97f
-            set red ed8796
-            set flamingo f0c6c6
-            set overlay1 8087a2
-            set surface0 363a4f
-            set maroon ee99a0
-            set overlay0 6e738d
-            set yellow eed49f
-            set teal 8bd5ca
-        case gruvbox
-            set text ebdbb2
-            set blue 83a598
-            set mauve d3869b
-            set green b8bb26
-            set pink fb4934
-            set peach fe8019
-            set red fb4934
-            set flamingo e78a4e
-            set overlay1 928374
-            set surface0 504945
-            set maroon ea6962
-            set overlay0 7c6f64
-            set yellow fabd2f
-            set teal 8ec07c
-        case tokyonight
-            set text c0caf5
-            set blue 7aa2f7
-            set mauve bb9af7
-            set green 9ece6a
-            set pink f7768e
-            set peach ff9e64
-            set red f7768e
-            set flamingo e0af68
-            set overlay1 565f89
-            set surface0 414868
-            set maroon ff757f
-            set overlay0 414868
-            set yellow e0af68
-            set teal 73daca
-        case rosepine
-            set text e0def4
-            set blue 9ccfd8
-            set mauve c4a7e7
-            set green 31748f
-            set pink ebbcba
-            set peach f6c177
-            set red eb6f92
-            set flamingo ebbcba
-            set overlay1 6e6a86
-            set surface0 26233a
-            set maroon eb6f92
-            set overlay0 524f67
-            set yellow f6c177
-            set teal 9ccfd8
-        case nord
-            set text eceff4
-            set blue 81a1c1
-            set mauve b48ead
-            set green a3be8c
-            set pink b48ead
-            set peach d08770
-            set red bf616a
-            set flamingo d08770
-            set overlay1 4c566a
-            set surface0 3b4252
-            set maroon bf616a
-            set overlay0 4c566a
-            set yellow ebcb8b
-            set teal 88c0d0
-        case dracula
-            set text f8f8f2
-            set blue 8be9fd
-            set mauve bd93f9
-            set green 50fa7b
-            set pink ff79c6
-            set peach ffb86c
-            set red ff5555
-            set flamingo ffb86c
-            set overlay1 6272a4
-            set surface0 44475a
-            set maroon ff5555
-            set overlay0 6272a4
-            set yellow f1fa8c
-            set teal 8be9fd
-        case solarized
-            set text 839496
-            set blue 268bd2
-            set mauve 6c71c4
-            set green 859900
-            set pink d33682
-            set peach cb4b16
-            set red dc322f
-            set flamingo cb4b16
-            set overlay1 586e75
-            set surface0 073642
-            set maroon dc322f
-            set overlay0 657b83
-            set yellow b58900
-            set teal 2aa198
-        case solarized-light
-            set text 657b83
-            set blue 268bd2
-            set mauve 6c71c4
-            set green 859900
-            set pink d33682
-            set peach cb4b16
-            set red dc322f
-            set flamingo cb4b16
-            set overlay1 93a1a1
-            set surface0 eee8d5
-            set maroon dc322f
-            set overlay0 839496
-            set yellow b58900
-            set teal 2aa198
-        case base16
-            set text d8d8d8
-            set blue 7cafc2
-            set mauve ba8baf
-            set green a1b56c
-            set pink ba8baf
-            set peach dc9656
-            set red ab4642
-            set flamingo dc9656
-            set overlay1 585858
-            set surface0 282828
-            set maroon ab4642
-            set overlay0 585858
-            set yellow f7ca88
-            set teal 86c1b9
-        case base16-light
-            set text 383838
-            set blue 7cafc2
-            set mauve ba8baf
-            set green a1b56c
-            set pink ba8baf
-            set peach dc9656
-            set red ab4642
-            set flamingo dc9656
-            set overlay1 b8b8b8
-            set surface0 e8e8e8
-            set maroon ab4642
-            set overlay0 b8b8b8
-            set yellow f7ca88
-            set teal 86c1b9
-        case zenburn
-            set text dcdccc
-            set blue 8cd0d3
-            set mauve dc8cc3
-            set green 7f9f7f
-            set pink dca3a3
-            set peach dfaf8f
-            set red cc9393
-            set flamingo dca3a3
-            set overlay1 7f9f7f
-            set surface0 4f4f4f
-            set maroon cc9393
-            set overlay0 606060
-            set yellow f0dfaf
-            set teal 93e0e3
-        case gruvbox-light
-            set text 3c3836
-            set blue 458588
-            set mauve b16286
-            set green 98971a
-            set pink cc241d
-            set peach d65d0e
-            set red cc241d
-            set flamingo af3a03
-            set overlay1 7c6f64
-            set surface0 ebdbb2
-            set maroon 9d0006
-            set overlay0 928374
-            set yellow d79921
-            set teal 689d6a
-        case colorblind
-            # Okabe-Ito 8-color palette — distinguishable for deuteranopia / protanopia.
-            set text eeeeee
-            set blue 0072b2
-            set mauve cc79a7
-            set green 009e73
-            set pink e69f00
-            set peach e69f00
-            set red d55e00
-            set flamingo e69f00
-            set overlay1 888888
-            set surface0 3a3a3a
-            set maroon d55e00
-            set overlay0 666666
-            set yellow f0e442
-            set teal 56b4e9
-        case terminal-dark
-            set text white
-            set blue blue
-            set mauve brmagenta
-            set green green
-            set pink brred
-            set peach yellow
-            set red red
-            set flamingo yellow
-            set overlay1 brblack
-            set surface0 brblack
-            set maroon red
-            set overlay0 brblack
-            set yellow yellow
-            set teal cyan
-        case terminal-light
-            set text black
-            set blue blue
-            set mauve magenta
-            set green green
-            set pink red
-            set peach yellow
-            set red red
-            set flamingo yellow
-            set overlay1 brblack
-            set surface0 brwhite
-            set maroon red
-            set overlay0 brblack
-            set yellow yellow
-            set teal cyan
-    end
+    set -l _damin_pdata (_damin_palette_data "$theme_damin_palette")
+    set -l text $_damin_pdata[1]
+    set -l blue $_damin_pdata[2]
+    set -l mauve $_damin_pdata[3]
+    set -l green $_damin_pdata[4]
+    set -l pink $_damin_pdata[5]
+    set -l peach $_damin_pdata[6]
+    set -l red $_damin_pdata[7]
+    set -l flamingo $_damin_pdata[8]
+    set -l overlay1 $_damin_pdata[9]
+    set -l surface0 $_damin_pdata[10]
+    set -l maroon $_damin_pdata[11]
+    set -l overlay0 $_damin_pdata[12]
+    set -l yellow $_damin_pdata[13]
+    set -l teal $_damin_pdata[14]
     set -q fish_color_normal; or set -U fish_color_normal $text
     set -q fish_color_command; or set -U fish_color_command $blue
     set -q fish_color_keyword; or set -U fish_color_keyword $mauve
@@ -940,6 +684,7 @@ function _damin_git_render
         if test -n "$data"
             _damin_write_cache $cache_file "$PWD" $data
             set -g _damin_git_cached_pwd "$PWD"
+            # post-write stat refreshes memo key; skip-and-reread / date-fork cost more.
             set -g _damin_git_cached_mt (path mtime $cache_file 2>/dev/null)
             set -g _damin_git_cached_data $data
         end
@@ -1586,9 +1331,10 @@ function _damin_warmup
     test "$theme_damin_show_k8s_context" = 1; and _damin_k8s_prefill
 end
 
-# subshell-mode guard kept as a safety net; current async kickoff sources only
-# _damin_async_core.fish so this branch isn't normally hit anymore.
-if not set -q _damin_subshell
+# _damin_subshell = legacy async-mode guard. _damin_loaded = one-time bootstrap
+# so damin_set_palette's re-source doesn't re-prune / re-bind / re-warmup.
+if not set -q _damin_subshell; and not set -q _damin_loaded
+    set -g _damin_loaded 1
     _damin_cache_prune
     _damin_install_transient_bindings
 
