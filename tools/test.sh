@@ -963,7 +963,7 @@ got=$(fish -c "
     set -gx USER alice
     _damin_context_render
     true
-" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/[\x0e\x0f]//g;s/^ *//;s/ *$//')
+" 2>/dev/null | tr -d '\016\017' | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
 expect "default_user unset: user always shown" "$got" "alice"
 
 got=$(fish -c "
@@ -974,7 +974,7 @@ got=$(fish -c "
     set -gx USER alice
     _damin_context_render
     true
-" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/[\x0e\x0f]//g;s/^ *//;s/ *$//')
+" 2>/dev/null | tr -d '\016\017' | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
 expect "default_user match: user suppressed" "$got" ""
 
 got=$(fish -c "
@@ -985,7 +985,7 @@ got=$(fish -c "
     set -gx USER bob
     _damin_context_render
     true
-" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g;s/[\x0e\x0f]//g;s/^ *//;s/ *$//')
+" 2>/dev/null | tr -d '\016\017' | sed 's/\x1b\[[0-9;]*m//g;s/^ *//;s/ *$//')
 expect "default_user differs: user still shown" "$got" "bob"
 
 echo

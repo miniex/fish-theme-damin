@@ -52,9 +52,14 @@ function _damin_git_compute
     set -l untracked_flag --untracked-files=all
     test "$theme_damin_git_count_untracked" = 0; and set untracked_flag --untracked-files=no
     for line in (command git --no-optional-locks status --porcelain=v2 --branch $untracked_flag 2>/dev/null)
-        switch (string sub -l 1 -- "$line")
-            case '\?'
-                set untracked (math $untracked + 1)
+        # `?` matched via `test`, not a `case` arm: `case` arms are globs, and `?`
+        # is a wildcard on fish 3.x but literal on 4.x — no `case` form works on both.
+        set -l tag (string sub -l 1 -- "$line")
+        if test "$tag" = '?'
+            set untracked (math $untracked + 1)
+            continue
+        end
+        switch $tag
             case u
                 set conflict (math $conflict + 1)
             case 1 2

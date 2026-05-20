@@ -96,8 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`damin_reset_cache` now clears every in-memory PWD memo.** Previously git / cwd / duration / AWS / GCP / Azure / GH / OSC memos survived a reset; cloud and gh segments could still serve stale data
 - **`damin_set_palette` no longer re-runs cache-prune / transient-bindings / async-warmup on its conf.d re-source.** `_damin_loaded` sentinel gates the one-time bootstrap; re-sources now only refresh palette + `_damin_c_*` escapes
 - `_damin_osc8` — switch OSC terminator from `ESC \` to BEL. fish's `printf` reads `\%` as escape, so the second `%s` leaked literal into the right-prompt cwd
-- `tools/test.sh` — strip SO/SI so `set_color normal`'s trailing `\017` doesn't break `default_user` string-equality checks
-- `_damin_git_compute` — restore `case '\?'` (third recurrence of the same regression). Fish `case` arms are glob patterns: bare `'?'` is the wildcard "any single char" and swallows every porcelain v2 line's first byte before `case '#'` (branch parsing) can run, so `branch` falls through to the literal `?` fallback and untracked counts every line. The escape must reach the glob layer — `case '\?'` (single-quoted `\?` survives as a 2-char literal, then the glob parses `\?` as literal `?`) or unquoted `case \?` both work; bare quoted `case '?'` does not. Verified fish 3.7.0 (Linux): `switch '#'; case '?'` matches, `case '\?'` does not. Do **not** "simplify" this again
+- `tools/test.sh` — strip SO/SI with `tr -d '\016\017'` instead of a sed `[\x0e\x0f]` class. BSD `sed` (macOS) doesn't read `\x` escapes inside `[...]`, so the class deleted literal `e`/`f` from output (`alice` -> `alic`)
+- `_damin_git_compute` — match the porcelain v2 untracked type (`?`) with `test`, not a `case` arm. `case` arms are globs and `?` is a wildcard on fish 3.x but literal on 4.x, so no `case` form works on both; `test =` does no glob matching and is version-stable
 
 ## [1.2.0] - 20260513222728 KST
 
