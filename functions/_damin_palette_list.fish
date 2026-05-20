@@ -17,6 +17,7 @@ function _damin_palette_list
         base16-light \
         zenburn \
         colorblind \
+        high-contrast \
         terminal-dark \
         terminal-light
 end

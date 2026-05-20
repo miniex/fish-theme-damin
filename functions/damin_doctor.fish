@@ -1,13 +1,17 @@
 function damin_doctor
     if contains -- "$argv[1]" --help -h
         _damin_help_block damin_doctor 'environment + install diagnostic' \
-            'damin_doctor [--json]' \
+            'damin_doctor [--json] [--fix]' \
             -- \
-            '--json emits one JSON object per check for CI / issue reporting.'
+            '--json emits one JSON object per check for CI / issue reporting.' \
+            '--fix  auto-resolves safe items: orphan fish_prompt symlink, leaked' \
+            '       universal _damin_in_transient, missing cache dir.'
         return
     end
     set -g _damin_doctor_mode text
     contains -- --json $argv; and set -g _damin_doctor_mode json
+    set -g _damin_doctor_fix 0
+    contains -- --fix $argv; and set -g _damin_doctor_fix 1
     if test "$_damin_doctor_mode" = json
         set -g _damin_doctor_first 1
         printf '['
@@ -69,7 +73,12 @@ function damin_doctor
             _damin_doctor_check "fish_prompt symlink" fail "(target ≠ themes/$theme — fix: rm $user_fp; then omf theme $theme)"
         end
     else
-        _damin_doctor_check "fish_prompt symlink" fail "($user_fp exists without omf — delete it: rm $user_fp)"
+        if test "$_damin_doctor_fix" = 1
+            command rm -f $user_fp
+            _damin_doctor_check "fish_prompt symlink" ok "(removed orphan: $user_fp)"
+        else
+            _damin_doctor_check "fish_prompt symlink" fail "($user_fp exists without omf — delete it: rm $user_fp, or rerun with --fix)"
+        end
     end
     if test -e ~/.config/fish/functions/fish_right_prompt.fish
         _damin_doctor_check "no stray fish_right_prompt.fish" fail "(damin doesn't ship this — delete to avoid override)"
@@ -121,8 +130,15 @@ function damin_doctor
 
     if mkdir -p $_damin_cache_dir 2>/dev/null; and test -w $_damin_cache_dir
         _damin_doctor_check "cache dir writable" ok "($_damin_cache_dir)"
+    else if test "$_damin_doctor_fix" = 1
+        command mkdir -p $_damin_cache_dir 2>/dev/null
+        if test -w $_damin_cache_dir
+            _damin_doctor_check "cache dir writable" ok "(created: $_damin_cache_dir)"
+        else
+            _damin_doctor_check "cache dir writable" fail "(could not create $_damin_cache_dir — check permissions)"
+        end
     else
-        _damin_doctor_check "cache dir writable" fail
+        _damin_doctor_check "cache dir writable" fail '(rerun with --fix to mkdir)'
     end
 
     set -l n_caches (count (path filter -tf $_damin_cache_dir/* 2>/dev/null))
@@ -157,7 +173,12 @@ function damin_doctor
         end
 
         if set -qU _damin_in_transient
-            _damin_doctor_check "transient state clean" fail "(_damin_in_transient leaked to universal scope — run: set -eU _damin_in_transient)"
+            if test "$_damin_doctor_fix" = 1
+                set -eU _damin_in_transient
+                _damin_doctor_check "transient state clean" ok '(erased leaked universal)'
+            else
+                _damin_doctor_check "transient state clean" fail "(_damin_in_transient leaked to universal scope — run: set -eU _damin_in_transient, or rerun with --fix)"
+            end
         else
             _damin_doctor_check "transient state clean" ok
         end
@@ -230,4 +251,5 @@ function damin_doctor
     end
     set -e _damin_doctor_mode
     set -e _damin_doctor_first
+    set -e _damin_doctor_fix
 end

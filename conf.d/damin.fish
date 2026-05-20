@@ -32,6 +32,11 @@ set -q theme_damin_show_user; or set -g theme_damin_show_user ssh
 set -q theme_damin_show_screen; or set -g theme_damin_show_screen 0
 set -q theme_damin_show_sudo_user; or set -g theme_damin_show_sudo_user 0
 set -q theme_damin_show_docker_machine; or set -g theme_damin_show_docker_machine 0
+set -q theme_damin_show_wsl; or set -g theme_damin_show_wsl 0
+set -q theme_damin_show_codespaces; or set -g theme_damin_show_codespaces 0
+set -q theme_damin_show_devcontainer; or set -g theme_damin_show_devcontainer 0
+set -q theme_damin_show_tmux; or set -g theme_damin_show_tmux 0
+set -q theme_damin_show_zellij; or set -g theme_damin_show_zellij 0
 set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
 set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
 set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
@@ -40,9 +45,13 @@ set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
 set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
 set -q theme_damin_show_git; or set -g theme_damin_show_git 1
 set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
+# 1 jj fork per prompt when on; counts M/A/C from `jj diff --summary -r @`.
+set -q theme_damin_jj_counts; or set -g theme_damin_jj_counts 0
 set -q theme_damin_show_hg; or set -g theme_damin_show_hg 0
 set -q theme_damin_show_fossil; or set -g theme_damin_show_fossil 0
 set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
+# 1 fork per prompt; opt-in dirty-bit (no count) for hg.
+set -q theme_damin_hg_dirty; or set -g theme_damin_hg_dirty 0
 set -q theme_damin_hide_default_branch; or set -g theme_damin_hide_default_branch 0
 set -q theme_damin_default_branches; or set -g theme_damin_default_branches main master trunk
 # 0 = no limit. >0 truncates long branch names with `…`.
@@ -54,6 +63,10 @@ set -q theme_damin_aws_max_len; or set -g theme_damin_aws_max_len 0
 set -q theme_damin_gcp_max_len; or set -g theme_damin_gcp_max_len 0
 set -q theme_damin_azure_max_len; or set -g theme_damin_azure_max_len 0
 set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
+# theme_damin_issue_url_template — e.g. 'https://jira.example.com/{key}'.
+# when set, branches matching [A-Z]+-[0-9]+ render as OSC 8 hyperlinks. unset → no-op.
+# opt-in dim relative age of newest stash next to `$N` count.
+set -q theme_damin_stash_age; or set -g theme_damin_stash_age 0
 set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
 # show_exit_code: 0|off|hidden, 1|number (default), name, both.
 set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code number
@@ -105,6 +118,9 @@ set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
 set -q theme_damin_show_project_parent; or set -g theme_damin_show_project_parent 1
 set -q theme_damin_project_dir_length; or set -g theme_damin_project_dir_length 0
 set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
+# right-prompt segment order. tokens: cwd lang devops env battery duration date extra,
+# or any damin_segment_<name>. drop a token to omit; reorder to taste.
+set -q theme_damin_right_segments; or set -g theme_damin_right_segments cwd lang devops env battery duration date extra
 set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
 set -q theme_damin_gh_pr_ttl; or set -g theme_damin_gh_pr_ttl 300
 set -q theme_damin_notify_threshold; or set -g theme_damin_notify_threshold 30000
@@ -250,6 +266,8 @@ set -g _damin_azure_mt ""
 set -g _damin_azure_value ""
 set -g _damin_osc_pwd ""
 set -g _damin_osc_host ""
+set -g _damin_tmux_key ""
+set -g _damin_tmux_value ""
 set -g _damin_gh_branch ""
 set -g _damin_gh_value ""
 set -g _damin_gh_at 0
@@ -267,6 +285,25 @@ function _damin_read_lines --argument-names file
     while read -l line
         printf '%s\n' "$line"
     end <$file
+end
+
+# unix-ts → short relative age (`2h`, `3d`, `now`). empty input → empty.
+function _damin_relative_time --argument-names ts
+    string match -rq '^[1-9][0-9]*$' -- "$ts"; or return
+    set -l now (date +%s)
+    set -l diff (math $now - $ts)
+    test $diff -lt 0; and set diff 0
+    if test $diff -lt 60
+        echo now
+    else if test $diff -lt 3600
+        echo (math --scale=0 $diff / 60)m
+    else if test $diff -lt 86400
+        echo (math --scale=0 $diff / 3600)h
+    else if test $diff -lt 2592000
+        echo (math --scale=0 $diff / 86400)d
+    else
+        echo (math --scale=0 $diff / 2592000)mo
+    end
 end
 
 # truncate to n chars with `…`. n ≤ 0 or non-numeric → passthrough.
@@ -498,6 +535,34 @@ function _damin_context_render
         set -l name (string replace -r '^\d+\.' '' -- $STY)
         echo -n -s $_damin_c_dim "screen:$name" $_damin_c_normal " "
     end
+    # $TMUX is the socket path; cache window name by $TMUX_PANE to avoid per-prompt fork.
+    if test "$theme_damin_show_tmux" = 1; and set -q TMUX; and test -n "$TMUX"
+        if test "$_damin_tmux_key" != "$TMUX_PANE"
+            set -g _damin_tmux_key "$TMUX_PANE"
+            set -g _damin_tmux_value (command tmux display-message -p '#W' 2>/dev/null | string trim)
+        end
+        set -l v $_damin_tmux_value
+        test -z "$v"; and set v "$TMUX_PANE"
+        echo -n -s $_damin_c_dim "tmux:$v" $_damin_c_normal " "
+    end
+    if test "$theme_damin_show_zellij" = 1; and set -q ZELLIJ; and test -n "$ZELLIJ"
+        set -l label zj
+        set -q ZELLIJ_SESSION_NAME; and test -n "$ZELLIJ_SESSION_NAME"; and set label "zj:$ZELLIJ_SESSION_NAME"
+        echo -n -s $_damin_c_dim "$label" $_damin_c_normal " "
+    end
+    if test "$theme_damin_show_wsl" = 1; and set -q WSL_DISTRO_NAME; and test -n "$WSL_DISTRO_NAME"
+        echo -n -s $_damin_c_dim "wsl:$WSL_DISTRO_NAME" $_damin_c_normal " "
+    end
+    # $CODESPACES is "true" inside a Codespace.
+    if test "$theme_damin_show_codespaces" = 1; and set -q CODESPACES; and test -n "$CODESPACES"
+        echo -n -s $_damin_c_dim cs $_damin_c_normal " "
+    end
+    # VS Code Remote-Containers sets $REMOTE_CONTAINERS; devcontainer CLI may also set $DEVCONTAINER_CLI.
+    if test "$theme_damin_show_devcontainer" = 1
+        if set -q REMOTE_CONTAINERS; or set -q DEVCONTAINER_CLI
+            echo -n -s $_damin_c_dim devc $_damin_c_normal " "
+        end
+    end
     # gate at the caller — disabled cloud segments don't autoload at all.
     test "$theme_damin_show_aws" = 1; and _damin_aws_render
     test "$theme_damin_show_gcp" = 1; and _damin_gcp_render
@@ -545,7 +610,7 @@ function _damin_git_part
     return 0
 end
 
-function _damin_git_render_data --argument-names branch u m s st a b c op
+function _damin_git_render_data --argument-names branch u m s st a b c op stash_ts
     set -l hide 0
     if test "$theme_damin_hide_default_branch" = 1
         contains -- $branch $theme_damin_default_branches; and set hide 1
@@ -557,6 +622,14 @@ function _damin_git_render_data --argument-names branch u m s st a b c op
         set -l shown $branch
         if test $theme_damin_branch_max_len -gt 0 -a (string length -- $branch) -gt $theme_damin_branch_max_len
             set shown (string sub -l (math $theme_damin_branch_max_len - 1) -- $branch)…
+        end
+        # wrap branch in OSC 8 when it contains an issue key matching the template.
+        if set -q theme_damin_issue_url_template; and test -n "$theme_damin_issue_url_template"
+            set -l key (string match -r '[A-Z]+-[0-9]+' -- $branch)
+            if test -n "$key"
+                set -l url (string replace -a '{key}' $key -- "$theme_damin_issue_url_template")
+                set shown (_damin_osc8 "$url" "$shown")
+            end
         end
         echo -n -s $_damin_c_branch $shown $_damin_c_normal
         test -n "$op"; and echo -n -s " " $_damin_c_exit "($op)" $_damin_c_normal
@@ -577,7 +650,14 @@ function _damin_git_render_data --argument-names branch u m s st a b c op
     end
 
     _damin_git_part $u $theme_damin_glyph_untracked $first $counts_on; and set first 0
-    _damin_git_part $st $theme_damin_glyph_stashed $first $counts_on; and set first 0
+    if _damin_git_part $st $theme_damin_glyph_stashed $first $counts_on
+        set first 0
+        # opt-in: dim relative age of newest stash next to the count.
+        if test "$theme_damin_stash_age" = 1; and test "$stash_ts" -gt 0 2>/dev/null
+            set -l rel (_damin_relative_time $stash_ts)
+            test -n "$rel"; and echo -n -s $_damin_c_dim "·$rel" $_damin_c_meta
+        end
+    end
     _damin_git_part $m $theme_damin_glyph_modified $first $counts_on; and set first 0
     _damin_git_part $s $theme_damin_glyph_added $first $counts_on; and set first 0
     _damin_git_part $b $theme_damin_glyph_behind $first $counts_on; and set first 0
@@ -661,8 +741,9 @@ function _damin_git_render
         set data $_damin_git_cached_data
     else if test -n "$cache_mt"
         set -l lines (_damin_read_lines $cache_file)
-        if test (count $lines) -ge 10 -a "$lines[1]" = "$PWD"
-            set data $lines[2..10]
+        # 11 = PWD + 10 fields (branch, u, m, s, st, a, b, c, op, stash_ts).
+        if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
+            set data $lines[2..11]
             set -g _damin_git_cached_pwd "$PWD"
             set -g _damin_git_cached_mt "$cache_mt"
             set -g _damin_git_cached_data $data
@@ -1123,6 +1204,16 @@ function _damin_env_render
         else
             set -a parts nix
         end
+    else if set -q IN_NIX_RUN
+        # `nix run` wrappers sometimes export this; surface as a distinct label.
+        set -a parts nix-run
+    else if set -q NIX_SHELL_DIR; and test -n "$NIX_SHELL_DIR"
+        # bare `nix-shell` without `IN_NIX_SHELL` set (older nix, custom wrappers).
+        if test "$theme_damin_show_nix_name" = 1
+            set -a parts "nix:"(path basename -- $NIX_SHELL_DIR)
+        else
+            set -a parts nix
+        end
     end
 
     test (count $parts) -eq 0; and return
@@ -1328,20 +1419,32 @@ function fish_right_prompt
         return
     end
 
-    set -l cwd_url
-    _damin_osc_enabled; and set cwd_url "file://"(_damin_osc_hostname)(_damin_osc_encode_path "$PWD")
-    echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_osc8 "$cwd_url" (_damin_cwd_pretty)) $_damin_c_normal
-
-    _damin_lang_render
-    # gate at caller — disabled segments don't autoload.
-    if test "$theme_damin_show_terraform" = 1; or test "$theme_damin_show_pulumi" = 1
-        _damin_devops_render
+    for seg in $theme_damin_right_segments
+        switch $seg
+            case cwd
+                set -l cwd_url
+                _damin_osc_enabled; and set cwd_url "file://"(_damin_osc_hostname)(_damin_osc_encode_path "$PWD")
+                echo -n -s " " $_damin_c_deco "$theme_damin_glyph_cwd " $_damin_c_cwd (_damin_osc8 "$cwd_url" (_damin_cwd_pretty)) $_damin_c_normal
+            case lang
+                _damin_lang_render
+            case devops
+                if test "$theme_damin_show_terraform" = 1; or test "$theme_damin_show_pulumi" = 1
+                    _damin_devops_render
+                end
+            case env
+                _damin_env_render
+            case battery
+                test "$theme_damin_show_battery" = 1; and _damin_battery_render
+            case duration
+                _damin_duration_render
+            case date
+                test "$theme_damin_show_date" = 1; and _damin_date_render
+            case extra
+                _damin_extra_segments_render right
+            case '*'
+                functions -q damin_segment_$seg; and damin_segment_$seg
+        end
     end
-    _damin_env_render
-    test "$theme_damin_show_battery" = 1; and _damin_battery_render
-    _damin_duration_render
-    test "$theme_damin_show_date" = 1; and _damin_date_render
-    _damin_extra_segments_render right
 end
 
 # one backgrounded fork at theme load fills both caches. `&` forks the current

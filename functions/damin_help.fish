@@ -47,6 +47,11 @@ function damin_help
     _damin_help_row theme_damin_show_screen 0
     _damin_help_row theme_damin_show_sudo_user 0
     _damin_help_row theme_damin_show_docker_machine 0
+    _damin_help_row theme_damin_show_wsl 0
+    _damin_help_row theme_damin_show_codespaces 0
+    _damin_help_row theme_damin_show_devcontainer 0
+    _damin_help_row theme_damin_show_tmux 0
+    _damin_help_row theme_damin_show_zellij 0
     _damin_help_row theme_damin_show_jobs 1
     _damin_help_row theme_damin_show_env 1
     _damin_help_row theme_damin_show_nix_name 1
@@ -64,6 +69,9 @@ function damin_help
     _damin_help_row theme_damin_show_pulumi 1
     _damin_help_row theme_damin_show_gh_pr 0
     _damin_help_row theme_damin_show_project_parent 1
+    _damin_help_row theme_damin_stash_age 0
+    _damin_help_row theme_damin_hg_dirty 0
+    _damin_help_row theme_damin_jj_counts 0
     _damin_help_row theme_damin_notify_long_command 0
     _damin_help_row theme_damin_git_counts 1
     _damin_help_row theme_damin_git_count_untracked 1
@@ -89,6 +97,7 @@ function damin_help
     _damin_help_row theme_damin_title_show_process 1
     _damin_help_row theme_damin_date_format '%H:%M'
     _damin_help_row theme_damin_date_timezone '(unset)'
+    _damin_help_row theme_damin_issue_url_template '(unset)'
     _damin_help_row theme_damin_palette mocha
     _damin_help_row theme_damin_palette_light '(unset)'
     if test "$_damin_help_mode" = text
@@ -149,6 +158,7 @@ function damin_help
     # list-typed rows reuse the same row format (space-joined values).
     _damin_help_row theme_damin_default_branches 'main master trunk'
     _damin_help_row theme_damin_vcs_ignore_paths '(unset)'
+    _damin_help_row theme_damin_right_segments 'cwd lang devops env battery duration date extra'
 
     if test "$_damin_help_mode" = json
         printf ']\n'
@@ -166,7 +176,8 @@ function damin_help
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic (--json)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (18 flavors — tab-completes)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (19 flavors — tab-completes)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_palette_preview (set_color normal) "render a sample prompt in <flavor> without applying"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_uninstall_themes (set_color normal) "remove the Damin .theme files (confirms)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"

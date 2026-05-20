@@ -89,10 +89,17 @@ function _damin_git_compute
     test -z "$branch"; and set branch '?'
 
     set -l stashed 0
+    set -l stash_ts 0
     set -l stash_log "$git_common/logs/refs/stash"
     if test -f $stash_log
         set -l stash_lines (command cat $stash_log 2>/dev/null)
         set stashed (count $stash_lines)
+        if test $stashed -gt 0
+            # reflog format: `<old> <new> <name> <email> <ts> <tz>\t<msg>`.
+            # name may contain spaces, so regex out the `<email> ts tz` tail.
+            set -l m (string match -r '> ([0-9]+) [+-][0-9]+' -- $stash_lines[-1])
+            test (count $m) -ge 2; and set stash_ts $m[2]
+        end
     end
 
     set -l op ""
@@ -110,7 +117,7 @@ function _damin_git_compute
         end
     end
 
-    printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$conflict" "$op"
+    printf '%s\n' "$branch" "$untracked" "$modified" "$staged" "$stashed" "$ahead" "$behind" "$conflict" "$op" "$stash_ts"
 end
 
 # compute + write the git cache without rendering. used by warmup + async repaint.

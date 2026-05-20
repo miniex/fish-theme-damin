@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Shell/remote context indicators** — `theme_damin_show_wsl` (`wsl:<distro>`), `_show_codespaces` (`cs`), `_show_devcontainer` (`devc` via `$REMOTE_CONTAINERS` / `$DEVCONTAINER_CLI`), `_show_tmux` (`tmux:<window>` — cached by `$TMUX_PANE`, 1 fork per pane switch), `_show_zellij` (`zj:<session>`). All opt-in
+- **Nix-run / NIX_SHELL_DIR fallback** — env segment surfaces `(nix-run)` from `$IN_NIX_RUN` and `(nix:<dir>)` from `$NIX_SHELL_DIR` when `IN_NIX_SHELL` is unset
+- **`theme_damin_right_segments`** — list-typed order control for the right prompt. Tokens: `cwd lang devops env battery duration date extra` (default) + any `damin_segment_<name>`. Drop or reorder; custom hooks slot in directly
+- **`damin_palette_preview <flavor>`** — render a sample prompt in `<flavor>` (or `--all`) without applying. Side-by-side flavor comparison for picking
+- **`high-contrast` palette** — WCAG AAA-ish dark theme: pure-black bg, saturated foregrounds, lifted overlays. 18 → 19 flavors
+- **`damin_bench --cold`** — wipe `~/.cache/damin` between samples, N=1, no warmup. Surfaces cold-path regressions (first `cd` into a repo, first version-pin read)
+- **`damin_bench --compare BASE.json HEAD.json`** — diff two `--json` outputs, emit Δ ms / % per segment + p50 sum. Needs `python3` (already required by bench)
+- **`damin_doctor --fix`** — auto-resolves safe items: orphan `fish_prompt.fish` symlink, leaked universal `_damin_in_transient`, missing cache dir
+- **Issue auto-link in branch name** — `theme_damin_issue_url_template` (e.g. `https://jira.example.com/{key}`). Branches matching `[A-Z]+-[0-9]+` get wrapped in OSC 8 hyperlinks
+- **Stash relative age (`theme_damin_stash_age=1`)** — appends `·2h` / `·3d` / `·now` after `$N`, dim. Reads newest entry from `.git/logs/refs/stash` (no fork)
+- **jj counts (`theme_damin_jj_counts=1`)** — modified / added / conflict counts from `jj diff --summary -r @`. 1 fork per prompt; off by default
+- **hg dirty bit (`theme_damin_hg_dirty=1`)** — single `hg status -q | head -1` fork; renders the modified glyph instead of sparkle when working copy is dirty. No counts
+- **`examples/segments/`** — drop-in `damin_segment_*` hooks: `uptime` (60 s TTL), `todo` (TODO/FIXME count per repo), `weather` (async wttr.in). See `examples/segments/README.md`
 - **`damin_help --json` / `damin_doctor --json`** — machine-readable output. `damin_help` emits `{name, value, default, set}` per toggle (filter applies); `damin_doctor` emits `{check, status, detail}` per check
 - **`damin_config edit`** — open `$EDITOR` on the current export, validate via `fish -n` on save, wipe existing `theme_damin_*` universals, re-source. Syntax errors leave the tmp file in place and abort
 - **`damin_doctor` extra checks** — `notify-send` availability when `theme_damin_notify_long_command=1`; `gh` cli + `gh auth status` when `theme_damin_show_gh_pr=1`; kubeconfig file readable when `theme_damin_show_k8s_context=1`; async-signal capture warning when `theme_damin_async_signal` changed after the handler was bound (requires `exec fish`)

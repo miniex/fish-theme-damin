@@ -21,6 +21,8 @@ function _damin_palette_accents --argument-names flavor
             echo "458588 b16286"
         case colorblind
             echo "56b4e9 e69f00"
+        case high-contrast
+            echo "87ceeb ff79c6"
         case terminal-dark terminal-light
             echo "blue magenta"
         case '*'

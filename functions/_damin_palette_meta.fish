@@ -58,6 +58,9 @@ function _damin_palette_meta --argument-names flavor field
         case colorblind
             set name "Damin Colorblind"
             set desc 'Okabe-Ito colorblind-safe (dark)'
+        case high-contrast
+            set name "Damin High Contrast"
+            set desc 'WCAG AAA-ish saturated palette (dark)'
         case terminal-dark
             set desc 'terminal 16-color, dark fg'
         case terminal-light

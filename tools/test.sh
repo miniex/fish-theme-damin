@@ -47,9 +47,10 @@ expect() {
     fi
 }
 
-# 9-line fixture builder (trailing newline stripped by $()).
+# 10-line fixture builder (trailing newline stripped by $()).
+# fields: branch, untracked, modified, staged, stashed, ahead, behind, conflict, op, stash_ts.
 expected() {
-    printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+    printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10:-0}"
 }
 
 mkrepo() {
@@ -120,7 +121,21 @@ echo orig >"$repo/f" && git -C "$repo" add f && git -C "$repo" commit -q -m add
 echo edit >"$repo/f"
 git -C "$repo" stash push -q -m wip
 got=$(run_compute "$repo")
-expect "1 stash entry" "$got" "$(expected main 0 0 0 1 0 0 0 '')"
+# strip dynamic stash_ts (line 10) before strict equality; assert it's a positive int separately.
+head_9=$(printf '%s' "$got" | sed -n '1,9p')
+ts_line=$(printf '%s' "$got" | sed -n '10p')
+want_9=$(printf 'main\n0\n0\n0\n1\n0\n0\n0\n')
+expect "1 stash entry: first 9 fields" "$head_9" "$want_9"
+case "$ts_line" in
+    [1-9]*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "1 stash entry: stash_ts is a positive int"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        printf '  FAIL %s (got: %s)\n' "1 stash entry: stash_ts is a positive int" "$ts_line"
+        ;;
+esac
 cleanup "$repo"
 
 # regression: branch.ab fallback when upstream is unset.
@@ -853,6 +868,89 @@ got=$(run_dumb "
     true
 ")
 expect "palette: terminal-dark → named colors" "$got" "white blue"
+
+got=$(run_dumb "
+    set -g theme_damin_palette high-contrast
+    source '$THEME/conf.d/damin.fish'
+    echo \$fish_color_normal \$theme_damin_accent_primary
+    true
+")
+expect "palette: high-contrast → text=ffffff accent=87ceeb" "$got" "ffffff 87ceeb"
+
+echo
+echo "=== damin _damin_relative_time tests ==="
+echo
+
+run_rel() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        _damin_relative_time $1
+        true
+    " 2>/dev/null
+}
+
+now=$(date +%s)
+got=$(run_rel "$((now - 30))")
+expect "rel: 30s → now" "$got" "now"
+
+got=$(run_rel "$((now - 600))")
+expect "rel: 10min → 10m" "$got" "10m"
+
+got=$(run_rel "$((now - 7200))")
+expect "rel: 2h → 2h" "$got" "2h"
+
+got=$(run_rel "$((now - 172800))")
+expect "rel: 2d → 2d" "$got" "2d"
+
+got=$(run_rel "")
+expect "rel: empty → empty" "$got" ""
+
+got=$(run_rel "abc")
+expect "rel: non-numeric → empty" "$got" ""
+
+echo
+echo "=== damin issue auto-link tests ==="
+echo
+
+run_link() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        set -g theme_damin_issue_url_template '$1'
+        cd '$2'
+        _damin_vcs_render
+        true
+    " 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g'
+}
+
+repo=$(mkrepo)
+git -C "$repo" checkout -q -b JIRA-123/feature
+got=$(run_link 'https://jira.example.com/{key}' "$repo")
+case "$got" in
+    *"https://jira.example.com/JIRA-123"*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "issue link: JIRA-123 surfaced via OSC 8"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        printf '  FAIL %s\n       got: %s\n' "issue link: JIRA-123 surfaced via OSC 8" "$got"
+        ;;
+esac
+cleanup "$repo"
+
+repo=$(mkrepo)
+git -C "$repo" checkout -q -b plain-branch-no-key
+got=$(run_link 'https://jira.example.com/{key}' "$repo")
+case "$got" in
+    *"https://jira"*)
+        FAIL=$((FAIL + 1))
+        printf '  FAIL %s\n       (got URL on a branch with no key)\n' "issue link: non-matching branch = no link"
+        ;;
+    *)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "issue link: non-matching branch = no link"
+        ;;
+esac
+cleanup "$repo"
 
 echo
 echo "=== damin default_user tests ==="

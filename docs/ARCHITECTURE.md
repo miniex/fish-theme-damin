@@ -11,10 +11,12 @@ conf.d/
   damin.fish               — defaults, color cache, hot-path renderers, postexec,
                               fish_prompt / fish_right_prompt.
 functions/
-  damin_{config,help,doctor,profile,bench,set_palette,install_themes,reset_cache}.fish
+  damin_{config,help,doctor,profile,bench,set_palette,palette_preview,
+         install_themes,uninstall_themes,reset_cache}.fish
                             — user-callable commands.
+  _damin_profile_now_ms     — ns-precision timestamp shared by profile + bench.
   _damin_help_block         — shared `--help` formatter for every damin_* command.
-  _damin_palette_list       — canonical 18-flavor name list.
+  _damin_palette_list       — canonical 19-flavor name list.
   _damin_palette_data       — flavor → 14 fish_color_* hex + 1 bg hint. shared
                               by conf.d's apply-colors block and install_themes.
   _damin_palette_meta       — flavor → display name / description / theme
@@ -195,18 +197,21 @@ The bare `damin_config` (no args) is still the interactive wizard. The dispatche
 
 Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Completions in `completions/`:
 
-- `damin_set_palette <Tab>` — 18 flavor names with descriptions
+- `damin_set_palette <Tab>` / `damin_palette_preview <Tab>` — 19 flavor names with descriptions
 - `damin_config <Tab>` — subcommands (`wizard` / `get` / `set` / `reset` / `export` / `edit` / `help`)
 - `damin_config set <Tab>` / `damin_config reset <Tab>` — currently-set `theme_damin_*` universals
 - `damin_help <Tab>` — substring of any currently-known `theme_damin_*` name (filter argument)
-- `damin_help --<Tab>` / `damin_doctor --<Tab>` / `damin_bench --<Tab>` / `damin_profile --<Tab>` — `--help` / `--json`
+- `damin_help --<Tab>` — `--help` / `--json`
+- `damin_doctor --<Tab>` — `--help` / `--json` / `--fix`
+- `damin_bench --<Tab>` — `--help` / `--json` / `--cold` / `--compare`
+- `damin_profile --<Tab>` — `--help` / `--json`
 
 `damin_help <pattern>` substring-filters the toggle listing (e.g. `damin_help git` shows every `theme_damin_*git*`). Bare invocation dumps everything as before.
 
 ### Toggles
 
 | Variable                             | Default   | Effect                                                                     |
-| ------------------------------------ | --------- | -------------------------------------------------------------------------- |
+| ------------------------------------ | --------- | -------------------------------------------------------------------------- | ---------------------------- |
 | `theme_damin_show_git`               | `1`       | Branch + meta (gates jj / hg too)                                          |
 | `theme_damin_show_jj`                | `1`       | Use jj when `.jj/` found before `.git/`                                    |
 | `theme_damin_show_hg`                | `0`       | Mercurial — branch from `.hg/branch`. No counts                            |
@@ -226,6 +231,11 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_show_screen`            | `0`       | `screen:<session>` indicator (from `$STY`)                                 |
 | `theme_damin_show_sudo_user`         | `0`       | `sudo:<user>` indicator inside a root shell launched via `sudo`            |
 | `theme_damin_show_docker_machine`    | `0`       | `dm:<name>` indicator from `$DOCKER_MACHINE_NAME`                          |
+| `theme_damin_show_wsl`               | `0`       | `wsl:<distro>` from `$WSL_DISTRO_NAME`                                     |
+| `theme_damin_show_codespaces`        | `0`       | `cs` indicator when `$CODESPACES=true`                                     |
+| `theme_damin_show_devcontainer`      | `0`       | `devc` from `$REMOTE_CONTAINERS` / `$DEVCONTAINER_CLI`                     |
+| `theme_damin_show_tmux`              | `0`       | `tmux:<window>` — 1 `tmux` fork cached by `$TMUX_PANE`                     |
+| `theme_damin_show_zellij`            | `0`       | `zj:<session>` from `$ZELLIJ_SESSION_NAME`                                 |
 | `theme_damin_show_k8s_context`       | `1`       | Append `:<context>` to `k8s`                                               |
 | `theme_damin_show_k8s_namespace`     | `0`       | Append `/<namespace>` to `k8s:<context>`                                   |
 | `theme_damin_show_jobs`              | `1`       | `&N` background-job count                                                  |
@@ -245,8 +255,12 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_show_terraform`         | `1`       | `tf:<workspace>` from `.terraform/environment`                             |
 | `theme_damin_show_pulumi`            | `1`       | `pulumi:<stack>` from `$PULUMI_STACK` or workspaces                        |
 | `theme_damin_show_gh_pr`             | `0`       | `#<num>` for current branch's open PR (via `gh`)                           |
+| `theme_damin_jj_counts`              | `0`       | jj M/A/C counts via `jj diff --summary -r @` (1 fork per prompt)           |
+| `theme_damin_hg_dirty`               | `0`       | hg dirty bit via `hg status -q                                             | head -1` (1 fork per prompt) |
+| `theme_damin_stash_age`              | `0`       | dim relative age of newest stash next to `$N` count                        |
+| `theme_damin_issue_url_template`     | _(unset)_ | branches matching `[A-Z]+-[0-9]+` → OSC 8 link; `{key}` placeholder        |
 | `theme_damin_notify_long_command`    | `0`       | OSC 9 + `notify-send` when `CMD_DURATION` > threshold                      |
-| `theme_damin_palette`                | `mocha`   | 1 of 18 built-in flavors (see "Palette flavors" below)                     |
+| `theme_damin_palette`                | `mocha`   | 1 of 19 built-in flavors (see "Palette flavors" below)                     |
 | `theme_damin_palette_light`          | _(unset)_ | If set + `$COLORFGBG` bg slot ≥ 7, this palette wins (light-terminal swap) |
 | `theme_damin_accent_primary`         | palette   | Brand accent hex (cwd, branch)                                             |
 | `theme_damin_accent_secondary`       | palette   | Brand accent hex (florette, meta)                                          |
@@ -346,10 +360,11 @@ Reskins swap both accents together — losing one breaks the tone-on-tone identi
 | `base16-light`    | light bg | base16 default-light                                                  |
 | `zenburn`         | dark bg  | jani nurminen classic — low-contrast muted greens                     |
 | `colorblind`      | dark bg  | Okabe-Ito 8-color set — distinguishable for deuteranopia / protanopia |
+| `high-contrast`   | dark bg  | WCAG AAA-ish saturated palette: pure-black bg, vivid foregrounds      |
 | `terminal-dark`   | dark bg  | uses your terminal's 16-color palette (named colors)                  |
 | `terminal-light`  | light bg | terminal palette, light foreground                                    |
 
-`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_install_themes` writes 16 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview). `damin_uninstall_themes` is the paired inverse — confirms before removing.
+`damin_set_palette <flavor>` flips the toggle, erases the `fish_color_*` + accent universals, and re-sources conf.d so the apply block re-fills them. `damin_palette_preview <flavor>` renders a one-line sample in that palette without applying. `damin_install_themes` writes 17 hex `Damin <Palette>.theme` files into `~/.config/fish/themes/` for `fish_config theme show` (terminal-\* skipped — named colors, no fixed preview). `damin_uninstall_themes` is the paired inverse — confirms before removing.
 
 ### Color override hook
 
@@ -366,10 +381,11 @@ end
 
 `set -U <var> <items…>` to populate; `set -e <var>` to clear.
 
-| Variable                       | Default             | Effect                                                        |
-| ------------------------------ | ------------------- | ------------------------------------------------------------- |
-| `theme_damin_default_branches` | `main master trunk` | Hidden branch names when `hide_default_branch=1`              |
-| `theme_damin_vcs_ignore_paths` | _(unset)_           | Glob patterns; matching `$PWD` skips `_damin_detect_vcs` walk |
+| Variable                       | Default                                           | Effect                                                                                 |
+| ------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `theme_damin_default_branches` | `main master trunk`                               | Hidden branch names when `hide_default_branch=1`                                       |
+| `theme_damin_vcs_ignore_paths` | _(unset)_                                         | Glob patterns; matching `$PWD` skips `_damin_detect_vcs` walk                          |
+| `theme_damin_right_segments`   | `cwd lang devops env battery duration date extra` | Right-prompt segment order. Drop / reorder; any `damin_segment_<name>` slots in inline |
 
 `vcs_ignore_paths` uses fish glob (`*` / `?` / `**`). Matched once per `cd` and cached in `_damin_vcs_value=""`.
 
@@ -383,7 +399,7 @@ set -U theme_damin_default_branches main master develop trunk
 ### Files
 
 ```
-~/.cache/damin/<%-encoded-PWD>-git    9 + 1 = 10 lines (branch, 7 counts, op, with PWD as line 1)
+~/.cache/damin/<%-encoded-PWD>-git    10 + 1 = 11 lines (branch, 7 counts, op, stash_ts, with PWD as line 1)
 ~/.cache/damin/<%-encoded-PWD>-lang   2 lines (value, with PWD as line 1)
 ~/.cache/damin/cloud-k8s              3 lines (kubeconfig mtime, current-context, namespace)
 ~/.cache/damin/.last-prune            mtime marker for daily prune
@@ -525,6 +541,6 @@ One conditional extra call: no upstream → porcelain omits `branch.ab`. With at
   - Async core (lives in `_damin_async_core.fish`): `_damin_pwd_key_*`, `_damin_cache_dir`
   - Caches: `_damin_c_*` (colors), `_damin_is_root`, `_damin_uname`, `_damin_battery_at/_value`, `_damin_k8s_*`, `_damin_aws_*` / `_gcp_*` / `_azure_*`, `_damin_osc_pwd/_host`, `_damin_gh_branch/_value/_at`
   - Flags: `_damin_async_pid_<key>` (per-segment cancel pid; created on first kickoff), `_damin_in_transient`, `_damin_loaded` (one-time-bootstrap gate; `damin_set_palette` re-source skips it), `_damin_async_signal_loaded` (signal name the handler captured at define-time; `damin_doctor` warns if it drifts from `theme_damin_async_signal`)
-- **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_install_themes`, `damin_uninstall_themes`, `damin_reset_cache` — autoloaded from `functions/`.
+- **User-facing commands**: `damin_config`, `damin_help`, `damin_doctor`, `damin_profile`, `damin_bench`, `damin_set_palette`, `damin_palette_preview`, `damin_install_themes`, `damin_uninstall_themes`, `damin_reset_cache` — autoloaded from `functions/`.
 - **Warmup** (`_damin_warmup`): one bg fork at theme load runs `_damin_git_prefill` (in git repos) + `_damin_k8s_prefill` (if `show_k8s_context=1`). `&` forks the current shell, so all helpers are inherited.
 - **No `funcsave`** — nothing persists to `~/.config/fish/functions/`. Uninstall: `omf theme <other> && rm -rf ~/.local/share/omf/themes/damin`.

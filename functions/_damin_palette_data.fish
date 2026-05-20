@@ -35,6 +35,9 @@ function _damin_palette_data --argument-names flavor
         case colorblind
             # Okabe-Ito 8-color set — distinguishable for deuteranopia / protanopia.
             printf '%s\n' eeeeee 0072b2 cc79a7 009e73 e69f00 e69f00 d55e00 e69f00 888888 3a3a3a d55e00 666666 f0e442 56b4e9 1a1a1a
+        case high-contrast
+            # WCAG AAA-ish — pure-black bg, saturated foregrounds.
+            printf '%s\n' ffffff 87ceeb ff79c6 00ff88 ff5577 ffaa00 ff3344 ffaa00 999999 1a1a1a ff3344 666666 ffe600 00d4ff 000000
         case terminal-dark
             printf '%s\n' white blue brmagenta green brred yellow red yellow brblack brblack red brblack yellow cyan ''
         case terminal-light
