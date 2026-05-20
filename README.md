@@ -16,6 +16,14 @@ Cloud + DevOps — `aws:<profile>@<region>` / `k8s:<ctx>/<ns>` / `tf:<workspace>
 
 ![cloud + devops](assets/preview-2.gif)
 
+Palette switching — 19 flavors, live via `damin_set_palette`, preview-before-apply with `damin_palette_preview`:
+
+![palette switching](assets/preview-3.gif)
+
+Beyond git — Jujutsu (`jj`), Mercurial (`hg`), and Fossil all render in the same prompt:
+
+![non-git VCS](assets/preview-4.gif)
+
 ## Install
 
 Requires **fish ≥ 3.7** (for the `path mtime` builtin).
@@ -94,7 +102,7 @@ PRs welcome. Run `./tools/format.sh`, `./tools/lint.sh`, `./tools/test.sh`. Hot-
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: **1.2.0**.
+See [CHANGELOG.md](CHANGELOG.md). Current version: **1.3.0**.
 
 ## License
 

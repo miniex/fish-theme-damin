@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 20260521074146 KST
 
 ### Added
 
@@ -20,13 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue auto-link in branch name** — `theme_damin_issue_url_template` (e.g. `https://jira.example.com/{key}`). Branches matching `[A-Z]+-[0-9]+` get wrapped in OSC 8 hyperlinks
 - **Stash relative age (`theme_damin_stash_age=1`)** — appends `·2h` / `·3d` / `·now` after `$N`, dim. Reads newest entry from `.git/logs/refs/stash` (no fork)
 - **jj counts (`theme_damin_jj_counts=1`)** — modified / added / conflict counts from `jj diff --summary -r @`. 1 fork per prompt; off by default
-- **hg dirty bit (`theme_damin_hg_dirty=1`)** — single `hg status -q | head -1` fork; renders the modified glyph instead of sparkle when working copy is dirty. No counts
+- **hg dirty bit (`theme_damin_hg_dirty=1`)** — one `hg status -q` fork, first line consumed via the `read` builtin; renders the modified glyph instead of sparkle when the working copy is dirty. No counts
 - **`examples/segments/`** — drop-in `damin_segment_*` hooks: `uptime` (60 s TTL), `todo` (TODO/FIXME count per repo), `weather` (async wttr.in). See `examples/segments/README.md`
 - **`damin_help --json` / `damin_doctor --json`** — machine-readable output. `damin_help` emits `{name, value, default, set}` per toggle (filter applies); `damin_doctor` emits `{check, status, detail}` per check
 - **`damin_config edit`** — open `$EDITOR` on the current export, validate via `fish -n` on save, wipe existing `theme_damin_*` universals, re-source. Syntax errors leave the tmp file in place and abort
 - **`damin_doctor` extra checks** — `notify-send` availability when `theme_damin_notify_long_command=1`; `gh` cli + `gh auth status` when `theme_damin_show_gh_pr=1`; kubeconfig file readable when `theme_damin_show_k8s_context=1`; async-signal capture warning when `theme_damin_async_signal` changed after the handler was bound (requires `exec fish`)
 - **`_damin_palette_meta`** — flavor -> display name / description / theme (dark|light). `damin_install_themes` and the `damin_set_palette` completion now read from this single source. Combined with `_damin_palette_list` / `_damin_palette_data`, a new palette touches one arm in each instead of five parallel switches
-- **`_damin_palette_data` / `_damin_palette_list`** — single source for the 14+1 palette hex values and canonical flavor name list. Conf.d apply-colors / `damin_install_themes` / `damin_set_palette` / `damin_config` picker all read from these. `conf.d/damin.fish`: 1599 -> 1349 lines (-16%)
+- **`_damin_palette_data` / `_damin_palette_list`** — single source for the palette hex values and canonical flavor name list. Conf.d apply-colors / `damin_install_themes` / `damin_set_palette` / `damin_config` picker all read from these. `conf.d/damin.fish`: 1599 -> 1349 lines (-16%)
 - **`damin_uninstall_themes`** — inverse of `damin_install_themes`. Globs `Damin *.theme`, removes after `y/N` confirm
 - **`damin_profile --json`** — mirrors `damin_bench --json` for CI comparison
 - **`damin_help <PATTERN>`** — substring-filters `theme_damin_*` rows (`damin_help git`). Bare invocation unchanged
@@ -84,20 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`damin_config edit` rollback** — snapshots the current export before wiping `theme_damin_*`. If `source` fails past `fish -n` validation (logic error), restores from snapshot so the shell isn't left config-less. Also prints `running: $EDITOR <tmp>` for transparency
-- **`damin_bench --compare` tolerates non-damin JSON** — missing `segments` array now produces a clear error instead of a python `KeyError` stack trace. Per-row `p50` defaults to `0.0`
-- **`damin_doctor --fix` covers stray `fish_right_prompt.fish`** — was the one stray check that didn't autofix (asymmetric with the orphan `fish_prompt.fish` fix)
-- **`damin_help --json` emits arrays for list-typed toggles** — `theme_damin_default_branches` / `_vcs_ignore_paths` / `_right_segments` / `_extra_left` / `_extra_right` now ship as `"value":[…]` so consumers don't have to split on space. Other multi-element toggles auto-detect
-- **`_damin_hg_render` drops the `head -1` fork** — `command hg status -q | read -l _` matches the same first-line-non-empty check via the fish builtin. Saves one fork per prompt when `theme_damin_hg_dirty=1`
-- **`_damin_jj_compute` 1-fork fast path when counts are on** — combined `jj log` template emits bookmark + change-id + `diff.summary()` in a single call; older jj versions without the template func transparently fall back to the dual-fork path
-- **`damin_palette_preview --all` hoists 2 set_color forks out of the loop** — flavor-independent dim/normal/label escapes computed once instead of per flavor (38 fewer forks for the 19-flavor preview)
-- **`_damin_relative_time` per-prompt-cycle cache** — `date +%s` now memoised by `$CMD_DURATION` so repaints and multi-segment calls share one fork
-- **`damin_bench --cold` confirms before wiping** — interactive `[y/N]` prompt avoids surprise cache loss; skipped under `--json`
 - **`damin_reset_cache` now clears every in-memory PWD memo.** Previously git / cwd / duration / AWS / GCP / Azure / GH / OSC memos survived a reset; cloud and gh segments could still serve stale data
 - **`damin_set_palette` no longer re-runs cache-prune / transient-bindings / async-warmup on its conf.d re-source.** `_damin_loaded` sentinel gates the one-time bootstrap; re-sources now only refresh palette + `_damin_c_*` escapes
-- `_damin_osc8` — switch OSC terminator from `ESC \` to BEL. fish's `printf` reads `\%` as escape, so the second `%s` leaked literal into the right-prompt cwd
-- `tools/test.sh` — strip SO/SI with `tr -d '\016\017'` instead of a sed `[\x0e\x0f]` class. BSD `sed` (macOS) doesn't read `\x` escapes inside `[...]`, so the class deleted literal `e`/`f` from output (`alice` -> `alic`)
-- `_damin_git_compute` — match the porcelain v2 untracked type (`?`) with `test`, not a `case` arm. `case` arms are globs and `?` is a wildcard on fish 3.x but literal on 4.x, so no `case` form works on both; `test =` does no glob matching and is version-stable
 
 ## [1.2.0] - 20260513222728 KST
 
@@ -229,7 +217,8 @@ Initial release.
 - Documentation — `README.md`, `docs/ARCHITECTURE.md`, `CONTRIBUTING.md`
 - Third-party attribution — `LICENSES/catppuccin.txt`
 
-[Unreleased]: https://github.com/miniex/fish-theme-damin/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/miniex/fish-theme-damin/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/miniex/fish-theme-damin/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/miniex/fish-theme-damin/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/miniex/fish-theme-damin/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/miniex/fish-theme-damin/releases/tag/v1.0.0
