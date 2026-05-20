@@ -1,7 +1,16 @@
 function damin_doctor
     if contains -- "$argv[1]" --help -h
-        _damin_help_block damin_doctor 'environment + install diagnostic' damin_doctor
+        _damin_help_block damin_doctor 'environment + install diagnostic' \
+            'damin_doctor [--json]' \
+            -- \
+            '--json emits one JSON object per check for CI / issue reporting.'
         return
+    end
+    set -g _damin_doctor_mode text
+    contains -- --json $argv; and set -g _damin_doctor_mode json
+    if test "$_damin_doctor_mode" = json
+        set -g _damin_doctor_first 1
+        printf '['
     end
     set -l parts (string split . -- $FISH_VERSION)
     set -l major $parts[1]
@@ -169,14 +178,56 @@ function damin_doctor
         _damin_doctor_check "$sig handlers" ok "(no non-damin collisions)"
     end
 
+    # signal is captured at function-define time; toggle changes need exec fish.
+    if set -q _damin_async_signal_loaded; and test "$_damin_async_signal_loaded" != "$theme_damin_async_signal"
+        _damin_doctor_check "async signal capture" fail "(handler bound to $_damin_async_signal_loaded at load; current=$theme_damin_async_signal — exec fish to apply)"
+    end
+
+    if test "$theme_damin_notify_long_command" = 1
+        if type -q notify-send
+            _damin_doctor_check notify-send ok (command -v notify-send)
+        else
+            _damin_doctor_check notify-send fail '(theme_damin_notify_long_command=1 but notify-send missing — OSC 9 still fires)'
+        end
+    end
+
+    if test "$theme_damin_show_gh_pr" = 1
+        if type -q gh
+            if command gh auth status >/dev/null 2>&1
+                _damin_doctor_check 'gh cli' ok authenticated
+            else
+                _damin_doctor_check 'gh cli' fail '(installed but not authenticated — run: gh auth login)'
+            end
+        else
+            _damin_doctor_check 'gh cli' fail '(theme_damin_show_gh_pr=1 but gh not on PATH)'
+        end
+    end
+
+    if test "$theme_damin_show_k8s_context" = 1
+        set -l cfg (_damin_k8s_config_path)
+        if test -f $cfg
+            _damin_doctor_check kubeconfig ok "($cfg)"
+        else if set -q KUBERNETES_SERVICE_HOST
+            _damin_doctor_check kubeconfig ok "(in-pod; bare 'k8s' indicator)"
+        else
+            _damin_doctor_check kubeconfig fail "($cfg unreadable; theme_damin_show_k8s_context=1)"
+        end
+    end
+
     if set -q TERM_PROGRAM; and test "$TERM_PROGRAM" = vscode
         _damin_doctor_check "VSCode terminal" fail "(VSCode injects its own OSC 633/133 — double-emission likely. set theme_damin_osc_integration=0 to silence damin's half)"
     end
 
-    echo
-    echo "  font width sanity — each glyph should sit immediately before the |:"
-    for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ · ?
-        printf '    %s|\n' $c
+    if test "$_damin_doctor_mode" = json
+        printf ']\n'
+    else
+        echo
+        echo "  font width sanity — each glyph should sit immediately before the |:"
+        for c in ✿ ❥ ✗ ✓ ⇣ ⇡ ✧ · ?
+            printf '    %s|\n' $c
+        end
+        echo "  (a '?' or visible gap before | = font is missing the glyph; enable ascii mode)"
     end
-    echo "  (a '?' or visible gap before | = font is missing the glyph; enable ascii mode)"
+    set -e _damin_doctor_mode
+    set -e _damin_doctor_first
 end

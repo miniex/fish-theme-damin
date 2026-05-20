@@ -7,6 +7,7 @@ complete -c damin_config -n __fish_use_subcommand -a get -d 'print matching them
 complete -c damin_config -n __fish_use_subcommand -a set -d 'set -U a theme_damin_* var'
 complete -c damin_config -n __fish_use_subcommand -a reset -d 'unset matching universals (confirm)'
 complete -c damin_config -n __fish_use_subcommand -a export -d 'dump universals as fish script'
+complete -c damin_config -n __fish_use_subcommand -a edit -d 'edit current export in $EDITOR, re-source on save'
 complete -c damin_config -n __fish_use_subcommand -a help -d 'show help'
 
 # arg slot after set/reset: complete with currently-set universal theme_damin_* names.

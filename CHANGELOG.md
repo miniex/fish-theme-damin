@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`_damin_palette_data` / `_damin_palette_list`** — single source for the 14+1 palette hex values and canonical flavor name list. Conf.d apply-colors / `damin_install_themes` / `damin_set_palette` / `damin_config` picker all read from these. New palette = one data arm + one accents arm + one name entry instead of five parallel switches. `conf.d/damin.fish`: 1599 → 1349 lines (-16%)
+- **`damin_help --json` / `damin_doctor --json`** — machine-readable output. `damin_help` emits `{name, value, default, set}` per toggle (filter applies); `damin_doctor` emits `{check, status, detail}` per check
+- **`damin_config edit`** — open `$EDITOR` on the current export, validate via `fish -n` on save, wipe existing `theme_damin_*` universals, re-source. Syntax errors leave the tmp file in place and abort
+- **`damin_doctor` extra checks** — `notify-send` availability when `theme_damin_notify_long_command=1`; `gh` cli + `gh auth status` when `theme_damin_show_gh_pr=1`; kubeconfig file readable when `theme_damin_show_k8s_context=1`; async-signal capture warning when `theme_damin_async_signal` changed after the handler was bound (requires `exec fish`)
+- **`_damin_palette_meta`** — flavor → display name / description / theme (dark|light). `damin_install_themes` and the `damin_set_palette` completion now read from this single source. Combined with `_damin_palette_list` / `_damin_palette_data`, a new palette touches one arm in each instead of five parallel switches
+- **`_damin_palette_data` / `_damin_palette_list`** — single source for the 14+1 palette hex values and canonical flavor name list. Conf.d apply-colors / `damin_install_themes` / `damin_set_palette` / `damin_config` picker all read from these. `conf.d/damin.fish`: 1599 → 1349 lines (-16%)
 - **`damin_uninstall_themes`** — inverse of `damin_install_themes`. Globs `Damin *.theme`, removes after `y/N` confirm
 - **`damin_profile --json`** — mirrors `damin_bench --json` for CI comparison
 - **`damin_help <PATTERN>`** — substring-filters `theme_damin_*` rows (`damin_help git`). Bare invocation unchanged

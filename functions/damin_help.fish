@@ -1,24 +1,40 @@
 function damin_help
     if contains -- "$argv[1]" --help -h
         _damin_help_block damin_help 'list every theme_damin_* toggle, current value, default' \
-            'damin_help [PATTERN]' \
+            'damin_help [PATTERN] [--json]' \
             -- \
             'PATTERN substring-filters var names (e.g. `damin_help git`).' \
+            '--json dumps every row as JSON for dotfile / CI tooling.' \
             'for read/write of universals see: damin_config --help.'
         return
     end
-    set -l filter $argv[1]
+    set -l filter
+    set -g _damin_help_mode text
+    for arg in $argv
+        switch $arg
+            case --json
+                set -g _damin_help_mode json
+            case '*'
+                test -z "$filter"; and set filter $arg
+        end
+    end
     if test -n "$filter"
         set -g _damin_help_filter $filter
         set -e _damin_help_matched
     end
+    if test "$_damin_help_mode" = json
+        set -g _damin_help_first 1
+        printf '['
+    end
     set -l c_dim (set_color --dim)
     set -l c_norm (set_color normal)
 
-    echo
-    printf '  %sdamin%s — config\n' (set_color E890B0 -o) (set_color normal)
-    echo
-    echo "  toggles (1 = on, 0 = off)"
+    if test "$_damin_help_mode" = text
+        echo
+        printf '  %sdamin%s — config\n' (set_color E890B0 -o) (set_color normal)
+        echo
+        echo "  toggles (1 = on, 0 = off)"
+    end
     _damin_help_row theme_damin_show_git 1
     _damin_help_row theme_damin_show_jj 1
     _damin_help_row theme_damin_show_hg 0
@@ -60,8 +76,10 @@ function damin_help
     _damin_help_row theme_damin_osc_integration 1
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0
-    echo
-    echo "  enums / strings"
+    if test "$_damin_help_mode" = text
+        echo
+        echo "  enums / strings"
+    end
     _damin_help_row theme_damin_show_exit_code number
     _damin_help_row theme_damin_show_user ssh
     _damin_help_row theme_damin_show_host ssh
@@ -73,12 +91,16 @@ function damin_help
     _damin_help_row theme_damin_date_timezone '(unset)'
     _damin_help_row theme_damin_palette mocha
     _damin_help_row theme_damin_palette_light '(unset)'
-    echo
-    echo "  palette accent overrides (hex without #; defaults shift per palette)"
+    if test "$_damin_help_mode" = text
+        echo
+        echo "  palette accent overrides (hex without #; defaults shift per palette)"
+    end
     _damin_help_row theme_damin_accent_primary 98ABCC
     _damin_help_row theme_damin_accent_secondary E890B0
-    echo
-    echo "  numeric"
+    if test "$_damin_help_mode" = text
+        echo
+        echo "  numeric"
+    end
     _damin_help_row theme_damin_cwd_keep 3
     _damin_help_row theme_damin_cwd_short 4
     _damin_help_row theme_damin_project_dir_length 0
@@ -93,8 +115,10 @@ function damin_help
     _damin_help_row theme_damin_gh_pr_ttl 300
     _damin_help_row theme_damin_notify_threshold 30000
     _damin_help_row theme_damin_async_timeout 5
-    echo
-    echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
+    if test "$_damin_help_mode" = text
+        echo
+        echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"
+    end
     if test "$theme_damin_ascii" = 1
         _damin_help_row theme_damin_glyph_prompt '*'
         _damin_help_row theme_damin_glyph_transient '*'
@@ -122,27 +146,30 @@ function damin_help
         _damin_help_row theme_damin_glyph_conflict X
         _damin_help_row theme_damin_glyph_sep ·
     end
+    # list-typed rows reuse the same row format (space-joined values).
+    _damin_help_row theme_damin_default_branches 'main master trunk'
+    _damin_help_row theme_damin_vcs_ignore_paths '(unset)'
+
+    if test "$_damin_help_mode" = json
+        printf ']\n'
+        set -e _damin_help_filter
+        set -e _damin_help_matched
+        set -e _damin_help_mode
+        set -e _damin_help_first
+        return
+    end
+
     echo
     echo "  commands (every command takes --help / -h)"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "wizard / get / set / reset / export — see damin_config --help"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing"
-    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_config (set_color normal) "wizard / get / set / reset / export / edit — see damin_config --help"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_help (set_color normal) "this listing (--json for dotfile / CI tooling)"
+    printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_doctor (set_color normal) "environment + font diagnostic (--json)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_profile (set_color normal) "time each segment (damin_profile [N=20])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_bench (set_color normal) "per-segment P50/P95/P99 (damin_bench [N=1000] [--json])"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_set_palette (set_color normal) "switch palette (18 flavors — tab-completes)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_install_themes (set_color normal) "write .theme files for fish_config theme show"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_uninstall_themes (set_color normal) "remove the Damin .theme files (confirms)"
     printf '    %s%-22s%s  %s\n' (set_color 98ABCC) damin_reset_cache (set_color normal) "wipe $_damin_cache_dir"
-    echo
-    echo "  lists (set -U <var> <items…>)"
-    set -l _db_default "main master trunk"
-    set -l _db_val (set -q theme_damin_default_branches; and string join ' ' -- $theme_damin_default_branches)
-    set -l _db_color (set_color E890B0)
-    test "$_db_val" = "$_db_default"; and set _db_color (set_color --dim)
-    printf '  %-38s %s%s%s %sdefault %s%s\n' theme_damin_default_branches $_db_color "[$_db_val]" $c_norm (set_color --dim) "[$_db_default]" $c_norm
-    set -l _ip_val ""
-    set -q theme_damin_vcs_ignore_paths; and set _ip_val (string join ' ' -- $theme_damin_vcs_ignore_paths)
-    printf '  %-38s %s%s%s %sdefault %s%s\n' theme_damin_vcs_ignore_paths (set_color E890B0) "[$_ip_val]" $c_norm (set_color --dim) "[]" $c_norm
     echo
     echo "  set:        $c_dim""set -U theme_damin_show_jobs 0$c_norm"
     echo "  unset:      $c_dim""set -e theme_damin_show_jobs$c_norm"
@@ -156,4 +183,6 @@ function damin_help
     end
     set -e _damin_help_filter
     set -e _damin_help_matched
+    set -e _damin_help_mode
+    set -e _damin_help_first
 end

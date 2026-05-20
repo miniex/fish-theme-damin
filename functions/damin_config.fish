@@ -77,6 +77,7 @@ function _damin_config_print_help
     printf '    %sdamin_config set VAR VALUE...%s      set -U a theme_damin_* var\n' $blue $norm
     printf '    %sdamin_config reset [PATTERN]%s       unset matching universals (confirm)\n' $blue $norm
     printf '    %sdamin_config export%s                dump universals as fish script\n' $blue $norm
+    printf '    %sdamin_config edit%s                  edit current export in $EDITOR, re-source on save\n' $blue $norm
     printf '\n  %sexamples%s\n' $dim $norm
     printf '    damin_config get git\n'
     printf '    damin_config set theme_damin_show_jobs 0\n'
@@ -170,6 +171,35 @@ function _damin_read_universal --argument-names var
             test (count $m) -ge 2; and echo $m[2]
         end
     end
+end
+
+# validate via `fish -n` before re-source; broken syntax keeps tmp and aborts.
+# wipe theme_damin_* first so deleted lines act as unsets.
+function _damin_config_edit
+    set -l editor
+    if set -q EDITOR; and test -n "$EDITOR"
+        set editor $EDITOR
+    else if type -q vi
+        set editor vi
+    else
+        printf 'damin_config edit: $EDITOR not set and vi missing\n' >&2
+        return 1
+    end
+    set -l tmp (command mktemp -t damin-config.XXXXXX.fish 2>/dev/null)
+    test -z "$tmp"; and printf 'damin_config edit: mktemp failed\n' >&2; and return 1
+    _damin_config_export >$tmp
+    eval $editor $tmp
+    if not fish -n $tmp 2>/dev/null
+        printf 'damin_config edit: syntax error — not applied (left at %s)\n' $tmp >&2
+        return 1
+    end
+    for v in (set --names -U | string match -r '^theme_damin_.*')
+        set -e $v
+    end
+    source $tmp
+    command rm -f $tmp
+    printf '  %s✿%s applied. run `exec fish` to refresh this shell.\n' \
+        (set_color E890B0 -o) (set_color normal)
 end
 
 function _damin_config_export
@@ -280,6 +310,8 @@ function damin_config
             _damin_config_reset $argv[2..]
         case export
             _damin_config_export
+        case edit
+            _damin_config_edit
         case '' wizard
             _damin_config_wizard
         case '*'

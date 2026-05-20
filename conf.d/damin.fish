@@ -627,6 +627,7 @@ end
 function _damin_async_signal_handler --on-signal $theme_damin_async_signal
     commandline -f repaint 2>/dev/null
 end
+set -g _damin_async_signal_loaded $theme_damin_async_signal
 
 function _damin_git_render
     if test "$theme_damin_async_git" != 1
@@ -1163,7 +1164,18 @@ function _damin_help_row --argument-names name default
         set -g _damin_help_matched 1
     end
     set -l val
-    set -q $name; and set val $$name
+    set -q $name; and set val (string join ' ' -- $$name)
+    if test "$_damin_help_mode" = json
+        set -l set_flag false
+        set -q $name; and set set_flag true
+        set -l v_esc (string replace -a '\\' '\\\\' -- $val | string replace -a '"' '\\"')
+        set -l d_esc (string replace -a '\\' '\\\\' -- $default | string replace -a '"' '\\"')
+        test "$_damin_help_first" != 1; and printf ,
+        set -g _damin_help_first 0
+        # quote each arg — empty $v_esc shifts the format slots otherwise.
+        printf '{"name":"%s","value":"%s","default":"%s","set":%s}' "$name" "$v_esc" "$d_esc" "$set_flag"
+        return
+    end
     set -l val_color (set_color E890B0)
     test "$val" = "$default"; and set val_color (set_color --dim)
     printf '  %-38s %s%-8s%s %sdefault %s%s\n' \
@@ -1171,6 +1183,16 @@ function _damin_help_row --argument-names name default
 end
 
 function _damin_doctor_check
+    if test "$_damin_doctor_mode" = json
+        set -l detail (string join ' ' -- $argv[3..])
+        set -l esc (string replace -a '\\' '\\\\' -- $detail | string replace -a '"' '\\"' | string replace -a \n ' ')
+        set -l label_esc (string replace -a '"' '\\"' -- $argv[1])
+        test "$_damin_doctor_first" != 1; and printf ,
+        set -g _damin_doctor_first 0
+        # quote each arg — empty $esc shifts the format slots otherwise.
+        printf '{"check":"%s","status":"%s","detail":"%s"}' "$label_esc" "$argv[2]" "$esc"
+        return
+    end
     set -l sym '✗'
     set -l col (set_color yellow)
     if test "$argv[2]" = ok

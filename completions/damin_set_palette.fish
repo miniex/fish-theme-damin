@@ -1,21 +1,7 @@
-# palette names hard-coded — must stay in sync with damin_set_palette / damin_install_themes.
+# flavors + descriptions come from _damin_palette_list / _damin_palette_meta.
 complete -c damin_set_palette -f
 complete -c damin_set_palette -l help -s h -d 'show help'
-complete -c damin_set_palette -a mocha -d 'catppuccin default (dark)'
-complete -c damin_set_palette -a frappe -d 'catppuccin softer (dark)'
-complete -c damin_set_palette -a macchiato -d 'catppuccin muted (dark)'
-complete -c damin_set_palette -a latte -d 'catppuccin light'
-complete -c damin_set_palette -a gruvbox -d 'retro warm earth (dark)'
-complete -c damin_set_palette -a gruvbox-light -d 'gruvbox light'
-complete -c damin_set_palette -a tokyonight -d 'downtown neon (dark)'
-complete -c damin_set_palette -a rosepine -d 'muted rose/pine (dark)'
-complete -c damin_set_palette -a nord -d 'arctic pastels (dark)'
-complete -c damin_set_palette -a dracula -d 'classic vampire (dark)'
-complete -c damin_set_palette -a solarized -d 'schoonover dark'
-complete -c damin_set_palette -a solarized-light -d 'solarized light'
-complete -c damin_set_palette -a base16 -d 'base16 default-dark'
-complete -c damin_set_palette -a base16-light -d 'base16 default-light'
-complete -c damin_set_palette -a zenburn -d 'low-contrast muted (dark)'
-complete -c damin_set_palette -a colorblind -d 'Okabe-Ito colorblind-safe (dark)'
-complete -c damin_set_palette -a terminal-dark -d 'terminal 16-color, dark fg'
-complete -c damin_set_palette -a terminal-light -d 'terminal 16-color, light fg'
+for _damin_pal in (_damin_palette_list 2>/dev/null)
+    complete -c damin_set_palette -a $_damin_pal -d (_damin_palette_meta $_damin_pal desc 2>/dev/null)
+end
+set -e _damin_pal

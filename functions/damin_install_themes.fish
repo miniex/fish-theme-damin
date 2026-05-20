@@ -12,47 +12,10 @@ function damin_install_themes
     set -l installed
     for flavor in (_damin_palette_list)
         set -l data (_damin_palette_data $flavor)
-        # terminal-* have no fixed-hex preview; skip.
+        set -l name (_damin_palette_meta $flavor name)
+        # empty name = no .theme file (terminal-* — named colors, no fixed preview).
+        test -z "$name"; and continue
         set -l bg $data[15]
-        test -z "$bg"; and continue
-
-        set -l name
-        switch $flavor
-            case mocha
-                set name "Damin Mocha"
-            case macchiato
-                set name "Damin Macchiato"
-            case frappe
-                set name "Damin Frappe"
-            case latte
-                set name "Damin Latte"
-            case gruvbox
-                set name "Damin Gruvbox"
-            case gruvbox-light
-                set name "Damin Gruvbox Light"
-            case tokyonight
-                set name "Damin Tokyo Night"
-            case rosepine
-                set name "Damin Rose Pine"
-            case nord
-                set name "Damin Nord"
-            case dracula
-                set name "Damin Dracula"
-            case solarized
-                set name "Damin Solarized"
-            case solarized-light
-                set name "Damin Solarized Light"
-            case base16
-                set name "Damin Base16"
-            case base16-light
-                set name "Damin Base16 Light"
-            case zenburn
-                set name "Damin Zenburn"
-            case colorblind
-                set name "Damin Colorblind"
-            case '*'
-                continue
-        end
 
         # p[1..14]: text blue mauve green pink peach red flamingo overlay1 surface0 maroon overlay0 yellow teal
         set -l p $data[1..14]
