@@ -7,13 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **`theme_damin_git_cache_ttl`** (default `1` s) — time-based stale fallback for editor-only edits (no git command, no `.git/{index,HEAD,logs}` change). `0` = mtime-only
-
 ### Changed
 
 - **`theme_damin_async_repaint` default → `1`** — first paint no longer blocks on git compute; stale/missing cache renders immediately and a bg `fish -c` triggers a repaint when done. `=0` restores sync-on-stale
+- **Git status refreshes per prompt** — `_damin_git_render` no longer gates on mtime or TTL. `async_repaint=1` kicks a bg refresh every prompt; `async_repaint=0` (or `async_git=0`) recomputes synchronously. Editor-only edits show up on the next prompt without a TTL fallback
+
+### Removed
+
+- **`theme_damin_git_cache_ttl`** (added in b83ba3a, never released) — superseded by per-prompt refresh
 
 ## [1.3.0] - 20260521074146 KST
 

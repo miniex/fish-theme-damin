@@ -20,9 +20,6 @@ function damin_reset_cache
     set -e _damin_k8s_mt
     set -e _damin_k8s_ctx
     set -e _damin_k8s_ns
-    set -e _damin_git_cached_pwd
-    set -e _damin_git_cached_mt
-    set -e _damin_git_cached_data
     set -e _damin_cwd_pwd
     set -e _damin_cwd_value
     set -e _damin_duration_ms

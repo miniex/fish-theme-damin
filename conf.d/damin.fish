@@ -86,8 +86,6 @@ set -q theme_damin_date_format; or set -g theme_damin_date_format '%H:%M'
 
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
 set -q theme_damin_git_count_untracked; or set -g theme_damin_git_count_untracked 1
-# editor-only edits touch no git internal file; TTL forces refresh. 0 = mtime-only.
-set -q theme_damin_git_cache_ttl; or set -g theme_damin_git_cache_ttl 1
 set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
@@ -246,9 +244,6 @@ set -g _damin_vcs_dir ""
 set -g _damin_vcs_worktree ""
 set -g _damin_lang_pwd ""
 set -g _damin_lang_value ""
-set -g _damin_git_cached_pwd ""
-set -g _damin_git_cached_mt ""
-set -g _damin_git_cached_data ""
 set -g _damin_cwd_pwd ""
 set -g _damin_cwd_value ""
 set -g _damin_duration_ms ""
@@ -584,25 +579,6 @@ end
 
 # _damin_git_compute lives in conf.d/_damin_async_core.fish.
 
-# single batched mtime call -> [cache, index, HEAD, logs/HEAD] (missing paths dropped).
-# output drives BOTH the cache-freshness key AND the stale check — one builtin invocation.
-function _damin_git_path_mtimes --argument-names cache_file
-    test -n "$_damin_vcs_dir"; or return 1
-    path mtime $cache_file "$_damin_vcs_dir/index" "$_damin_vcs_dir/HEAD" "$_damin_vcs_dir/logs/HEAD" 2>/dev/null
-end
-
-function _damin_git_cache_stale --argument-names cache_file
-    set -l mt (_damin_git_path_mtimes $cache_file)
-    test (count $mt) -lt 2; and return 1
-    set -l cm $mt[1]
-    for m in $mt[2..]
-        test $m -gt $cm; and return 0
-    end
-    string match -rq '^[1-9][0-9]*$' -- "$theme_damin_git_cache_ttl"; or return 1
-    test (math (date +%s) - $cm) -ge $theme_damin_git_cache_ttl; and return 0
-    return 1
-end
-
 function _damin_git_part
     set -l count $argv[1]
     set -l symbol $argv[2]
@@ -724,71 +700,19 @@ end
 set -g _damin_async_signal_loaded $theme_damin_async_signal
 
 function _damin_git_render
-    if test "$theme_damin_async_git" != 1
-        set -l data (_damin_git_compute)
-        test -z "$data"; and return
-        _damin_git_render_data $data
-        return
-    end
-
-    set -l cache_file (_damin_cache_path git)
-    set -l cache_mt ""
-    set -l stale 0
-
-    # `test -f` gate: path mtime silently drops missing paths, so without this
-    # mt[1] could be the index mtime instead of the cache mtime.
-    if test -f $cache_file
-        set -l mt (_damin_git_path_mtimes $cache_file)
-        if test (count $mt) -ge 1
-            set cache_mt $mt[1]
-            for m in $mt[2..]
-                test $m -gt $cache_mt; and set stale 1; and break
-            end
-            if test $stale = 0; and string match -rq '^[1-9][0-9]*$' -- "$theme_damin_git_cache_ttl"
-                test (math (date +%s) - $cache_mt) -ge $theme_damin_git_cache_ttl; and set stale 1
-            end
-        end
-    end
-
-    set -l data
-
-    # in-memory shortcut: same pwd + same cache mtime + fresh -> reuse parsed data.
-    # postexec deletes the cache file on git-mutating commands -> cache_mt empty -> forced re-read.
-    if test -n "$cache_mt" -a "$_damin_git_cached_pwd" = "$PWD" -a "$_damin_git_cached_mt" = "$cache_mt" -a $stale = 0
-        set data $_damin_git_cached_data
-    else if test -n "$cache_mt"
+    # async_repaint: render last disk cache; bg refresh writes + signals a repaint.
+    if test "$theme_damin_async_git" = 1; and test "$theme_damin_async_repaint" = 1
+        _damin_async_kickoff git _damin_git_prefill
+        set -l cache_file (_damin_cache_path git)
+        test -f $cache_file; or return
         set -l lines (_damin_read_lines $cache_file)
         # 11 = PWD + 10 fields (branch, u, m, s, st, a, b, c, op, stash_ts).
-        if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
-            set data $lines[2..11]
-            set -g _damin_git_cached_pwd "$PWD"
-            set -g _damin_git_cached_mt "$cache_mt"
-            set -g _damin_git_cached_data $data
-        end
-    end
-
-    # async_repaint mode: render stale/empty NOW, bg refresh + repaint on completion.
-    if test "$theme_damin_async_repaint" = 1
-        if test -z "$data" -o $stale = 1
-            _damin_async_kickoff git _damin_git_prefill
-        end
-        test -z "$data"; and return
-        _damin_git_render_data $data
+        test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"; or return
+        _damin_git_render_data $lines[2..11]
         return
     end
 
-    # default: sync compute on miss or stale.
-    if test -z "$data" -o $stale = 1
-        set data (_damin_git_compute)
-        if test -n "$data"
-            _damin_write_cache $cache_file "$PWD" $data
-            set -g _damin_git_cached_pwd "$PWD"
-            # post-write stat refreshes memo key; skip-and-reread / date-fork cost more.
-            set -g _damin_git_cached_mt (path mtime $cache_file 2>/dev/null)
-            set -g _damin_git_cached_data $data
-        end
-    end
-
+    set -l data (_damin_git_compute)
     test -z "$data"; and return
     _damin_git_render_data $data
 end
