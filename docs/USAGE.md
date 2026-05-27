@@ -12,7 +12,7 @@ Commands, configuration, and feature reference. For internals (cache layout, asy
 - **Terminal-native** — OSC 7 (cwd advertise) + OSC 8 (clickable PR badge, cwd, branch issue keys) + OSC 133 (semantic prompt markers). Opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock.
 - **19 palettes** — Catppuccin x4 + gruvbox(+light) / tokyonight / rosepine / nord / dracula / solarized(+light) / base16(+light) / zenburn / colorblind (Okabe-Ito) / high-contrast / terminal-dark/-light. `theme_damin_palette_light` auto-swaps when `$COLORFGBG` reports a light terminal. Live switch via `damin_set_palette`; preview without applying via `damin_palette_preview`; `damin_colors` hook for per-segment overrides.
 - **Transient prompt** — past prompts collapse to a dim `✿` after Enter. `theme_damin_glyph_transient` overrides the stub glyph.
-- **Async** — git/lang/gh refresh in a ~3 KB subshell. `theme_damin_async_timeout` (default `5`s) kills runaway bg work.
+- **Async** — git/lang/gh refresh in a ~3 KB subshell. First paint never blocks (`async_repaint=1`); editor edits reflected within `git_cache_ttl` s (default `1`). `async_timeout` (default `5`s) kills runaway bg work.
 - **Customizable** — 70+ `theme_damin_*` toggles. `damin_segment_<name>` hooks + `theme_damin_right_segments` for right-prompt ordering. Example hooks (`uptime`, `todo`, `weather`) under [`examples/segments/`](../examples/segments/).
 - **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**.
 

@@ -86,11 +86,13 @@ set -q theme_damin_date_format; or set -g theme_damin_date_format '%H:%M'
 
 set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
 set -q theme_damin_git_count_untracked; or set -g theme_damin_git_count_untracked 1
+# editor-only edits touch no git internal file; TTL forces refresh. 0 = mtime-only.
+set -q theme_damin_git_cache_ttl; or set -g theme_damin_git_cache_ttl 1
 set -q theme_damin_transient; or set -g theme_damin_transient 1
 set -q theme_damin_async_git; or set -g theme_damin_async_git 1
 set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
 set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
-set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 0
+set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 1
 set -q theme_damin_async_gh_pr; or set -g theme_damin_async_gh_pr 1
 # IPC signal — override only if SIGUSR1 collides.
 set -q theme_damin_async_signal; or set -g theme_damin_async_signal SIGUSR1
@@ -596,6 +598,8 @@ function _damin_git_cache_stale --argument-names cache_file
     for m in $mt[2..]
         test $m -gt $cm; and return 0
     end
+    string match -rq '^[1-9][0-9]*$' -- "$theme_damin_git_cache_ttl"; or return 1
+    test (math (date +%s) - $cm) -ge $theme_damin_git_cache_ttl; and return 0
     return 1
 end
 
@@ -739,6 +743,9 @@ function _damin_git_render
             set cache_mt $mt[1]
             for m in $mt[2..]
                 test $m -gt $cache_mt; and set stale 1; and break
+            end
+            if test $stale = 0; and string match -rq '^[1-9][0-9]*$' -- "$theme_damin_git_cache_ttl"
+                test (math (date +%s) - $cache_mt) -ge $theme_damin_git_cache_ttl; and set stale 1
             end
         end
     end

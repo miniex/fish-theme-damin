@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`theme_damin_git_cache_ttl`** (default `1` s) — time-based stale fallback for editor-only edits (no git command, no `.git/{index,HEAD,logs}` change). `0` = mtime-only
+
+### Changed
+
+- **`theme_damin_async_repaint` default → `1`** — first paint no longer blocks on git compute; stale/missing cache renders immediately and a bg `fish -c` triggers a repaint when done. `=0` restores sync-on-stale
+
 ## [1.3.0] - 20260521074146 KST
 
 ### Added

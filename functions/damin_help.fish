@@ -80,7 +80,7 @@ function damin_help
     _damin_help_row theme_damin_async_git 1
     _damin_help_row theme_damin_async_lang 1
     _damin_help_row theme_damin_async_warmup 1
-    _damin_help_row theme_damin_async_repaint 0
+    _damin_help_row theme_damin_async_repaint 1
     _damin_help_row theme_damin_osc_integration 1
     _damin_help_row theme_damin_apply_colors 1
     _damin_help_row theme_damin_ascii 0
@@ -121,6 +121,7 @@ function damin_help
     _damin_help_row theme_damin_azure_max_len 0
     _damin_help_row theme_damin_long_command_threshold 3000
     _damin_help_row theme_damin_battery_threshold 30
+    _damin_help_row theme_damin_git_cache_ttl 1
     _damin_help_row theme_damin_gh_pr_ttl 300
     _damin_help_row theme_damin_notify_threshold 30000
     _damin_help_row theme_damin_async_timeout 5
