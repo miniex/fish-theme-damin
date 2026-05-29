@@ -614,11 +614,12 @@ end
 # _damin_git_prefill lives in _damin_async_core.fish.
 
 # bg subshell sources only the small core file (so <fn> must live in core),
-# signals parent on done. new kickoff for the same <key> kills the prior pid.
+# signals parent on done. skip if <key>'s worker is still running — restarting
+# it every prompt starves slow repos (git status never finishes before the kill).
 function _damin_async_kickoff --argument-names key fn
     set -l pid_var _damin_async_pid_$key
     set -l prior $$pid_var
-    test -n "$prior"; and kill $prior 2>/dev/null
+    test -n "$prior"; and kill -0 $prior 2>/dev/null; and return
     # escape so a `'` in the path can't break the subshell quoting.
     set -l call (string escape -- $fn $argv[3..])
     set -l core (string escape -- $_damin_async_core_file)

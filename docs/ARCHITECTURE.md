@@ -437,7 +437,7 @@ PWD encoding: `string replace -a / %` — no `shasum` fork, deterministic.
 - **Devops cache** — cleared on `terraform`/`tf`/`pulumi`.
 - **Cloud caches** — cleared on `aws`/`gcloud`/`az`/`kubectl config` (same-second writes evade mtime).
 
-Out-of-shell mutations (lazygit, IDE plugins, another fish session) and editor-only edits land on the next prompt: `_damin_git_render` has no freshness gate, so `async_repaint=1` kicks a bg refresh every prompt and `async_repaint=0` (or `async_git=0`) recomputes synchronously. Postexec still deletes the cache after write-side git commands — without it, `async_repaint=1` would flash the prior count for one prompt while the bg refresh runs.
+Out-of-shell mutations (lazygit, IDE plugins, another fish session) and editor-only edits land on the next prompt: `_damin_git_render` has no freshness gate, so `async_repaint=1` kicks a bg refresh every prompt (coalesced — one in-flight worker per key) and `async_repaint=0` (or `async_git=0`) recomputes synchronously. Postexec still deletes the cache after write-side git commands — without it, `async_repaint=1` would flash the prior count for one prompt while the bg refresh runs.
 
 ### In-memory PWD memo (hot-path shortcut)
 
@@ -460,7 +460,7 @@ On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to
 
 The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 160 lines), not the full theme (~1300 lines).
 
-`&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
+`&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>`. On the next call with the same key it `kill -0`s that pid and **skips** if the prior worker is still running — restarting every prompt would starve slow repos, where `git status` never finishes before the next kill. In-flight intent wins; rapid prompts coalesce to one worker per key.
 
 Each kickoff arms a watchdog **inside** the worker subshell (`begin; sleep $theme_damin_async_timeout; kill $fish_pid; end &`) so a hung `gh pr view` or k8s YAML walk can't linger forever — and so the prompt forks once per kickoff, not twice. Default timeout `5` seconds; set to `0` to disable.
 
@@ -515,7 +515,7 @@ git dirty + node project                 0.70 ms / prompt
 - Stash count via fish `count` builtin (no `wc -l` fork)
 - `git --no-optional-locks` everywhere — prompt never blocks on `.git/index.lock`
 - Opt-out `-uno` (`theme_damin_git_count_untracked=0`) skips the workdir walk (30-100× faster in monorepos)
-- Background refresh fires every prompt under `async_repaint=1`; `_damin_async_kickoff` kills the prior subshell by pid so rapid prompts don't pile up
+- Background refresh fires every prompt under `async_repaint=1`; `_damin_async_kickoff` skips (`kill -0`) while the key's worker is still in flight, so rapid prompts coalesce to one worker instead of piling up
 - `fish_indent`-formatted, `fish -n`-clean
 
 ### Cold paths

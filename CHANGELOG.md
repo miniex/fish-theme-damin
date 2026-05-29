@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`theme_damin_show_project_parent` was inverted** — the project-relative `<project>/<rel>` path only rendered when set to `0`, the opposite of its default (`1`) and its documented meaning. Now `1` (default) renders project-relative and `0` shows the abbreviated full PWD
 - **Apostrophe in `$PWD` broke the async git segment** — `_damin_async_kickoff` interpolated the cwd (and core path) into single quotes unescaped, so a path like `~/Don't Touch/repo` produced a broken subshell that never wrote the cache, leaving the git segment permanently blank there. Both are now `string escape`d
 - **Blank git segment on the first prompt in an un-warmed repo** — under `async_repaint=1` a cold/stale cache returned nothing instead of rendering. `_damin_git_render` now computes once synchronously on a cache miss while the bg kickoff warms the cache for later prompts
+- **Async refresh never completed in slow repos / on held Enter** — `_damin_async_kickoff` killed and restarted the in-flight worker every prompt, so when `git status` outran the gap between prompts the refresh never finished and the cache stayed stale until a write-side git command dropped it. It now **skips** (via `kill -0`) while the key's worker is still running, letting it finish
 
 ### Removed
 
