@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`theme_damin_show_project_parent` was inverted** — the project-relative `<project>/<rel>` path only rendered when set to `0`, the opposite of its default (`1`) and its documented meaning. Now `1` (default) renders project-relative and `0` shows the abbreviated full PWD
+- **Apostrophe in `$PWD` broke the async git segment** — `_damin_async_kickoff` interpolated the cwd (and core path) into single quotes unescaped, so a path like `~/Don't Touch/repo` produced a broken subshell that never wrote the cache, leaving the git segment permanently blank there. Both are now `string escape`d
+- **Blank git segment on the first prompt in an un-warmed repo** — under `async_repaint=1` a cold/stale cache returned nothing instead of rendering. `_damin_git_render` now computes once synchronously on a cache miss while the bg kickoff warms the cache for later prompts
+
 ### Changed
 
-- **`theme_damin_async_repaint` default → `1`** — first paint no longer blocks on git compute; stale/missing cache renders immediately and a bg `fish -c` triggers a repaint when done. `=0` restores sync-on-stale
+- **`theme_damin_async_repaint` default → `1`** — a warm/stale cache renders immediately (stale-while-revalidate) and a bg `fish -c` triggers a repaint when done; a cold/missing cache computes once synchronously. `=0` restores sync-on-stale
 - **Git status refreshes per prompt** — `_damin_git_render` no longer gates on mtime or TTL. `async_repaint=1` kicks a bg refresh every prompt; `async_repaint=0` (or `async_git=0`) recomputes synchronously. Editor-only edits show up on the next prompt without a TTL fallback
+- **Async watchdog folded into the worker subshell** — the per-kickoff hang-timeout (`theme_damin_async_timeout`) now runs as an in-worker `begin; sleep N; kill` block, so each kickoff forks once from the prompt instead of twice
+- **Root `fish_title.fish` is now a shim** — it sources `functions/fish_title.fish` (single source of truth) instead of duplicating the 43-line body; both are now covered by `tools/lint.sh` / `tools/format.sh`
 
 ### Removed
 

@@ -667,26 +667,26 @@ function _damin_async_kickoff --argument-names key fn
     set -l pid_var _damin_async_pid_$key
     set -l prior $$pid_var
     test -n "$prior"; and kill $prior 2>/dev/null
+    # escape so a `'` in the path can't break the subshell quoting.
     set -l call (string escape -- $fn $argv[3..])
-    set -l core $_damin_async_core_file
-    set -l pwd $PWD
+    set -l core (string escape -- $_damin_async_core_file)
+    set -l pwd (string escape -- $PWD)
     set -l parent $fish_pid
     set -l signal $theme_damin_async_signal
+    # in-worker watchdog kills a hung worker after N s — one fork per kickoff, not two. 0 = off.
+    set -l guard ""
+    set -l t $theme_damin_async_timeout
+    string match -rq '^[1-9][0-9]*$' -- "$t"; and set guard "begin; sleep $t; kill \$fish_pid 2>/dev/null; end &; disown 2>/dev/null"
     fish -c "
-        cd '$pwd' 2>/dev/null
-        source '$core' 2>/dev/null
+        cd $pwd 2>/dev/null
+        source $core 2>/dev/null
+        $guard
         $call
         kill -s $signal $parent 2>/dev/null
     " >/dev/null 2>&1 &
     set -l bg_pid $last_pid
     set -g $pid_var $bg_pid
     disown 2>/dev/null
-
-    set -l t $theme_damin_async_timeout
-    if string match -rq '^[1-9][0-9]*$' -- "$t"
-        fish -c "sleep $t; kill $bg_pid 2>/dev/null" >/dev/null 2>&1 &
-        disown 2>/dev/null
-    end
 end
 
 # signal captured at define time (var change needs shell restart). pid cleanup
@@ -704,11 +704,17 @@ function _damin_git_render
     if test "$theme_damin_async_git" = 1; and test "$theme_damin_async_repaint" = 1
         _damin_async_kickoff git _damin_git_prefill
         set -l cache_file (_damin_cache_path git)
-        test -f $cache_file; or return
-        set -l lines (_damin_read_lines $cache_file)
-        # 11 = PWD + 10 fields (branch, u, m, s, st, a, b, c, op, stash_ts).
-        test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"; or return
-        _damin_git_render_data $lines[2..11]
+        if test -f $cache_file
+            set -l lines (_damin_read_lines $cache_file)
+            if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
+                _damin_git_render_data $lines[2..11]
+                return
+            end
+        end
+        # cold cache: compute inline once so the segment isn't blank (kickoff above warms it).
+        set -l data (_damin_git_compute)
+        test -z "$data"; and return
+        _damin_git_render_data $data
         return
     end
 
@@ -894,7 +900,7 @@ function _damin_cwd_pretty
         set -g _damin_cwd_pwd "$PWD"
         set -l value ""
         # project-relative: skip in worktrees (vcs_dir points to a different tree).
-        if test "$theme_damin_show_project_parent" = 0 -a -z "$_damin_vcs_worktree"
+        if test "$theme_damin_show_project_parent" = 1 -a -z "$_damin_vcs_worktree"
             _damin_detect_vcs >/dev/null
             if test -n "$_damin_vcs_dir"
                 set -l root (path dirname -- $_damin_vcs_dir)

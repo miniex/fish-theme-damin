@@ -310,6 +310,40 @@ case "$got" in
 esac
 cleanup "$repo"
 
+# regression: show_project_parent was inverted; =1 (default) must render <project>/<rel>.
+repo=$(mkrepo)
+mkdir -p "$repo/src/deep"
+base=$(basename "$repo")
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_project_parent 1
+    cd '$repo/src/deep'
+    _damin_cwd_pretty
+    true
+" 2>/dev/null)
+expect "cwd: project_parent=1 shows <project>/<rel>" "$got" "$base/src/deep"
+
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_show_project_parent 0
+    cd '$repo/src/deep'
+    _damin_cwd_pretty
+    true
+" 2>/dev/null)
+case "$got" in
+    "$base/src/deep")
+        FAIL=$((FAIL + 1))
+        FAILED_NAMES="$FAILED_NAMES
+    cwd: project_parent=0 falls back to prompt_pwd"
+        printf '  FAIL %s\n       got: %s\n' "cwd: project_parent=0 falls back to prompt_pwd" "$got"
+        ;;
+    *)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "cwd: project_parent=0 falls back to prompt_pwd"
+        ;;
+esac
+cleanup "$repo"
+
 echo
 echo "=== damin _damin_k8s_compute tests ==="
 echo
@@ -1088,6 +1122,28 @@ HOME="$tmphome" XDG_CONFIG_HOME="$tmphome/.config" \
     " 2>/dev/null >"$tmphome/out"
 result=$(cat "$tmphome/out")
 expect "async repaint: bg subshell writes cache" "$result" "cached"
+rm -rf "$tmphome" "$tmprepo"
+
+# regression: a `'` in $PWD must not break the bg subshell quoting.
+tmphome=$(mktemp -d -t damin-test-home.XXXXXX)
+tmprepo=$(mktemp -d -t "damin-test-q'uote.XXXXXX")
+git -C "$tmprepo" -c init.defaultBranch=main init -q
+git -C "$tmprepo" commit --allow-empty -q -m init
+HOME="$tmphome" XDG_CONFIG_HOME="$tmphome/.config" \
+    fish --no-config -c "
+        set -g theme_damin_async_repaint 1
+        source '$THEME/conf.d/damin.fish' 2>/dev/null
+        cd \"$tmprepo\"
+        _damin_git_render >/dev/null
+        for _ in (seq 30)
+            test (count \$_damin_cache_dir/*-git 2>/dev/null) -gt 0; and break
+            sleep 0.1
+        end
+        test (count \$_damin_cache_dir/*-git 2>/dev/null) -gt 0; and echo cached; or echo missing
+        true
+    " 2>/dev/null >"$tmphome/out"
+result=$(cat "$tmphome/out")
+expect "async kickoff: apostrophe in PWD still writes cache" "$result" "cached"
 rm -rf "$tmphome" "$tmprepo"
 
 echo

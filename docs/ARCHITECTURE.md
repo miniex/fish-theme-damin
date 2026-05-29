@@ -39,8 +39,9 @@ completions/
                               palette names, subcommands, --help / --json flags.
 
 fish_{prompt,right_prompt,title}.fish, key_bindings.fish
-                            — root-level OMF shims. fish_title is duplicated
-                              under functions/ so Fisher autoloads it too.
+                            — root-level OMF shims, no logic. Root fish_title
+                              sources functions/fish_title.fish (single source
+                              of truth; Fisher autoloads the functions/ copy).
 
 hooks/install.fish         — OMF install hook: drops stale fish_prompt.fish symlink.
 
@@ -74,7 +75,7 @@ tools/format.sh / lint.sh / bench.sh / test.sh
 
 ### Right prompt segments
 
-1. **Heart bullet `❥`** + cwd in cool blue. With `show_project_parent=0` inside a VCS repo, renders `<project>/<rel>` instead of full PWD; `project_dir_length > 0` abbreviates the rel part.
+1. **Heart bullet `❥`** + cwd in cool blue. With `show_project_parent=1` (default) inside a VCS repo, renders `<project>/<rel>` instead of full PWD; `project_dir_length > 0` abbreviates the rel part.
 2. **`· lang:version`** — when a project marker is found ≤ 8 levels up. Version: `.tool-versions` -> `.mise.toml` -> lang-specific pin (`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) -> binary fork. Langs: `rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig`. With `show_lang_global=1`, marker-less PWDs fall through to `_damin_lang_global` — env-var lookup of NVM / fnm / rbenv / RVM / chruby / pyenv / asdf shims.
 3. **`· tf:<workspace>` / `· pulumi:<stack>`** — `tf:` reads `.terraform/environment` (hides bare `default`). `pulumi:` prefers `$PULUMI_STACK`, else reads `~/.pulumi/workspaces/<proj>-*-workspace.json` iff exactly one matches. Shared pwd-cached walk-up
 4. **`· (env)`** — venv basename / conda env / `direnv:<dir>` / `nix:<derivation-name>` (collapses to bare `nix` when generic or `show_nix_name=0`)
@@ -288,7 +289,7 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_title_show_process`     | `1`       | Append running process name to terminal title                                                                             |
 | `theme_damin_date_format`            | `%H:%M`   | `strftime` format string passed to `date +"…"`                                                                            |
 | `theme_damin_date_timezone`          | _(unset)_ | Optional `TZ` override (e.g. `UTC`, `America/Los_Angeles`)                                                                |
-| `theme_damin_show_project_parent`    | `1`       | `0` = render `<project>/<rel>` instead of full PWD inside a VCS repo                                                      |
+| `theme_damin_show_project_parent`    | `1`       | `1` = render `<project>/<rel>` inside a VCS repo; `0` = abbreviated full PWD                                              |
 | `theme_damin_project_dir_length`     | `0`       | Abbreviate each segment of the project-relative part to N chars (0 = full)                                                |
 
 ### Glyph overrides
@@ -432,7 +433,7 @@ Above the disk cache, three renderers keep a per-PWD (or per-input) in-process m
 
 `theme_damin_async_repaint=1` (default) renders the last disk cache and refreshes per prompt:
 
-- Every prompt -> render the cache (empty cache = no git segment) + bg `fish -c` recomputes and overwrites the cache.
+- Every prompt -> render the cache + bg `fish -c` recomputes and overwrites the cache. A cold/missing cache (first prompt in an un-warmed repo) computes once synchronously so the segment is never blank.
 - On bg completion -> signal-driven repaint shows the fresh value.
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
@@ -441,7 +442,7 @@ The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 148 lines), no
 
 `&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
 
-Each kickoff also spawns a watchdog (`sleep $theme_damin_async_timeout; kill $bg_pid`) so a hung `gh pr view` or k8s YAML walk can't linger forever. Default timeout `5` seconds; set to `0` to disable.
+Each kickoff arms a watchdog **inside** the worker subshell (`begin; sleep $theme_damin_async_timeout; kill $fish_pid; end &`) so a hung `gh pr view` or k8s YAML walk can't linger forever — and so the prompt forks once per kickoff, not twice. Default timeout `5` seconds; set to `0` to disable.
 
 Used today by `git _damin_git_prefill` (under `theme_damin_async_repaint`, default on) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
 
@@ -499,7 +500,7 @@ git dirty + node project                 0.70 ms / prompt
 
 ### Cold paths
 
-- First `cd` into a new dir — `git status --porcelain=v2 --branch` + (if no pin file) one binary fork for `<lang> --version`. Pin-file detection (`.tool-versions`/`.mise.toml`/`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) runs in the same walk-up, so most projects skip the fork. ~30 ms on small repos. Under `async_repaint=1` (default) this runs in the bg and the prompt redraws on signal; `=0` runs it inline.
+- First `cd` into a new dir — `git status --porcelain=v2 --branch` + (if no pin file) one binary fork for `<lang> --version`. Pin-file detection (`.tool-versions`/`.mise.toml`/`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) runs in the same walk-up, so most projects skip the fork. ~30 ms on small repos, computed inline on this first (cold-cache) prompt so nothing renders blank. Later prompts serve the cache; `async_repaint=1` (default) then bg-refreshes git and redraws on signal, `=0` recomputes inline.
 - After a write-side git command — cache deleted by postexec; same cold path.
 - Editor-only edits — picked up on the next prompt: `async_repaint=1` renders the prior value then repaints with fresh counts; `async_repaint=0` blocks for the recompute.
 
