@@ -1,4 +1,6 @@
 # collect all blocks first so order of current-context vs contexts: doesn't matter.
+# assumes standard kubeconfig indentation (2-space `- context:` / 4-space `namespace:`);
+# hand-rolled to avoid a kubectl fork. exotic / flow-style YAML isn't handled.
 function _damin_k8s_compute --argument-names cfg
     set -l current
     set -l in_contexts 0

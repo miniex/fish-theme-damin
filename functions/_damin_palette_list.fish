@@ -1,23 +1,7 @@
-# canonical flavor list. completion file keeps its own static copy for descriptions.
+# canonical flavor list, derived from _damin_palette_table.
+# completion file keeps its own static copy for descriptions.
 function _damin_palette_list
-    printf '%s\n' \
-        mocha \
-        macchiato \
-        frappe \
-        latte \
-        gruvbox \
-        gruvbox-light \
-        tokyonight \
-        rosepine \
-        nord \
-        dracula \
-        solarized \
-        solarized-light \
-        base16 \
-        base16-light \
-        zenburn \
-        colorblind \
-        high-contrast \
-        terminal-dark \
-        terminal-light
+    for line in (_damin_palette_table)
+        echo (string split -m1 '|' -- $line)[1]
+    end
 end

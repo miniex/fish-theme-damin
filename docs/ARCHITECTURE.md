@@ -16,6 +16,10 @@ functions/
                             — user-callable commands.
   _damin_profile_now_ms     — ns-precision timestamp shared by profile + bench.
   _damin_help_block         — shared `--help` formatter for every damin_* command.
+  _damin_defaults           — single source for scalar/list defaults. conf.d
+  _damin_default_of           applies them at load; damin_help reads the same.
+  _damin_palette_table      — one row per flavor (theme/name/desc/accents/colors).
+  _damin_palette_row          single source; the four accessors below derive from it.
   _damin_palette_list       — canonical 19-flavor name list.
   _damin_palette_data       — flavor -> 14 fish_color_* hex + 1 bg hint. shared
                               by conf.d's apply-colors block and install_themes.
@@ -24,6 +28,8 @@ functions/
                               completion read from this.
   _damin_palette_accents    — flavor -> "primary_hex secondary_hex". used by
                               conf.d and the damin_config palette picker.
+  damin_async_refresh       — public async helper for custom segments:
+  damin_async_value           bg-run a command, cache it, repaint when done.
   _damin_{aws,gcp,azure}_*  — lazy-loaded cloud renderers (autoloaded when enabled).
   _damin_k8s_*              — kubernetes render + compute + prefill.
   _damin_{devops,pulumi}_*  — terraform / pulumi.
@@ -76,7 +82,7 @@ tools/format.sh / lint.sh / bench.sh / test.sh
 ### Right prompt segments
 
 1. **Heart bullet `❥`** + cwd in cool blue. With `show_project_parent=1` (default) inside a VCS repo, renders `<project>/<rel>` instead of full PWD; `project_dir_length > 0` abbreviates the rel part.
-2. **`· lang:version`** — when a project marker is found ≤ 8 levels up. Version: `.tool-versions` -> `.mise.toml` -> lang-specific pin (`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) -> binary fork. Langs: `rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig`. With `show_lang_global=1`, marker-less PWDs fall through to `_damin_lang_global` — env-var lookup of NVM / fnm / rbenv / RVM / chruby / pyenv / asdf shims.
+2. **`· lang:version`** — when a project marker is found ≤ 8 levels up. Version: `.tool-versions` -> `.mise.toml` -> lang-specific pin (`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) -> binary fork. Langs: `rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig` / `dotnet` / `swift` / `scala` / `hs` / `dart` / `jl` / `lua` / `cpp` (CMake/meson, label only). With `show_lang_global=1`, marker-less PWDs fall through to `_damin_lang_global` — env-var lookup of NVM / fnm / rbenv / RVM / chruby / pyenv / asdf shims.
 3. **`· tf:<workspace>` / `· pulumi:<stack>`** — `tf:` reads `.terraform/environment` (hides bare `default`). `pulumi:` prefers `$PULUMI_STACK`, else reads `~/.pulumi/workspaces/<proj>-*-workspace.json` iff exactly one matches. Shared pwd-cached walk-up
 4. **`· (env)`** — venv basename / conda env / `direnv:<dir>` / `nix:<derivation-name>` (collapses to bare `nix` when generic or `show_nix_name=0`)
 5. **`· N%`** — battery when ≤ threshold (opt-in)
@@ -161,6 +167,19 @@ function damin_segment_kube_age
     test $n -gt 0; and echo -n -s " $(set_color --dim)pods:$n$(set_color normal)"
 end
 set -U theme_damin_extra_left kube_age
+```
+
+For slow segments, the same async machinery the built-ins use is public:
+
+- `damin_async_refresh <key> <ttl> <command…>` — if the disk cache for `<key>` is older than `<ttl>`s (or missing), run `<command>` in a background `fish`, cache its stdout, and signal a repaint when done. Non-blocking. `<command>` must be self-contained (it runs in a bare subshell, not the prompt's).
+- `damin_async_value <key>` — the cached value (trimmed), or empty.
+
+```fish
+function damin_segment_weather
+    damin_async_refresh weather 1800 curl -s --max-time 2 "wttr.in/?format=%c+%t"
+    set -l v (damin_async_value weather)
+    test -n "$v"; and echo -n -s " $(set_color --dim)$v$(set_color normal)"
+end
 ```
 
 ### TRAMP / dumb terminal auto-detect
@@ -283,7 +302,8 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_battery_threshold`      | `30`      | Show battery when `%` ≤ this                                                                                              |
 | `theme_damin_gh_pr_ttl`              | `300`     | Seconds the GitHub PR result is cached                                                                                    |
 | `theme_damin_notify_threshold`       | `30000`   | Duration (ms) for long-command notification                                                                               |
-| `theme_damin_ascii`                  | `0`       | Swap all glyph defaults to ASCII                                                                                          |
+| `theme_damin_ascii`                  | `0`       | Swap all glyph defaults to ASCII (wins over `nerd_font`; dumb-terminal default)                                           |
+| `theme_damin_nerd_font`              | `0`       | Swap glyph defaults to Nerd Font icons (needs a patched font)                                                             |
 | `theme_damin_title_show_user`        | `ssh`     | Terminal title user/host: `0` / `1` / `ssh`                                                                               |
 | `theme_damin_title_show_path`        | `1`       | Terminal title path: `0` / `1` (full) / `short`                                                                           |
 | `theme_damin_title_show_process`     | `1`       | Append running process name to terminal title                                                                             |
@@ -294,7 +314,7 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 
 ### Glyph overrides
 
-Each symbol comes from `theme_damin_glyph_*` — override one without flipping the whole theme to ASCII. User override wins; otherwise the default below switches on `theme_damin_ascii`.
+Each symbol comes from `theme_damin_glyph_*` — override one without flipping the whole theme. User override wins; otherwise the default set is chosen by `theme_damin_ascii=1` (plain ASCII) or `theme_damin_nerd_font=1` (Nerd Font icons), with `ascii` taking precedence. The defaults below are the Unicode-dingbat set.
 
 | Variable                      | Default (fancy) | Default (`ascii=1`) | Where it renders                                |
 | ----------------------------- | --------------- | ------------------- | ----------------------------------------------- |
@@ -438,7 +458,7 @@ Above the disk cache, three renderers keep a per-PWD (or per-input) in-process m
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
 
-The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 148 lines), not the full theme (1349 lines).
+The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 160 lines), not the full theme (~1300 lines).
 
 `&` on a _fish function_ doesn't populate `$last_pid`, but `&` on `fish -c` does — `_damin_async_kickoff <key> <fn> [<args>...]` captures it into `$_damin_async_pid_<key>` and `kill`s the prior pid on the next call with the same key. Most recent intent wins.
 

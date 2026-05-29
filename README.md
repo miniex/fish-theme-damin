@@ -47,7 +47,7 @@ omf theme damin
 - **git / jj / hg / fossil** — counts, op state, worktree, opt-in `#N` GitHub PR badge, branch issue-key auto-link
 - **Context** — `ssh` / `root` / `dkr` / `tmux` / `wsl` / `k8s` / opt-in `aws` / `gcp` / `az`. Pure-fish, no CLI forks
 - **19 palettes**, live switch + preview without applying. OSC 7 / 8 / 133 shell integration. Custom segment hooks
-- **70+ toggles**, configurable right-prompt order, ASCII fallback, dumb-terminal auto-minimal
+- **70+ toggles**, configurable right-prompt order, ASCII fallback + optional Nerd Font preset, dumb-terminal auto-minimal
 
 Full feature reference + every command + every toggle: **[docs/USAGE.md](docs/USAGE.md)**. Internals (cache layers, async IPC, palette plumbing): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 

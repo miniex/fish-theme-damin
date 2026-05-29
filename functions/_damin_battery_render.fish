@@ -1,6 +1,6 @@
 function _damin_battery_render
     test "$theme_damin_show_battery" = 1; or return
-    set -l now (date +%s)
+    set -l now (_damin_now)
     if test (math $now - $_damin_battery_at) -ge 60
         set -g _damin_battery_at $now
         # uname is a fork; platform doesn't change mid-session.

@@ -1147,6 +1147,164 @@ expect "async kickoff: apostrophe in PWD still writes cache" "$result" "cached"
 rm -rf "$tmphome" "$tmprepo"
 
 echo
+echo "=== damin lang detection tests ==="
+echo
+
+run_lang() {
+    fish -c "
+        source '$THEME/conf.d/damin.fish'
+        set -g theme_damin_async_lang 0
+        cd '$1'
+        _damin_lang_compute
+        true
+    " 2>/dev/null
+}
+
+# pin precedence + version extraction. regression: the binary-fork fallback used
+# 'string match -gr' with no capture group and silently produced no version.
+lp=$(mktemp -d -t damin-lang.XXXXXX)
+touch "$lp/Cargo.toml"
+printf 'rust 1.75.0\n' >"$lp/.tool-versions"
+got=$(run_lang "$lp")
+expect "lang: rust pinned via .tool-versions" "$got" "rust:1.75.0"
+rm -rf "$lp"
+
+lp=$(mktemp -d -t damin-lang.XXXXXX)
+touch "$lp/go.mod"
+printf '[tools]\ngo = "1.22.0"\n' >"$lp/.mise.toml"
+got=$(run_lang "$lp")
+expect "lang: go pinned via .mise.toml [tools]" "$got" "go:1.22.0"
+rm -rf "$lp"
+
+lp=$(mktemp -d -t damin-lang.XXXXXX)
+touch "$lp/package.json"
+printf 'v20.11.0\n' >"$lp/.nvmrc"
+got=$(run_lang "$lp")
+expect "lang: node pinned via .nvmrc (v-stripped)" "$got" "node:20.11.0"
+rm -rf "$lp"
+
+# new detectors (label-only when no toolchain is installed/pinned).
+for marker in Package.swift:swift build.sbt:scala pubspec.yaml:dart Project.toml:jl CMakeLists.txt:cpp; do
+    file=${marker%:*}
+    label=${marker#*:}
+    lp=$(mktemp -d -t damin-lang.XXXXXX)
+    touch "$lp/$file"
+    got=$(run_lang "$lp")
+    expect "lang: detect $file -> $label" "$got" "$label"
+    rm -rf "$lp"
+done
+
+# *.csproj glob detector.
+lp=$(mktemp -d -t damin-lang.XXXXXX)
+touch "$lp/App.csproj"
+got=$(run_lang "$lp")
+expect "lang: detect *.csproj -> dotnet" "$got" "dotnet"
+rm -rf "$lp"
+
+echo
+echo "=== damin numeric coercion tests ==="
+echo
+
+# a non-integer numeric toggle must coerce to its default so the prompt's `test -gt`
+# can't abort. a valid value is left untouched.
+got=$(fish -c "
+    set -g theme_damin_branch_max_len ten
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_branch_max_len
+    true
+" 2>/dev/null)
+expect "numeric: non-int branch_max_len coerced to 0" "$got" "0"
+
+got=$(fish -c "
+    set -g theme_damin_battery_threshold 25
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_battery_threshold
+    true
+" 2>/dev/null)
+expect "numeric: valid battery_threshold kept" "$got" "25"
+
+echo
+echo "=== damin defaults registry tests ==="
+echo
+
+# every _damin_defaults entry must resolve and equal the value applied at load.
+got=$(run_dumb "
+    source '$THEME/conf.d/damin.fish'
+    set -l bad
+    for spec in (_damin_defaults)
+        set -l vn theme_damin_(string split ' ' -- \$spec)[1]
+        test (_damin_default_of \$vn) = (string join ' ' -- \$\$vn); or set -a bad \$vn
+    end
+    test (count \$bad) -eq 0; and echo ok; or echo \"\$bad\"
+")
+expect "registry: defaults match applied values" "$got" "ok"
+
+echo
+echo "=== damin nerd-font glyph tests ==="
+echo
+
+got=$(run_dumb "
+    set -g theme_damin_nerd_font 1
+    source '$THEME/conf.d/damin.fish'
+    printf '%s' \$theme_damin_glyph_ahead | od -An -tx1 | string trim
+")
+expect "nerd_font: ahead glyph -> U+F062" "$got" "ef 81 a2"
+
+got=$(run_dumb "
+    set -g theme_damin_ascii 1
+    set -g theme_damin_nerd_font 1
+    source '$THEME/conf.d/damin.fish'
+    echo \$theme_damin_glyph_ahead
+")
+expect "nerd_font: ascii wins over nerd_font" "$got" "^"
+
+echo
+echo "=== damin async segment api tests ==="
+echo
+
+asth=$(mktemp -d -t damin-async.XXXXXX)
+result=$(HOME="$asth" XDG_CONFIG_HOME="$asth/.config" XDG_DATA_HOME="$asth/.local/share" \
+    fish --no-config -c "
+        source '$THEME/conf.d/damin.fish'
+        set -g CMD_DURATION 1
+        damin_async_refresh apitest 60 printf 'value 42'
+        for i in (seq 30)
+            test -f \$_damin_cache_dir/seg-apitest; and break
+            sleep 0.1
+        end
+        damin_async_value apitest
+        true
+    " 2>/dev/null)
+expect "async api: refresh writes cache, value reads it (spaces survive)" "$result" "value 42"
+rm -rf "$asth"
+
+echo
+echo "=== damin cold-cache git render tests ==="
+echo
+
+# regression (#4): async on + cold cache -> branch renders inline, not blank.
+repo=$(mkrepo)
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    cd '$repo'
+    _damin_git_render
+    true
+" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g')
+case "$got" in
+    *main*)
+        PASS=$((PASS + 1))
+        printf '  ok   %s\n' "cold cache: git branch renders synchronously"
+        ;;
+    *)
+        FAIL=$((FAIL + 1))
+        FAILED_NAMES="$FAILED_NAMES
+    cold cache: git branch renders synchronously"
+        printf '  FAIL %s\n       got: %s\n' "cold cache: git branch renders synchronously" "$got"
+        ;;
+esac
+cleanup "$repo"
+
+echo
 TOTAL=$((PASS + FAIL))
 if [ $FAIL -gt 0 ]; then
     printf '%d/%d failed:%s\n' "$FAIL" "$TOTAL" "$FAILED_NAMES"

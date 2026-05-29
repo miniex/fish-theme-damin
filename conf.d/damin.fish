@@ -25,112 +25,47 @@ if test $_damin_dumb = 1
     set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 0
 end
 
-set -q theme_damin_show_context; or set -g theme_damin_show_context 1
-# host/user: no | ssh | always. default_user: matching $USER suppressed.
-set -q theme_damin_show_host; or set -g theme_damin_show_host ssh
-set -q theme_damin_show_user; or set -g theme_damin_show_user ssh
-set -q theme_damin_show_screen; or set -g theme_damin_show_screen 0
-set -q theme_damin_show_sudo_user; or set -g theme_damin_show_sudo_user 0
-set -q theme_damin_show_docker_machine; or set -g theme_damin_show_docker_machine 0
-set -q theme_damin_show_wsl; or set -g theme_damin_show_wsl 0
-set -q theme_damin_show_codespaces; or set -g theme_damin_show_codespaces 0
-set -q theme_damin_show_devcontainer; or set -g theme_damin_show_devcontainer 0
-set -q theme_damin_show_tmux; or set -g theme_damin_show_tmux 0
-set -q theme_damin_show_zellij; or set -g theme_damin_show_zellij 0
-set -q theme_damin_show_aws; or set -g theme_damin_show_aws 0
-set -q theme_damin_show_aws_region; or set -g theme_damin_show_aws_region 1
-set -q theme_damin_show_gcp; or set -g theme_damin_show_gcp 0
-set -q theme_damin_show_azure; or set -g theme_damin_show_azure 0
-set -q theme_damin_show_k8s_context; or set -g theme_damin_show_k8s_context 1
-set -q theme_damin_show_k8s_namespace; or set -g theme_damin_show_k8s_namespace 0
-set -q theme_damin_show_git; or set -g theme_damin_show_git 1
-set -q theme_damin_show_jj; or set -g theme_damin_show_jj 1
-# 1 jj fork per prompt when on; counts M/A/C from `jj diff --summary -r @`.
-set -q theme_damin_jj_counts; or set -g theme_damin_jj_counts 0
-set -q theme_damin_show_hg; or set -g theme_damin_show_hg 0
-set -q theme_damin_show_fossil; or set -g theme_damin_show_fossil 0
-set -q theme_damin_show_git_op; or set -g theme_damin_show_git_op 1
-# 1 fork per prompt; opt-in dirty-bit (no count) for hg.
-set -q theme_damin_hg_dirty; or set -g theme_damin_hg_dirty 0
-set -q theme_damin_hide_default_branch; or set -g theme_damin_hide_default_branch 0
-set -q theme_damin_default_branches; or set -g theme_damin_default_branches main master trunk
-# 0 = no limit. >0 truncates long branch names with `…`.
-set -q theme_damin_branch_max_len; or set -g theme_damin_branch_max_len 0
-# cloud label truncation. per-segment max_len (>0) wins; else cloud_max_len applies.
-set -q theme_damin_cloud_max_len; or set -g theme_damin_cloud_max_len 0
-set -q theme_damin_k8s_max_len; or set -g theme_damin_k8s_max_len 0
-set -q theme_damin_aws_max_len; or set -g theme_damin_aws_max_len 0
-set -q theme_damin_gcp_max_len; or set -g theme_damin_gcp_max_len 0
-set -q theme_damin_azure_max_len; or set -g theme_damin_azure_max_len 0
-set -q theme_damin_show_gh_pr; or set -g theme_damin_show_gh_pr 0
-# theme_damin_issue_url_template — e.g. 'https://jira.example.com/{key}'.
-# when set, branches matching [A-Z]+-[0-9]+ render as OSC 8 hyperlinks. unset -> no-op.
-# opt-in dim relative age of newest stash next to `$N` count.
-set -q theme_damin_stash_age; or set -g theme_damin_stash_age 0
-set -q theme_damin_show_jobs; or set -g theme_damin_show_jobs 1
-# show_exit_code: 0|off|hidden, 1|number (default), name, both.
-set -q theme_damin_show_exit_code; or set -g theme_damin_show_exit_code number
-set -q theme_damin_show_vi_mode; or set -g theme_damin_show_vi_mode 1
+# scalar/list defaults from the shared registry (also read by damin_help).
+# `set -q; or set` leaves the dumb-terminal pre-sets above and any user value intact.
+for _damin_d in (_damin_defaults)
+    set -l _damin_p (string split ' ' -- $_damin_d)
+    set -l _damin_var theme_damin_$_damin_p[1]
+    set -q $_damin_var; or set -g $_damin_var $_damin_p[2..]
+end
 
-set -q theme_damin_show_lang; or set -g theme_damin_show_lang 1
-set -q theme_damin_show_lang_global; or set -g theme_damin_show_lang_global 0
-set -q theme_damin_show_env; or set -g theme_damin_show_env 1
-set -q theme_damin_show_nix_name; or set -g theme_damin_show_nix_name 1
-set -q theme_damin_show_terraform; or set -g theme_damin_show_terraform 1
-set -q theme_damin_show_pulumi; or set -g theme_damin_show_pulumi 1
-set -q theme_damin_show_battery; or set -g theme_damin_show_battery 0
-set -q theme_damin_show_duration; or set -g theme_damin_show_duration 1
-set -q theme_damin_show_date; or set -g theme_damin_show_date 0
-set -q theme_damin_date_format; or set -g theme_damin_date_format '%H:%M'
-# theme_damin_date_timezone — optional TZ override (e.g. UTC, America/Los_Angeles).
+# unset by default (documented here; consumed where referenced):
+#   theme_damin_default_user        — matching $USER suppresses the user segment.
+#   theme_damin_issue_url_template  — e.g. 'https://jira.example.com/{key}'; branches
+#                                     matching [A-Z]+-[0-9]+ render as OSC 8 links.
+#   theme_damin_date_timezone       — optional TZ override (e.g. UTC, America/Los_Angeles).
 
-set -q theme_damin_git_counts; or set -g theme_damin_git_counts 1
-set -q theme_damin_git_count_untracked; or set -g theme_damin_git_count_untracked 1
-set -q theme_damin_transient; or set -g theme_damin_transient 1
-set -q theme_damin_async_git; or set -g theme_damin_async_git 1
-set -q theme_damin_async_lang; or set -g theme_damin_async_lang 1
-set -q theme_damin_async_warmup; or set -g theme_damin_async_warmup 1
-set -q theme_damin_async_repaint; or set -g theme_damin_async_repaint 1
-set -q theme_damin_async_gh_pr; or set -g theme_damin_async_gh_pr 1
-# IPC signal — override only if SIGUSR1 collides.
-set -q theme_damin_async_signal; or set -g theme_damin_async_signal SIGUSR1
-# kill bg subshell after N seconds; 0 = disabled. catches hung gh/k8s/aws.
-set -q theme_damin_async_timeout; or set -g theme_damin_async_timeout 5
-set -q theme_damin_osc_integration; or set -g theme_damin_osc_integration 1
-set -q theme_damin_notify_long_command; or set -g theme_damin_notify_long_command 0
-set -q theme_damin_apply_colors; or set -g theme_damin_apply_colors 1
-set -q theme_damin_palette; or set -g theme_damin_palette mocha
 # light/dark auto-swap — palette_light wins when $COLORFGBG bg slot ≥ 7.
 if set -q theme_damin_palette_light; and test -n "$theme_damin_palette_light"; and set -q COLORFGBG
     set -l _damin_bg (string split ';' -- $COLORFGBG)[-1]
     string match -rq '^[0-9]+$' -- "$_damin_bg"; and test "$_damin_bg" -ge 7; and set -g theme_damin_palette $theme_damin_palette_light
 end
-set -q theme_damin_ascii; or set -g theme_damin_ascii 0
-set -q theme_damin_newline_prompt; or set -g theme_damin_newline_prompt 0
-# title: user = 0|1|ssh, path = 0|1|short, process = 0|1.
-set -q theme_damin_title_show_user; or set -g theme_damin_title_show_user ssh
-set -q theme_damin_title_show_path; or set -g theme_damin_title_show_path 1
-set -q theme_damin_title_show_process; or set -g theme_damin_title_show_process 1
 
-set -q theme_damin_cwd_keep; or set -g theme_damin_cwd_keep 3
-set -q theme_damin_cwd_short; or set -g theme_damin_cwd_short 4
-# project-relative path: inside a repo show `<project>/<rel>` instead of full cwd.
-set -q theme_damin_show_project_parent; or set -g theme_damin_show_project_parent 1
-set -q theme_damin_project_dir_length; or set -g theme_damin_project_dir_length 0
-set -q theme_damin_long_command_threshold; or set -g theme_damin_long_command_threshold 3000
-# right-prompt segment order. tokens: cwd lang devops env battery duration date extra,
-# or any damin_segment_<name>. drop a token to omit; reorder to taste.
-set -q theme_damin_right_segments; or set -g theme_damin_right_segments cwd lang devops env battery duration date extra
-set -q theme_damin_battery_threshold; or set -g theme_damin_battery_threshold 30
-set -q theme_damin_gh_pr_ttl; or set -g theme_damin_gh_pr_ttl 300
-set -q theme_damin_notify_threshold; or set -g theme_damin_notify_threshold 30000
+# numeric toggles: coerce a non-integer user value back to its default so a typo
+# (e.g. theme_damin_branch_max_len=ten) can't abort the prompt at a `test -gt`.
+set -l _damin_ints \
+    cwd_keep 3 cwd_short 4 project_dir_length 0 branch_max_len 0 \
+    cloud_max_len 0 k8s_max_len 0 aws_max_len 0 gcp_max_len 0 azure_max_len 0 \
+    long_command_threshold 3000 battery_threshold 30 gh_pr_ttl 300 \
+    notify_threshold 30000 async_timeout 5
+set -l _damin_i 1
+while test $_damin_i -le (count $_damin_ints)
+    set -l _damin_v theme_damin_$_damin_ints[$_damin_i]
+    string match -rq '^[0-9]+$' -- "$$_damin_v"; or set -g $_damin_v $_damin_ints[(math $_damin_i + 1)]
+    set _damin_i (math $_damin_i + 2)
+end
 
 # transient flag is session-global only; drain any universal-scope leak.
 set -qU _damin_in_transient; and set -eU _damin_in_transient
 # legacy IPC token from pre-signal versions; persists in fish_variables.
 set -qU _damin_async_repaint_token; and set -eU _damin_async_repaint_token
 
-# glyphs (defaults flip when ascii=1; theme_damin_glyph_* overrides win)
+# glyphs: defaults flip with theme_damin_ascii=1 (plain) or theme_damin_nerd_font=1
+# (Nerd Font icons — needs a patched font). theme_damin_glyph_* overrides always win.
 set -l _ds_prompt ✿
 set -l _ds_cwd ❥
 set -l _ds_clean ✧
@@ -144,6 +79,7 @@ set -l _ds_sep ·
 set -l _ds_conflict X
 
 if test "$theme_damin_ascii" = 1
+    # ascii wins (also the dumb-terminal default) — safe everywhere.
     set _ds_prompt '*'
     set _ds_cwd '>'
     set _ds_clean '~'
@@ -152,6 +88,18 @@ if test "$theme_damin_ascii" = 1
     set _ds_ahead '^'
     set _ds_behind v
     set _ds_sep '|'
+else if test "$theme_damin_nerd_font" = 1
+    # classic FontAwesome codepoints — present across Nerd Font v2/v3. sep stays ·.
+    set _ds_prompt 
+    set _ds_cwd 
+    set _ds_clean 
+    set _ds_modified 
+    set _ds_added 
+    set _ds_untracked 
+    set _ds_stashed 
+    set _ds_ahead 
+    set _ds_behind 
+    set _ds_conflict 
 end
 
 set -q theme_damin_glyph_prompt; or set -g theme_damin_glyph_prompt $_ds_prompt
@@ -286,15 +234,19 @@ function _damin_read_lines --argument-names file
     end <$file
 end
 
-# unix-ts -> short relative age (`2h`, `3d`, `now`). empty input -> empty.
-# `now` cached by $CMD_DURATION so repaints / multi-segment calls share one fork.
-function _damin_relative_time --argument-names ts
-    string match -rq '^[1-9][0-9]*$' -- "$ts"; or return
+# unix `now`, cached by $CMD_DURATION so repaints / every segment share one fork.
+function _damin_now
     if test "$_damin_now_at" != "$CMD_DURATION"
         set -g _damin_now_at "$CMD_DURATION"
         set -g _damin_now_value (date +%s)
     end
-    set -l now $_damin_now_value
+    echo $_damin_now_value
+end
+
+# unix-ts -> short relative age (`2h`, `3d`, `now`). empty input -> empty.
+function _damin_relative_time --argument-names ts
+    string match -rq '^[1-9][0-9]*$' -- "$ts"; or return
+    set -l now (_damin_now)
     set -l diff (math $now - $ts)
     test $diff -lt 0; and set diff 0
     if test $diff -lt 60
@@ -700,20 +652,23 @@ end
 set -g _damin_async_signal_loaded $theme_damin_async_signal
 
 function _damin_git_render
-    # async_repaint: render last disk cache; bg refresh writes + signals a repaint.
+    # async_repaint: serve the disk cache, refresh in the bg, signal a repaint.
     if test "$theme_damin_async_git" = 1; and test "$theme_damin_async_repaint" = 1
-        _damin_async_kickoff git _damin_git_prefill
         set -l cache_file (_damin_cache_path git)
         if test -f $cache_file
             set -l lines (_damin_read_lines $cache_file)
             if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
+                # warm cache: serve it, refresh in the bg for the next prompt.
+                _damin_async_kickoff git _damin_git_prefill
                 _damin_git_render_data $lines[2..11]
                 return
             end
         end
-        # cold cache: compute inline once so the segment isn't blank (kickoff above warms it).
+        # cold/stale cache: compute inline once and warm the cache ourselves — no
+        # bg fork, so cold `cd` runs `git status` once instead of twice.
         set -l data (_damin_git_compute)
         test -z "$data"; and return
+        _damin_write_cache $cache_file "$PWD" $data
         _damin_git_render_data $data
         return
     end
@@ -733,7 +688,7 @@ function _damin_gh_render --argument-names branch
     test -n "$branch"; or return
 
     if test "$theme_damin_async_gh_pr" != 1
-        set -l now (date +%s)
+        set -l now (_damin_now)
         set -l ttl $theme_damin_gh_pr_ttl
         if test "$_damin_gh_branch" != "$branch"; or test (math $now - $_damin_gh_at) -ge $ttl
             set -g _damin_gh_branch "$branch"
@@ -746,7 +701,7 @@ function _damin_gh_render --argument-names branch
 
     set -l cache_file (_damin_cache_path gh-(_damin_gh_branch_key $branch))
     set -l cache_mt (path mtime $cache_file 2>/dev/null)
-    set -l now (date +%s)
+    set -l now (_damin_now)
     set -l ttl $theme_damin_gh_pr_ttl
     set -l fresh 0
     test -n "$cache_mt" -a (math $now - "0$cache_mt") -lt $ttl; and set fresh 1
@@ -1011,6 +966,31 @@ function _damin_lang_compute
             else if test -f "$dir/pom.xml" -o -f "$dir/build.gradle" -o -f "$dir/build.gradle.kts"
                 set found_lang java
                 set found_label java
+            else if test (count $dir/*.csproj $dir/*.fsproj 2>/dev/null) -gt 0
+                set found_lang dotnet
+                set found_label dotnet
+            else if test -f "$dir/Package.swift"
+                set found_lang swift
+                set found_label swift
+            else if test -f "$dir/build.sbt"
+                set found_lang scala
+                set found_label scala
+            else if test -f "$dir/stack.yaml" -o -f "$dir/cabal.project"
+                set found_lang haskell
+                set found_label hs
+            else if test -f "$dir/pubspec.yaml"
+                set found_lang dart
+                set found_label dart
+            else if test -f "$dir/Project.toml"
+                set found_lang julia
+                set found_label jl
+            else if test -f "$dir/.luarc.json"
+                set found_lang lua
+                set found_label lua
+            else if test -f "$dir/CMakeLists.txt" -o -f "$dir/meson.build"
+                # no canonical per-project version; label only.
+                set found_lang cpp
+                set found_label cpp
             end
         end
         test -z "$tool_versions" -a -f "$dir/.tool-versions"; and set tool_versions "$dir/.tool-versions"
@@ -1041,7 +1021,7 @@ function _damin_lang_compute
         case rust
             set v (_damin_lang_read_tool_versions $tool_versions rust)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml rust)
-            test -z "$v"; and set v (command rustc --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command rustc --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case node
             set v (_damin_lang_read_tool_versions $tool_versions nodejs)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml node)
@@ -1055,37 +1035,63 @@ function _damin_lang_compute
             set v (_damin_lang_read_tool_versions $tool_versions python)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml python)
             test -z "$v"; and set v (_damin_lang_read_pin $python_pin)
-            test -z "$v"; and set v (command python3 --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command python3 --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case deno
             set v (_damin_lang_read_tool_versions $tool_versions deno)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml deno)
-            test -z "$v"; and set v (command deno --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command deno --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case ruby
             set v (_damin_lang_read_tool_versions $tool_versions ruby)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml ruby)
             test -z "$v"; and set v (_damin_lang_read_pin $ruby_pin)
-            test -z "$v"; and set v (command ruby --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command ruby --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case elixir
             set v (_damin_lang_read_tool_versions $tool_versions elixir)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml elixir)
-            test -z "$v"; and set v (command elixir --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command elixir --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case php
             set v (_damin_lang_read_tool_versions $tool_versions php)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml php)
-            test -z "$v"; and set v (command php -r 'echo PHP_VERSION;' 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command php -r 'echo PHP_VERSION;' 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case crystal
             set v (_damin_lang_read_tool_versions $tool_versions crystal)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml crystal)
-            test -z "$v"; and set v (command crystal --version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command crystal --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case zig
             set v (_damin_lang_read_tool_versions $tool_versions zig)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml zig)
-            test -z "$v"; and set v (command zig version 2>/dev/null | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command zig version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
         case java
             set v (_damin_lang_read_tool_versions $tool_versions java)
             test -z "$v"; and set v (_damin_lang_read_mise $mise_toml java)
             test -z "$v"; and set v (_damin_lang_read_pin $java_pin)
-            test -z "$v"; and set v (command java -version 2>&1 | string match -gr '\d+\.\d+\.\d+' | head -1)
+            test -z "$v"; and set v (command java -version 2>&1 | string match -r '\d+\.\d+\.\d+')[1]
+        case dotnet
+            set v (_damin_lang_read_tool_versions $tool_versions dotnet)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml dotnet)
+            test -z "$v"; and set v (command dotnet --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
+        case swift
+            set v (_damin_lang_read_tool_versions $tool_versions swift)
+            test -z "$v"; and set v (command swift --version 2>&1 | string match -r '\d+\.\d+\.\d+')[1]
+        case scala
+            set v (_damin_lang_read_tool_versions $tool_versions scala)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml scala)
+            test -z "$v"; and set v (command scala -version 2>&1 | string match -r '\d+\.\d+\.\d+')[1]
+        case haskell
+            set v (_damin_lang_read_tool_versions $tool_versions haskell)
+            test -z "$v"; and set v (command ghc --numeric-version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
+        case dart
+            set v (_damin_lang_read_tool_versions $tool_versions dart)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml dart)
+            test -z "$v"; and set v (command dart --version 2>&1 | string match -r '\d+\.\d+\.\d+')[1]
+        case julia
+            set v (_damin_lang_read_tool_versions $tool_versions julia)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml julia)
+            test -z "$v"; and set v (command julia --version 2>/dev/null | string match -r '\d+\.\d+\.\d+')[1]
+        case lua
+            set v (_damin_lang_read_tool_versions $tool_versions lua)
+            test -z "$v"; and set v (_damin_lang_read_mise $mise_toml lua)
+            test -z "$v"; and set v (command lua -v 2>&1 | string match -r '\d+\.\d+\.\d+')[1]
     end
 
     test -n "$v"; and echo "$found_label:$v"; or echo $found_label
@@ -1197,6 +1203,8 @@ function _damin_duration_render
 end
 
 function _damin_help_row --argument-names name default
+    # no explicit default -> pull it from the shared registry (single source).
+    test -z "$default"; and set default (_damin_default_of $name)
     if set -q _damin_help_filter; and test -n "$_damin_help_filter"
         string match -q "*$_damin_help_filter*" -- $name; or return
         set -g _damin_help_matched 1

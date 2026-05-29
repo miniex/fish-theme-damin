@@ -50,8 +50,9 @@ omf theme damin; exec fish
   - Root `fish_prompt.fish` / `fish_right_prompt.fish` / `fish_title.fish` / `key_bindings.fish` — OMF shims, no logic
   - `hooks/*.fish` — OMF install lifecycle. Idempotent and side-effect-free outside the orphan cleanup
   - `examples/segments/*.fish` — drop-in `damin_segment_<name>` snippets. Not installed by Fisher/OMF; users copy or symlink into `~/.config/fish/conf.d/`
-- Brand accents (`theme_damin_accent_primary` / `_secondary`) drive every `_damin_c_*`. Adding a palette: arm in `_damin_palette_data.fish` (14 `fish_color_*` hex + 1 bg hint), arm in `_damin_palette_accents.fish` (brand pair), arm in `_damin_palette_meta.fish` (display name + description + dark|light), name in `_damin_palette_list.fish`, plus `LICENSES/` + `README.md` highlights count. `damin_set_palette`, the config picker, `damin_install_themes`, and the `damin_set_palette` completion all pick up from those helpers automatically.
-- New lang: marker + label in `_damin_lang_compute`, resolution chain (`.tool-versions` -> `.mise.toml` -> lang pin -> binary fork), fixture test in `tools/test.sh`.
+- Brand accents (`theme_damin_accent_primary` / `_secondary`) drive every `_damin_c_*`. Adding a palette: one row in `_damin_palette_table.fish` (`flavor|theme|name|desc|accentP accentS|14 colors|bg`) — `_damin_palette_{list,data,accents,meta}` all derive from it, so a single line replaces the old four parallel switches. Plus `LICENSES/` + `README.md` highlights count. `damin_set_palette`, the config picker, `damin_install_themes`, and the completion pick it up automatically.
+- New `theme_damin_*` toggle: one `var default` line in `_damin_defaults.fish` — `conf.d/damin.fish` applies it at load and `damin_help` displays it from the same source (add a matching `_damin_help_row <var>` with no default arg, placed in the right group).
+- New lang: marker + label in `_damin_lang_compute` (glob markers like `*.csproj` via `count … -gt 0`), resolution chain (`.tool-versions` -> `.mise.toml` -> lang pin -> binary fork; extract with `string match -r '\d+\.\d+\.\d+'`, no `-g`), fixture test in `tools/test.sh`.
 - Hot-path changes: include before/after `./tools/bench.sh` numbers. `damin_profile` for means, `damin_bench` for P50/P95/P99. Per-PWD or per-input memo -> document its invalidation path.
 
 ## Commit messages

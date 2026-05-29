@@ -6,7 +6,7 @@ Commands, configuration, and feature reference. For internals (cache layout, asy
 
 - **git / jj / hg / fossil** — counts (`X2 ?2 ✗3 ✓1 ⇡N`), op state (`rebase` / `merge` / `pick` / …), worktree (`wt:<name>`), unmerged-first, opt-in `#N` GitHub PR. `theme_damin_jj_counts` for jj diff counts, `theme_damin_hg_dirty` for hg dirty bit, `theme_damin_stash_age` for newest-stash relative time, `theme_damin_issue_url_template` for `[A-Z]+-[0-9]+` -> OSC 8 ticket links. `hide_default_branch`, `branch_max_len` for long names.
 - **Context** — `ssh` / `root` / `sudo:<user>` / `dkr` / `ctr` / `dm:<machine>` / `screen:<session>` / `tmux:<window>` / `zj:<session>` / `wsl:<distro>` / `cs` (Codespaces) / `devc` (Devcontainer) / `k8s:<ctx>/<ns>`, opt-in `aws[-vault]:<profile>` / `gcp:<project>` / `az:<subscription>`. SSH-aware `user@host` + `default_user` to hide your own. Pure-fish, no CLI forks (tmux window cached by `$TMUX_PANE`). `theme_damin_cloud_max_len` (+ per-segment overrides) clips long ARN-style labels with `…`.
-- **Lang + env** — 11 langs (`rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig`) via pin files first (`.tool-versions` -> `.mise.toml` -> lang-specific pin -> binary fork). `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv / pyenv / NVM / asdf).
+- **Lang + env** — 19 langs (`rust` / `node` / `go` / `py` / `deno` / `rb` / `java` / `ex` / `php` / `cr` / `zig` / `dotnet` / `swift` / `scala` / `hs` / `dart` / `jl` / `lua` / `cpp`) via pin files first (`.tool-versions` -> `.mise.toml` -> lang-specific pin -> binary fork). `(.venv)` / `(conda)` / `(direnv:<dir>)` / `(nix:<devshell>)`. Opt-in global-version-manager fallback (rbenv / pyenv / NVM / asdf).
 - **Terraform / Pulumi** — opt-in `tf:<workspace>` / `pulumi:<stack>`.
 - **Path** — abbreviated cwd, optional project-relative (`<project>/<rel>`) mode.
 - **Terminal-native** — OSC 7 (cwd advertise) + OSC 8 (clickable PR badge, cwd, branch issue keys) + OSC 133 (semantic prompt markers). Opt-in OSC 9 + `notify-send` long-command alert. Configurable terminal title + right-prompt clock.
@@ -14,7 +14,7 @@ Commands, configuration, and feature reference. For internals (cache layout, asy
 - **Transient prompt** — past prompts collapse to a dim `✿` after Enter. `theme_damin_glyph_transient` overrides the stub glyph.
 - **Async** — git/lang/gh refresh in a ~3 KB subshell. Warm prompts serve the cache and bg-refresh (`async_repaint=1`); an un-warmed repo computes once synchronously then caches. Every prompt kicks a fresh git refresh, so editor-only edits show up on the next prompt. `async_timeout` (default `5`s) kills runaway bg work.
 - **Customizable** — 70+ `theme_damin_*` toggles. `damin_segment_<name>` hooks + `theme_damin_right_segments` for right-prompt ordering. Example hooks (`uptime`, `todo`, `weather`) under [`examples/segments/`](../examples/segments/).
-- **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback**, **TRAMP / dumb auto-minimal**.
+- **vi-mode badge**, **multi-line option** (`newline_prompt`), **ASCII fallback** (`ascii`) + **Nerd Font preset** (`nerd_font`), **TRAMP / dumb auto-minimal**.
 
 ## Commands
 
@@ -63,6 +63,19 @@ set -U theme_damin_right_segments cwd lang kube_age env duration
 ```
 
 `theme_damin_right_segments` reserves these tokens for built-in renderers (custom segments with the same name are shadowed): `cwd`, `lang`, `devops`, `env`, `battery`, `duration`, `date`, `extra`. The `extra` slot fires every `theme_damin_extra_right` function. Pick a different `damin_segment_<name>` if you collide.
+
+For a segment that shells out (network, slow CLI), use the built-in async helpers instead of blocking the prompt:
+
+```fish
+function damin_segment_weather
+    # bg-fetch on a 30 min TTL; repaints when the result lands.
+    damin_async_refresh weather 1800 curl -s --max-time 2 "wttr.in/?format=%c+%t"
+    set -l v (damin_async_value weather)
+    test -n "$v"; and echo -n -s " $(set_color --dim)$v$(set_color normal)"
+end
+```
+
+`damin_async_refresh <key> <ttl-seconds> <command…>` caches `<command>`'s stdout per `<key>` and signals a repaint when it returns; `damin_async_value <key>` reads it. The command runs in a bare subshell, so keep it self-contained (no theme-internal functions).
 
 Three ready-made examples live under [`examples/segments/`](../examples/segments/) — copy or symlink into `~/.config/fish/conf.d/`.
 
