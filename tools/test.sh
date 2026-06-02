@@ -1305,6 +1305,46 @@ esac
 cleanup "$repo"
 
 echo
+echo "=== damin adaptive git render tests ==="
+echo
+
+# fast repo: inline compute -> the edit shows on the same render (verdict `fast`).
+repo=$(mkrepo)
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    cd '$repo'
+    _damin_git_render >/dev/null            # measures -> fast
+    printf untracked > new.txt
+    _damin_git_render >/dev/null            # inline, must re-read fresh
+    set -l mode (_damin_read_lines (_damin_cache_path git-mode))[1]
+    set -l untracked (_damin_read_lines (_damin_cache_path git))[3]
+    echo \"\$mode \$untracked\"
+    true
+" 2>/dev/null)
+expect "adaptive: fast repo computes inline, reflects edit immediately" "$got" "fast 1"
+cleanup "$repo"
+
+# threshold 0 -> slow verdict: render serves stale, bg worker updates the cache.
+repo=$(mkrepo)
+got=$(fish -c "
+    source '$THEME/conf.d/damin.fish'
+    set -g theme_damin_async_threshold 0
+    cd '$repo'
+    _damin_git_render >/dev/null            # measures -> slow
+    printf untracked > new.txt
+    _damin_git_render >/dev/null            # serves stale, kicks bg refresh
+    set -l mode (_damin_read_lines (_damin_cache_path git-mode))[1]
+    set -l served (_damin_read_lines (_damin_cache_path git))[3]
+    while kill -0 \$_damin_async_pid_git 2>/dev/null; sleep 0.02; end
+    sleep 0.05
+    set -l refreshed (_damin_read_lines (_damin_cache_path git))[3]
+    echo \"\$mode served=\$served refreshed=\$refreshed\"
+    true
+" 2>/dev/null)
+expect "adaptive: slow repo serves stale, bg refresh updates cache" "$got" "slow served=0 refreshed=1"
+cleanup "$repo"
+
+echo
 TOTAL=$((PASS + FAIL))
 if [ $FAIL -gt 0 ]; then
     printf '%d/%d failed:%s\n' "$FAIL" "$TOTAL" "$FAILED_NAMES"

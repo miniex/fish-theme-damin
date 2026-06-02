@@ -127,6 +127,7 @@ function damin_help
     _damin_help_row theme_damin_gh_pr_ttl
     _damin_help_row theme_damin_notify_threshold
     _damin_help_row theme_damin_async_timeout
+    _damin_help_row theme_damin_async_threshold
     if test "$_damin_help_mode" = text
         echo
         echo "  glyphs (override individually; theme_damin_ascii=1 swaps all defaults)"

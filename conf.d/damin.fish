@@ -51,7 +51,7 @@ set -l _damin_ints \
     cwd_keep 3 cwd_short 4 project_dir_length 0 branch_max_len 0 \
     cloud_max_len 0 k8s_max_len 0 aws_max_len 0 gcp_max_len 0 azure_max_len 0 \
     long_command_threshold 3000 battery_threshold 30 gh_pr_ttl 300 \
-    notify_threshold 30000 async_timeout 5
+    notify_threshold 30000 async_timeout 5 async_threshold 80
 set -l _damin_i 1
 while test $_damin_i -le (count $_damin_ints)
     set -l _damin_v theme_damin_$_damin_ints[$_damin_i]
@@ -652,31 +652,53 @@ end
 # this on purpose — the handler is still bound, so the flag must keep matching.
 set -g _damin_async_signal_loaded $theme_damin_async_signal
 
-function _damin_git_render
-    # async_repaint: serve the disk cache, refresh in the bg, signal a repaint.
-    if test "$theme_damin_async_git" = 1; and test "$theme_damin_async_repaint" = 1
-        set -l cache_file (_damin_cache_path git)
-        if test -f $cache_file
-            set -l lines (_damin_read_lines $cache_file)
-            if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
-                # warm cache: serve it, refresh in the bg for the next prompt.
-                _damin_async_kickoff git _damin_git_prefill
-                _damin_git_render_data $lines[2..11]
-                return
-            end
+# compute inline, warm the cache, render. always fresh — the fast-repo default.
+function _damin_git_render_inline
+    set -l data (_damin_git_compute)
+    test -z "$data"; and return
+    _damin_write_cache (_damin_cache_path git) "$PWD" $data
+    _damin_git_render_data $data
+end
+
+# serve the cached count, refresh in the bg, signal a repaint. one cycle stale.
+function _damin_git_render_async
+    set -l cache_file (_damin_cache_path git)
+    if test -f $cache_file
+        set -l lines (_damin_read_lines $cache_file)
+        if test (count $lines) -ge 11 -a "$lines[1]" = "$PWD"
+            _damin_async_kickoff git _damin_git_prefill
+            _damin_git_render_data $lines[2..11]
+            return
         end
-        # cold/stale cache: compute inline once and warm the cache ourselves — no
-        # bg fork, so cold `cd` runs `git status` once instead of twice.
-        set -l data (_damin_git_compute)
-        test -z "$data"; and return
-        _damin_write_cache $cache_file "$PWD" $data
-        _damin_git_render_data $data
+    end
+    # cold/stale cache: compute inline (one `git status`, no bg fork).
+    _damin_git_render_inline
+end
+
+function _damin_git_render
+    # no async, or no repaint to un-stale a served cache -> always inline (fresh).
+    if test "$theme_damin_async_git" != 1; or test "$theme_damin_async_repaint" != 1
+        _damin_git_render_inline
         return
     end
 
-    set -l data (_damin_git_compute)
-    test -z "$data"; and return
-    _damin_git_render_data $data
+    # adaptive: inline by default; a repo whose first `git status` runs slower than
+    # async_threshold ms flips to async. verdict cached per dir (git-mode), timed once.
+    set -l mode_file (_damin_cache_path git-mode)
+    set -l mode (_damin_read_lines $mode_file)[1]
+
+    switch "$mode"
+        case slow
+            _damin_git_render_async
+        case fast
+            _damin_git_render_inline
+        case '*'
+            set -l t0 (_damin_profile_now_ms)
+            _damin_git_render_inline
+            set -l verdict fast
+            test (math (_damin_profile_now_ms) - $t0) -gt $theme_damin_async_threshold; and set verdict slow
+            _damin_write_cache $mode_file "$verdict"
+    end
 end
 
 # jj helpers live in functions/ — autoloaded only when in a jj repo.

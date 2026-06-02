@@ -43,7 +43,7 @@ omf theme damin
 
 ## What you get
 
-- **Fast** — ~0.5 ms/prompt. In-memory PWD memos, async refresh in a ~3 KB subshell, opt-out `-uno` for monorepos
+- **Fast & fresh** — git counts computed inline so they reflect on the prompt they change; ~0.5 ms theme overhead, in-memory PWD memos, async fallback in huge repos (~3 KB subshell), opt-out `-uno` for monorepos
 - **git / jj / hg / fossil** — counts, op state, worktree, opt-in `#N` GitHub PR badge, branch issue-key auto-link
 - **Context** — `ssh` / `root` / `dkr` / `tmux` / `wsl` / `k8s` / opt-in `aws` / `gcp` / `az`. Pure-fish, no CLI forks
 - **19 palettes**, live switch + preview without applying. OSC 7 / 8 / 133 shell integration. Custom segment hooks

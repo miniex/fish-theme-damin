@@ -29,10 +29,12 @@ function _damin_defaults
         'show_terraform 1' 'show_pulumi 1' 'show_battery 0' 'show_duration 1' \
         'show_date 0' 'date_format %H:%M'
     # behavior. async_signal: override only if SIGUSR1 collides. async_timeout 0 = off.
+    # async_threshold (ms): repos with git status faster than this stay inline; 0 = always async.
     printf '%s\n' \
         'git_counts 1' 'git_count_untracked 1' 'transient 1' \
         'async_git 1' 'async_lang 1' 'async_warmup 1' 'async_repaint 1' \
         'async_gh_pr 1' 'async_signal SIGUSR1' 'async_timeout 5' \
+        'async_threshold 80' \
         'osc_integration 1' 'notify_long_command 0' 'apply_colors 1' \
         'palette mocha' 'ascii 0' 'nerd_font 0' 'newline_prompt 0'
     # terminal title. user 0|1|ssh, path 0|1|short, process 0|1.

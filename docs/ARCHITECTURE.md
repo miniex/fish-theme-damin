@@ -288,13 +288,14 @@ Every `damin_*` answers `--help` / `-h` via the shared `_damin_help_block`. Comp
 | `theme_damin_git_count_untracked`    | `1`       | `0` -> `-uno` (30-100× faster in big repos, hides `?N`)                                                                   |
 | `theme_damin_newline_prompt`         | `0`       | Move the florette to its own line (multi-line prompt)                                                                     |
 | `theme_damin_transient`              | `1`       | Collapse past prompts to `✿` after Enter                                                                                  |
-| `theme_damin_async_git`              | `1`       | Cache git + postexec invalidation. `0` = sync                                                                             |
+| `theme_damin_async_git`              | `1`       | Adaptive git: inline-fresh by default, bg-async for slow repos. `0` = always inline                                       |
 | `theme_damin_async_lang`             | `1`       | Cache lang + postexec invalidation. `0` = sync                                                                            |
 | `theme_damin_async_warmup`           | `1`       | Background-prefill caches at theme load                                                                                   |
-| `theme_damin_async_repaint`          | `1`       | Stale-while-revalidate git via `fish -c` subshell. `0` = sync compute on stale                                            |
+| `theme_damin_async_repaint`          | `1`       | Gate the serve-stale/bg-refresh path (slow repos only). `0` = always inline                                               |
 | `theme_damin_async_gh_pr`            | `1`       | Background-refresh `gh pr view`; `0` = blocking sync                                                                      |
 | `theme_damin_async_signal`           | `SIGUSR1` | Signal the async-refresh subshell sends to repaint the parent                                                             |
 | `theme_damin_async_timeout`          | `5`       | Seconds before a hung bg subshell is killed by the watchdog. `0` disables                                                 |
+| `theme_damin_async_threshold`        | `80`      | ms; a repo whose first `git status` beats this stays inline (fresh). Slower repos flip to async. `0` = always async       |
 | `theme_damin_osc_integration`        | `1`       | Emit OSC 7 + OSC 8 + OSC 133                                                                                              |
 | `theme_damin_cwd_keep`               | `3`       | Trailing path segments kept full                                                                                          |
 | `theme_damin_cwd_short`              | `4`       | Chars to truncate earlier segments to                                                                                     |
@@ -420,8 +421,9 @@ set -U theme_damin_default_branches main master develop trunk
 ### Files
 
 ```
-~/.cache/damin/<%-encoded-PWD>-git    10 + 1 = 11 lines (branch, 7 counts, op, stash_ts, with PWD as line 1)
-~/.cache/damin/<%-encoded-PWD>-lang   2 lines (value, with PWD as line 1)
+~/.cache/damin/<%-encoded-PWD>-git       10 + 1 = 11 lines (branch, 7 counts, op, stash_ts, with PWD as line 1)
+~/.cache/damin/<%-encoded-PWD>-git-mode  1 line: fast|slow verdict, timed once per dir
+~/.cache/damin/<%-encoded-PWD>-lang      2 lines (value, with PWD as line 1)
 ~/.cache/damin/cloud-k8s              3 lines (kubeconfig mtime, current-context, namespace)
 ~/.cache/damin/.last-prune            mtime marker for daily prune
 ```
@@ -437,7 +439,7 @@ PWD encoding: `string replace -a / %` — no `shasum` fork, deterministic.
 - **Devops cache** — cleared on `terraform`/`tf`/`pulumi`.
 - **Cloud caches** — cleared on `aws`/`gcloud`/`az`/`kubectl config` (same-second writes evade mtime).
 
-Out-of-shell mutations (lazygit, IDE plugins, another fish session) and editor-only edits land on the next prompt: `_damin_git_render` has no freshness gate, so `async_repaint=1` kicks a bg refresh every prompt (coalesced — one in-flight worker per key) and `async_repaint=0` (or `async_git=0`) recomputes synchronously. Postexec still deletes the cache after write-side git commands — without it, `async_repaint=1` would flash the prior count for one prompt while the bg refresh runs.
+`_damin_git_render` is adaptive. By default it computes `git status` inline, so every prompt — including out-of-shell mutations (lazygit, IDE plugins, another fish session) and editor-only edits — reflects on the prompt it happened, with no stale paint. The first compute per dir is timed; the `fast`/`slow` verdict is cached in a per-dir `git-mode` file, so it runs once. Only a repo slower than `theme_damin_async_threshold` ms flips to the async path: serve the cached count instantly, kick a coalesced bg refresh (one in-flight worker per key), and signal a repaint when it lands. `async_threshold=0` forces every repo onto the async path; `async_git=0` or `async_repaint=0` forces inline everywhere. Postexec still deletes the cache after write-side git commands so the async path can't flash a prior count.
 
 ### In-memory PWD memo (hot-path shortcut)
 
@@ -447,13 +449,13 @@ Above the disk cache, three renderers keep a per-PWD (or per-input) in-process m
 - `_damin_cwd_pretty` — key: PWD. Pure presentation.
 - `_damin_duration_format` — key: `$CMD_DURATION`. Stable within a prompt cycle, so repaints cost zero math.
 
-`_damin_git_render` has no memo by design — per-prompt freshness is the contract. Pure-sync mode (`async_git=0` / `async_lang=0`) skips the disk cache; the lang/cwd/duration memos still apply.
+`_damin_git_render` has no memo by design — per-prompt freshness is the contract. It computes inline by default and writes the disk cache on the way out (the async path reads it; the inline path never does). `async_lang=0` skips the lang disk cache; the lang/cwd/duration memos still apply.
 
-### True async repaint (default)
+### True async repaint (slow-repo path)
 
-`theme_damin_async_repaint=1` (default) renders the last disk cache and refreshes per prompt:
+The default git path is inline (always fresh); a repo timed slower than `theme_damin_async_threshold` ms flips to this serve-stale path, which `theme_damin_async_repaint=1` (default) enables. For such a repo, each prompt:
 
-- Every prompt -> render the cache + bg `fish -c` recomputes and overwrites the cache. A cold/missing cache (first prompt in an un-warmed repo) computes once synchronously so the segment is never blank.
+- Renders the cache + bg `fish -c` recomputes and overwrites the cache. A cold/missing cache (first prompt in an un-warmed repo) computes once synchronously so the segment is never blank.
 - On bg completion -> signal-driven repaint shows the fresh value.
 
 On finish, the subshell sends `$theme_damin_async_signal` (default `SIGUSR1`) to its parent; the parent's `--on-signal` handler runs `commandline -f repaint`. Signal delivery is microsecond-scale and only reaches the originating shell — `set -U` would write `~/.config/fish/fish_variables` on every refresh and broadcast to every fish session.
@@ -464,7 +466,7 @@ The subshell sources **only** `_damin_async_core.fish` (~5.7 KB / 160 lines), no
 
 Each kickoff arms a watchdog **inside** the worker subshell (`begin; sleep $theme_damin_async_timeout; kill $fish_pid; end &`) so a hung `gh pr view` or k8s YAML walk can't linger forever — and so the prompt forks once per kickoff, not twice. Default timeout `5` seconds; set to `0` to disable.
 
-Used today by `git _damin_git_prefill` (under `theme_damin_async_repaint`, default on) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
+Used today by `git _damin_git_prefill` (on the slow-repo path above) and `gh _damin_gh_prefill <branch>` (under `theme_damin_async_gh_pr`, default on). New segments need only a `_damin_<seg>_prefill` in core + one render-side call.
 
 The gh disk cache key is `<pwd-key>-gh-<branch-key>` with TTL `theme_damin_gh_pr_ttl`; `-` = negative cache.
 
@@ -490,7 +492,7 @@ POSIX `rename(2)` is atomic on same-filesystem. Per-PID tmp suffix prevents conc
 
 `./tools/bench.sh`: 100 hot-loop iterations + 5 warmup across four scenarios. Needs `python3` for sub-second timestamps on macOS.
 
-M-series Mac reference:
+M-series Mac reference, served-cache path (`theme_damin_async_threshold=0`):
 
 ```
 out-of-repo (/tmp)                       0.46 ms / prompt
@@ -499,7 +501,7 @@ git: 1 untracked + 1 staged              0.69 ms / prompt
 git dirty + node project                 0.70 ms / prompt
 ```
 
-`bench.sh` measures steady state. Cold cost (first cd into a new repo) is higher — measured by `damin_bench` from a fresh PWD.
+The **default** path computes `git status` inline for always-fresh counts, so each git-repo prompt pays one `git status` (a few ms in a small repo, scaling with size) instead of the cache read above. Repos slower than `async_threshold` fall back to the served-cache path automatically. `bench.sh` measures steady state; cold cost (first cd into a new repo) is higher — measured by `damin_bench` from a fresh PWD.
 
 ### Why it's fast
 
@@ -508,21 +510,21 @@ git dirty + node project                 0.70 ms / prompt
 - PWD encoded with `string replace` and memoized (no `shasum` fork per cd)
 - **In-memory PWD memo on lang/cwd** — second prompt in same dir skips disk i/o; postexec invalidates
 - **`_damin_duration_format` memoed by `$CMD_DURATION`** — repaints cost zero math
-- **Async repaint hides git status latency** — render the previous cache instantly, refresh in the background, repaint when done
+- **Git status is inline by default** — always-fresh counts on the prompt that changed; only repos past `async_threshold` serve the previous cache and repaint when the bg refresh lands
 - Cache reads via fish `read` builtin in a loop (no `cat` fork)
 - Cloud / DevOps / battery / jj renderers autoload from `functions/` — disabled = zero parse cost
 - Async refresh subshell parses ~3 KB core, not the full 1349-line theme
 - Stash count via fish `count` builtin (no `wc -l` fork)
 - `git --no-optional-locks` everywhere — prompt never blocks on `.git/index.lock`
 - Opt-out `-uno` (`theme_damin_git_count_untracked=0`) skips the workdir walk (30-100× faster in monorepos)
-- Background refresh fires every prompt under `async_repaint=1`; `_damin_async_kickoff` skips (`kill -0`) while the key's worker is still in flight, so rapid prompts coalesce to one worker instead of piling up
+- Background refresh fires every prompt only for slow repos (`async_repaint=1`); `_damin_async_kickoff` skips (`kill -0`) while the key's worker is still in flight, so rapid prompts coalesce to one worker instead of piling up
 - `fish_indent`-formatted, `fish -n`-clean
 
 ### Cold paths
 
-- First `cd` into a new dir — `git status --porcelain=v2 --branch` + (if no pin file) one binary fork for `<lang> --version`. Pin-file detection (`.tool-versions`/`.mise.toml`/`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) runs in the same walk-up, so most projects skip the fork. ~30 ms on small repos, computed inline on this first (cold-cache) prompt so nothing renders blank. Later prompts serve the cache; `async_repaint=1` (default) then bg-refreshes git and redraws on signal, `=0` recomputes inline.
+- First `cd` into a new dir — `git status --porcelain=v2 --branch` + (if no pin file) one binary fork for `<lang> --version`. Pin-file detection (`.tool-versions`/`.mise.toml`/`.python-version`/`.nvmrc`/`.node-version`/`.ruby-version`/`.java-version`) runs in the same walk-up, so most projects skip the fork. ~30 ms on small repos, computed inline on this first prompt so nothing renders blank, and timed once to pick the fast/slow path. A fast repo computes git inline on every later prompt too (fresh); a repo past `async_threshold` serves the cache and bg-refreshes (redraw on signal).
 - After a write-side git command — cache deleted by postexec; same cold path.
-- Editor-only edits — picked up on the next prompt: `async_repaint=1` renders the prior value then repaints with fresh counts; `async_repaint=0` blocks for the recompute.
+- Editor-only edits — reflected on the next prompt: a fast repo recomputes inline (fresh immediately); a slow repo renders the prior value then repaints with fresh counts.
 
 `damin_profile [N] [--json]` — per-renderer mean over N runs (default 20). GNU `date %N` for ns precision, falls back to gdate/python3/perl. `--json` for CI comparison.
 

@@ -15,12 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Git status reflects on the prompt it changed** — `_damin_git_render` is now adaptive: it computes `git status` inline by default, so a normal repo shows the new state on the very next prompt with no stale-then-repaint lag. The first compute per dir is timed; only a repo slower than `theme_damin_async_threshold` ms (new, default `80`) flips to the previous serve-cache-then-bg-refresh path. The fast/slow verdict is cached per dir (`git-mode`) so the compute is timed once. `async_threshold=0` forces async everywhere; `async_git=0`/`async_repaint=0` force inline everywhere
 - **Palette definitions consolidated** — one row per flavor in `_damin_palette_table.fish`; `_damin_palette_{list,data,accents,meta}` derive from it. Adding a palette is now one line instead of four parallel switch arms
 - **Defaults consolidated into `_damin_defaults`** — `conf.d/damin.fish` applies them at load and `damin_help` displays them from the same registry, so the two can't drift
 - **Fewer prompt forks** — lang version parsing drops a `head` fork per probe; `git status` runs once (not twice) on a cold `cd`; one shared `date +%s` (`_damin_now`) serves relative-time / battery / gh per prompt
 - **Azure uses `jq` when available** — accurate `azureProfile.json` parse (BOM-stripped); the string heuristic stays as the no-`jq` fallback
-- **`theme_damin_async_repaint` default → `1`** — a warm/stale cache renders immediately (stale-while-revalidate) and a bg `fish -c` triggers a repaint when done; a cold/missing cache computes once synchronously. `=0` restores sync-on-stale
-- **Git status refreshes per prompt** — `_damin_git_render` no longer gates on mtime or TTL. `async_repaint=1` kicks a bg refresh every prompt; `async_repaint=0` (or `async_git=0`) recomputes synchronously. Editor-only edits show up on the next prompt without a TTL fallback
+- **`theme_damin_async_repaint` default → `1`** — enables the serve-stale/bg-refresh fallback that slow repos use (see the adaptive-git entry above); `=0` forces inline everywhere. `_damin_git_render` no longer gates on mtime or TTL
 - **Async watchdog folded into the worker subshell** — the per-kickoff hang-timeout (`theme_damin_async_timeout`) now runs as an in-worker `begin; sleep N; kill` block, so each kickoff forks once from the prompt instead of twice
 - **Root `fish_title.fish` is now a shim** — it sources `functions/fish_title.fish` (single source of truth) instead of duplicating the 43-line body; both are now covered by `tools/lint.sh` / `tools/format.sh`
 
@@ -30,12 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A non-integer numeric toggle aborted the prompt** — e.g. `theme_damin_branch_max_len=ten` hit `test -gt` and errored; numeric toggles now coerce back to their default at load
 - **`theme_damin_show_project_parent` was inverted** — the project-relative `<project>/<rel>` path only rendered when set to `0`, the opposite of its default (`1`) and its documented meaning. Now `1` (default) renders project-relative and `0` shows the abbreviated full PWD
 - **Apostrophe in `$PWD` broke the async git segment** — `_damin_async_kickoff` interpolated the cwd (and core path) into single quotes unescaped, so a path like `~/Don't Touch/repo` produced a broken subshell that never wrote the cache, leaving the git segment permanently blank there. Both are now `string escape`d
-- **Blank git segment on the first prompt in an un-warmed repo** — under `async_repaint=1` a cold/stale cache returned nothing instead of rendering. `_damin_git_render` now computes once synchronously on a cache miss while the bg kickoff warms the cache for later prompts
+- **Blank git segment on the first prompt in an un-warmed repo** — a cold/stale cache returned nothing instead of rendering. `_damin_git_render` now computes inline on a cache miss (the async fallback also warms the cache for later prompts)
 - **Async refresh never completed in slow repos / on held Enter** — `_damin_async_kickoff` killed and restarted the in-flight worker every prompt, so when `git status` outran the gap between prompts the refresh never finished and the cache stayed stale until a write-side git command dropped it. It now **skips** (via `kill -0`) while the key's worker is still running, letting it finish
 
 ### Removed
 
-- **`theme_damin_git_cache_ttl`** (added in b83ba3a, never released) — superseded by per-prompt refresh
+- **`theme_damin_git_cache_ttl`** (added in b83ba3a, never released) — superseded by per-prompt inline render
 
 ## [1.3.0] - 20260521074146 KST
 
